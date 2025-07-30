@@ -10,7 +10,11 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/xml2js": "^0.4.14",
+    "adm-zip": "^0.5.16",
     "hono": "^4.8.10",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "xml2js": "^0.6.2"
   }
 }
