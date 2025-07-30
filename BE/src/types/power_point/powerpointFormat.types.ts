@@ -24,6 +24,7 @@ export interface Shape {
 // một slide đã được phân tích định dạng
 export interface FormattedSlide {
   slideNumber: number;
+  layout: string;
   shapes: Shape[];
 }
 

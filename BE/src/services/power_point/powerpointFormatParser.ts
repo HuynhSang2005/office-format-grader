@@ -1,5 +1,6 @@
 import AdmZip from 'adm-zip';
 import { parseStringPromise } from 'xml2js';
+import path from 'node:path';
 import type {
   ParsedPowerPointFormatData,
   FormattedSlide,
@@ -65,10 +66,10 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
   try {
     const zip = new AdmZip(filePath);
 
-    const zipEntries = zip.getEntries();
-    const mediaFiles = zipEntries
+    // Lấy danh sách file media
+    const mediaFiles = zip.getEntries()
       .filter(entry => entry.entryName.startsWith('ppt/media/'))
-      .map(entry => entry.name); // Chỉ lấy tên file
+      .map(entry => entry.name);
 
     const relsEntry = zip.getEntry('ppt/_rels/presentation.xml.rels');
     if (!relsEntry) throw new Error('Không tìm thấy file presentation relationships.');
@@ -89,15 +90,38 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       const slideXmlObject = await parseStringPromise(slideXmlRaw);
       const shapes = extractShapesFromSlide(slideXmlObject);
 
+      // Lấy tên layout của slide
+      let layoutName = 'Unknown';
+      const layoutId = slideXmlObject['p:sld']?.['p:sldLayout']?.[0]?.$?.['r:id'];
+      if (layoutId) {
+        const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
+        const slideRelsEntry = zip.getEntry(slideRelsPath);
+        if (slideRelsEntry) {
+          const slideRelsXml = await parseStringPromise(slideRelsEntry.getData().toString('utf-8'));
+          const layoutRel = slideRelsXml.Relationships.Relationship.find(
+            (r: any) => r.$.Id === layoutId
+          );
+          if (layoutRel) {
+            const layoutPath = `ppt/slideLayouts/${path.basename(layoutRel.$.Target)}`;
+            const layoutXmlRaw = zip.getEntry(layoutPath)?.getData().toString('utf-8');
+            if (layoutXmlRaw) {
+              const layoutXml = await parseStringPromise(layoutXmlRaw);
+              layoutName = layoutXml['p:sldLayout']?.['p:cSld']?.[0]?.$?.name || 'Unnamed Layout';
+            }
+          }
+        }
+      }
+
       formattedSlides.push({
         slideNumber: slideCounter++,
+        layout: layoutName,
         shapes,
       });
     }
 
     return {
       slideCount: formattedSlides.length,
-      mediaFiles: mediaFiles,
+      mediaFiles,
       slides: formattedSlides,
     };
   } catch (error) {
