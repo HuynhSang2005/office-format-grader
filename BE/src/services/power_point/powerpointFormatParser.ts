@@ -83,13 +83,11 @@ function extractShapesFromSlide(
         const fontInfo = r['a:rPr']?.[0]?.['a:latin']?.[0]?.$ || {};
         const size = properties.sz ? parseInt(properties.sz, 10) / 100 : undefined;
 
-        // ---- LOGIC MỚI: TÌM HYPERLINK ----
         let hyperlink: string | undefined = undefined;
         const hlinkClick = r['a:rPr']?.[0]?.['a:hlinkClick']?.[0];
         if (hlinkClick && hlinkClick.$ && hlinkClick.$['r:id'] && relationships) {
           hyperlink = relationships.get(hlinkClick.$['r:id']);
         }
-        // ------------------------------------
 
         textRuns.push({
           text,
@@ -293,15 +291,25 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       const transitionNode = slideXmlObject['p:sld']['p:transition']?.[0];
 
       if (transitionNode) {
-        const durationStr = transitionNode.$?.dur;
-        // Lấy tên của thẻ con đầu tiên, đó chính là loại hiệu ứng
-        const effectTypeNode = Object.keys(transitionNode).find(key => key !== '$');
-        if (effectTypeNode) {
-          transition = {
-            type: effectTypeNode.replace('p:', ''),
-            duration: durationStr ? parseInt(durationStr, 10) : undefined,
-          };
-        }
+          const durationStr = transitionNode.$?.dur;
+          const effectTypeKey = Object.keys(transitionNode).find(
+              key => key !== '$' && key !== 'p:sound'
+          ); // Loại trừ thẻ sound
+
+          if (effectTypeKey) {
+              transition = {
+                  type: effectTypeKey.replace('p:', ''),
+                  duration: durationStr ? parseInt(durationStr, 10) : undefined,
+              };
+
+              const soundNode = transitionNode['p:sound']?.[0];
+              if (soundNode) {
+                  const soundNameNode = soundNode['a:prstSnd']?.[0]; // Âm thanh có sẵn
+                  if (soundNameNode && soundNameNode.$?.prst) {
+                      transition.sound = { name: soundNameNode.$.prst };
+                  }
+              }
+          }
       }
 
       // Lấy thông tin animation

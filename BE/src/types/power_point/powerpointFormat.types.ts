@@ -41,6 +41,9 @@ export interface SlideDisplayInfo {
 export interface TransitionEffect {
   type: string; // Tên hiệu ứng (ví dụ: 'fade', 'push')
   duration?: number; // Thời gian (ms)
+  sound?: { 
+    name: string; // Ví dụ: 'applause', 'click'
+  };
 }
 
 // một hiệu ứng animation cụ thể
