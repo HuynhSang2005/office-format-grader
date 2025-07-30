@@ -8,10 +8,10 @@ import type {
   ShapeTransform,
   FormattedTextRun,
   TableData,
-  SlideDisplayInfo // Import type mới
+  SlideDisplayInfo 
 } from '../../types/power_point/powerpointFormat.types';
 
-// ---- THÊM HÀM TRỢ GIÚP MỚI ĐỂ PARSE BẢNG ----
+// để phân tích một bảng từ XML
 function parseTableXml(tableElement: any): TableData {
   const rows: string[][] = [];
   const tableRows = tableElement['a:tr'] || [];
@@ -44,15 +44,20 @@ function extractShapesFromSlide(slideXmlObject: any): Shape[] {
 
   if (!spTree) return [];
 
-  // Xử lý các shape thông thường (text, picture,...)
-  const shapeElements = spTree['p:sp'] || [];
-  for (const shapeElement of shapeElements) {
-    // Lấy thông tin cơ bản của shape
-    const id = shapeElement['p:nvSpPr'][0]['p:cNvPr'][0].$.id;
-    const name = shapeElement['p:nvSpPr'][0]['p:cNvPr'][0].$.name;
+  // Gộp cả shape thường và graphicFrame vào một mảng để xử lý chung
+  const allElements = [...(spTree['p:sp'] || []), ...(spTree['p:graphicFrame'] || [])];
 
-    // Lấy thông tin vị trí và kích thước
-    const xfrm = shapeElement['p:spPr'][0]['a:xfrm'][0];
+  for (const element of allElements) {
+    // Lấy id, name, transform
+    const nvPr = element['p:nvSpPr']?.[0]?.['p:cNvPr']?.[0] ||
+                 element['p:nvGraphicFramePr']?.[0]?.['p:cNvPr']?.[0];
+    if (!nvPr) continue;
+    const id = nvPr.$.id;
+    const name = nvPr.$.name;
+
+    const xfrm = element['p:spPr']?.[0]?.['a:xfrm']?.[0] ||
+                 element['p:xfrm']?.[0];
+    if (!xfrm) continue;
     const transform: ShapeTransform = {
       x: parseInt(xfrm['a:off'][0].$.x, 10),
       y: parseInt(xfrm['a:off'][0].$.y, 10),
@@ -60,47 +65,38 @@ function extractShapesFromSlide(slideXmlObject: any): Shape[] {
       height: parseInt(xfrm['a:ext'][0].$.cy, 10),
     };
 
-    // Lấy thông tin text và định dạng
+    // Lấy các đoạn text và định dạng của chúng
     const textRuns: FormattedTextRun[] = [];
-    const paragraphs = shapeElement['p:txBody']?.[0]?.['a:p'] || [];
+    const paragraphs = element['p:txBody']?.[0]?.['a:p'] || [];
 
     for (const p of paragraphs) {
       const runs = p['a:r'] || [];
       for (const r of runs) {
         const text = r['a:t']?.[0] || '';
         const properties = r['a:rPr']?.[0]?.$ || {};
+        const fontInfo = r['a:rPr']?.[0]?.['a:latin']?.[0]?.$ || {};
+
+        // Lấy size (giá trị trong XML là pt * 100, ví dụ 1800 = 18pt)
+        const size = properties.sz ? parseInt(properties.sz, 10) / 100 : undefined;
+
         textRuns.push({
           text,
           isBold: properties.b === '1',
           isItalic: properties.i === '1',
+          font: fontInfo.typeface,
+          size: size,
         });
       }
     }
 
-    shapes.push({ id, name, transform, textRuns });
-  }
-
-  // handle graphic frames (có thể chứa bảng, chart,...) ----
-  const graphicFrames = spTree['p:graphicFrame'] || [];
-  for (const frame of graphicFrames) {
-    const id = frame['p:nvGraphicFramePr'][0]['p:cNvPr'][0].$.id;
-    const name = frame['p:nvGraphicFramePr'][0]['p:cNvPr'][0].$.name;
-    const xfrm = frame['p:xfrm'][0];
-    const transform: ShapeTransform = {
-      x: parseInt(xfrm['a:off'][0].$.x, 10),
-      y: parseInt(xfrm['a:off'][0].$.y, 10),
-      width: parseInt(xfrm['a:ext'][0].$.cx, 10),
-      height: parseInt(xfrm['a:ext'][0].$.cy, 10),
-    };
-
-    // Kiểm tra xem đối tượng có phải là một cái bảng không
-    const tableElement = frame['a:graphic'][0]['a:graphicData'][0]['a:tbl']?.[0];
+    // Kiểm tra nếu là bảng thì parse bảng
     let tableData: TableData | undefined = undefined;
+    const tableElement = element['a:graphic']?.[0]?.['a:graphicData']?.[0]?.['a:tbl']?.[0];
     if (tableElement) {
       tableData = parseTableXml(tableElement);
     }
 
-    shapes.push({ id, name, transform, textRuns: [], tableData });
+    shapes.push({ id, name, transform, textRuns, tableData });
   }
 
   return shapes;
@@ -159,7 +155,7 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
         }
       }
 
-      // -lấy thông tin header, footer, slide number
+      // lấy thông tin header, footer, slide number
       const slideProperties = slideXmlObject['p:sld']['p:cSld'][0].$ || {};
       // Thuộc tính 'showMasterSp' (show master shapes) nếu bằng "0" có nghĩa là ẩn tất cả.
       const masterShapesVisible = slideProperties.showMasterSp !== '0';
@@ -183,7 +179,6 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
           if (ph.$.type === 'sldNum') displayInfo.showsSlideNumber = ph.$.sz !== '0';
         }
       }
-      // ----------------------------------------------------------------
 
       formattedSlides.push({
         slideNumber: slideCounter++,

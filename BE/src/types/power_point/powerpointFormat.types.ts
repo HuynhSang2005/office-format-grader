@@ -11,6 +11,8 @@ export interface FormattedTextRun {
   text: string;
   isBold: boolean;
   isItalic: boolean;
+  font?: string;   
+  size?: number;
 }
 
 export interface TableData {
