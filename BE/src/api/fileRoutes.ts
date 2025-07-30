@@ -2,12 +2,12 @@ import { Hono } from "hono";
 import path from "node:path";
 
 import { scanOfficeFiles } from "../services/fileScanner";
-import { parseExcelFile } from "../services/xlsxParser";
-import { parseWordFile } from "../services/docxParser";
-import { parsePowerPointFile } from "../services/pptxParser";
+import { parseExcelFile } from "../services/excel/xlsxParser.ts";
+import { parseWordFile } from "../services/word/docxParser.ts";
+import { parsePowerPointFile } from "../services/power_point/pptxParser.ts";
 import { successResponse, errorResponse } from "../utils/apiResponse";
-import { parseWordWithFormat } from "../services/wordFormatParser.ts"; // Import service mới
-import { parsePowerPointWithFormat } from "../services/powerpointFormatParser.ts";
+import { parseWordWithFormat } from "../services/word/wordFormatParser.ts"; // Import service mới
+import { parsePowerPointWithFormat } from "../services/power_point/powerpointFormatParser.ts";
 
 const fileRoutes = new Hono();
 
