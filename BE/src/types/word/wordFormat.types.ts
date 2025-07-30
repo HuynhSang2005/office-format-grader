@@ -17,7 +17,13 @@ export interface TextRun {
 // define một "paragraph" - chứa một hoặc nhiều "run"
 export interface Paragraph {
   runs: TextRun[];
-  // Sau này có thể thêm các thuộc tính của paragraph như căn lề
+  alignment?: 'left' | 'right' | 'center' | 'justify' | string;
+  indentation?: {
+    left?: number;
+    right?: number;
+    firstLine?: number;
+    hanging?: number;
+  };
 }
 
 // Cấu trúc data cho file Word

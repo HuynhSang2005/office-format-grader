@@ -1,6 +1,6 @@
 import AdmZip from 'adm-zip';
 import { parseStringPromise } from 'xml2js';
-import type { Paragraph, ParsedWordData, TextRun } from '../../types/word/wordFormat.types';
+import type { ParsedWordData, Paragraph, TextRun } from '../../types/word/wordFormat.types';
 
 export async function parseWordWithFormat(filePath: string): Promise<ParsedWordData> {
   try {
@@ -14,13 +14,34 @@ export async function parseWordWithFormat(filePath: string): Promise<ParsedWordD
     const xmlContent = docXmlEntry.getData().toString('utf-8');
     const parsedXml = await parseStringPromise(xmlContent);
 
-    const paragraphsXml = parsedXml['w:document']['w:body'][0]['w:p'];
+    const paragraphsXml = parsedXml['w:document']['w:body'][0]['p'];
     const extractedContent: Paragraph[] = [];
 
     for (const p of paragraphsXml) {
       const paragraph: Paragraph = { runs: [] };
-      const runsXml = p['w:r'] || [];
+      const pPr = p['w:pPr']?.[0]; // Lấy thuộc tính của đoạn văn
 
+      // Lấy ra thông tin định dạng đoạn văn
+      if (pPr) {
+        // Lấy thông tin căn lề
+        const alignment = pPr['w:jc']?.[0]?.$?.val;
+        if (alignment) {
+          paragraph.alignment = alignment;
+        }
+
+        // Lấy thông tin thụt lề (đơn vị là twentieths of a point)
+        const indent = pPr['w:ind']?.[0]?.$;
+        if (indent) {
+          paragraph.indentation = {
+            left: indent.left ? parseInt(indent.left) : undefined,
+            right: indent.right ? parseInt(indent.right) : undefined,
+            firstLine: indent.firstLine ? parseInt(indent.firstLine) : undefined,
+            hanging: indent.hanging ? parseInt(indent.hanging) : undefined,
+          };
+        }
+      }
+
+      const runsXml = p['w:r'] || [];
       for (const r of runsXml) {
         const text = r['w:t']?.[0]?._ || r['w:t']?.[0] || '';
         if (!text) continue;
