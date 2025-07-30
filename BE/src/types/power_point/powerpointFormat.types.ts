@@ -34,11 +34,17 @@ export interface SlideDisplayInfo {
   showsSlideNumber: boolean;
 }
 
+export interface TransitionEffect {
+  type: string; // Tên hiệu ứng (ví dụ: 'fade', 'push')
+  duration?: number; // Thời gian (ms)
+}
+
 // một slide đã được phân tích định dạng
 export interface FormattedSlide {
   slideNumber: number;
   layout: string;
   displayInfo: SlideDisplayInfo;
+  transition?: TransitionEffect;
   shapes: Shape[];
 }
 

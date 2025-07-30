@@ -8,7 +8,8 @@ import type {
   ShapeTransform,
   FormattedTextRun,
   TableData,
-  SlideDisplayInfo 
+  SlideDisplayInfo,
+  TransitionEffect
 } from '../../types/power_point/powerpointFormat.types';
 
 // để phân tích một bảng từ XML
@@ -35,9 +36,8 @@ function parseTableXml(tableElement: any): TableData {
   return { rows };
 }
 
-/**
- * Hàm trợ giúp để trích xuất các hình khối và định dạng của chúng từ một slide.
- */
+
+// để trích xuất các hình khối và định dạng của chúng từ một slide.
 function extractShapesFromSlide(slideXmlObject: any): Shape[] {
   const shapes: Shape[] = [];
   const spTree = slideXmlObject?.['p:sld']?.['p:cSld']?.[0]?.['p:spTree']?.[0];
@@ -157,7 +157,6 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
 
       // lấy thông tin header, footer, slide number
       const slideProperties = slideXmlObject['p:sld']['p:cSld'][0].$ || {};
-      // Thuộc tính 'showMasterSp' (show master shapes) nếu bằng "0" có nghĩa là ẩn tất cả.
       const masterShapesVisible = slideProperties.showMasterSp !== '0';
 
       const displayInfo: SlideDisplayInfo = {
@@ -180,10 +179,27 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
         }
       }
 
+      // lấy ra transition effect 
+      let transition: TransitionEffect | undefined = undefined;
+      const transitionNode = slideXmlObject['p:sld']['p:transition']?.[0];
+
+      if (transitionNode) {
+        const durationStr = transitionNode.$?.dur;
+        // Lấy tên của thẻ con đầu tiên, đó chính là loại hiệu ứng
+        const effectTypeNode = Object.keys(transitionNode).find(key => key !== '$');
+        if (effectTypeNode) {
+          transition = {
+            type: effectTypeNode.replace('p:', ''),
+            duration: durationStr ? parseInt(durationStr, 10) : undefined,
+          };
+        }
+      }
+
       formattedSlides.push({
         slideNumber: slideCounter++,
         layout: layoutName,
-        displayInfo: displayInfo, // <-- Thêm kết quả vào đây
+        displayInfo: displayInfo,
+        transition: transition,
         shapes,
       });
     }
