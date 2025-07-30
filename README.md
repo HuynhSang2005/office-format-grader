@@ -43,6 +43,4 @@ Thư mục `FE/` hiện tại mới được khởi tạo. Trong tương lai, fr
 
 ## 📌 Ghi chú
 
-Dự án đang được phát triển với tinh thần học hỏi và khám phá công nghệ mới. Mọi đóng góp hoặc phản hồi đều được chào đón!
-
-> Nguyễn Huỳnh Sang – 2025
+Dự án đang được phát triển với tinh thần học, khám phá và thử nghiệm các techstack mới. Mọi đóng góp hoặc phản hồi đều được chào đón!
