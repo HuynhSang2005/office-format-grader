@@ -7,7 +7,8 @@ import type {
   Shape,
   ShapeTransform,
   FormattedTextRun,
-  TableData
+  TableData,
+  SlideDisplayInfo // Import type mới
 } from '../../types/power_point/powerpointFormat.types';
 
 // ---- THÊM HÀM TRỢ GIÚP MỚI ĐỂ PARSE BẢNG ----
@@ -158,9 +159,36 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
         }
       }
 
+      // -lấy thông tin header, footer, slide number
+      const slideProperties = slideXmlObject['p:sld']['p:cSld'][0].$ || {};
+      // Thuộc tính 'showMasterSp' (show master shapes) nếu bằng "0" có nghĩa là ẩn tất cả.
+      const masterShapesVisible = slideProperties.showMasterSp !== '0';
+
+      const displayInfo: SlideDisplayInfo = {
+        // Mặc định là hiển thị nếu master shapes được hiển thị
+        showsFooter: masterShapesVisible,
+        showsDate: masterShapesVisible,
+        showsSlideNumber: masterShapesVisible,
+      };
+
+      // Tìm các placeholder cụ thể bị ẩn trên slide này
+      const phs = slideXmlObject['p:sld']['p:cSld'][0]['p:spTree'][0]['p:sp']
+        ?.map((sp: any) => sp['p:nvSpPr']?.[0]?.['p:nvPr']?.[0]?.['p:ph']?.[0])
+        .filter(Boolean);
+
+      if (phs) {
+        for (const ph of phs) {
+          if (ph.$.type === 'ftr') displayInfo.showsFooter = ph.$.sz !== '0';
+          if (ph.$.type === 'dt') displayInfo.showsDate = ph.$.sz !== '0';
+          if (ph.$.type === 'sldNum') displayInfo.showsSlideNumber = ph.$.sz !== '0';
+        }
+      }
+      // ----------------------------------------------------------------
+
       formattedSlides.push({
         slideNumber: slideCounter++,
         layout: layoutName,
+        displayInfo: displayInfo, // <-- Thêm kết quả vào đây
         shapes,
       });
     }

@@ -26,10 +26,17 @@ export interface Shape {
   tableData?: TableData;
 }
 
+export interface SlideDisplayInfo {
+  showsFooter: boolean;
+  showsDate: boolean;
+  showsSlideNumber: boolean;
+}
+
 // một slide đã được phân tích định dạng
 export interface FormattedSlide {
   slideNumber: number;
   layout: string;
+  displayInfo: SlideDisplayInfo;
   shapes: Shape[];
 }
 
