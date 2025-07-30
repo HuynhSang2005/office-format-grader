@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import fileRoutes from './api/fileRoutes';
 
 const app = new Hono();
 
@@ -8,6 +9,9 @@ app.get('/', (c) => {
     status: 'ok'
   });
 });
+
+app.route('/api', fileRoutes);
+
 
 export default {
   port: 3000,
