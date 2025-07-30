@@ -45,7 +45,8 @@ function parseTableXml(tableElement: any): TableData {
 function extractShapesFromSlide(
   slideXmlObject: any,
   slidePath?: string,
-  zip?: AdmZip
+  zip?: AdmZip,
+  relationships?: Map<string, string>
 ): Shape[] {
   const shapes: Shape[] = [];
   const spTree = slideXmlObject?.['p:sld']?.['p:cSld']?.[0]?.['p:spTree']?.[0];
@@ -82,12 +83,21 @@ function extractShapesFromSlide(
         const fontInfo = r['a:rPr']?.[0]?.['a:latin']?.[0]?.$ || {};
         const size = properties.sz ? parseInt(properties.sz, 10) / 100 : undefined;
 
+        // ---- LOGIC MỚI: TÌM HYPERLINK ----
+        let hyperlink: string | undefined = undefined;
+        const hlinkClick = r['a:rPr']?.[0]?.['a:hlinkClick']?.[0];
+        if (hlinkClick && hlinkClick.$ && hlinkClick.$['r:id'] && relationships) {
+          hyperlink = relationships.get(hlinkClick.$['r:id']);
+        }
+        // ------------------------------------
+
         textRuns.push({
           text,
           isBold: properties.b === '1',
           isItalic: properties.i === '1',
           font: fontInfo.typeface,
           size: size,
+          hyperlink: hyperlink, // <-- Thêm hyperlink vào đây
         });
       }
     }
@@ -214,7 +224,24 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       if (!slideXmlRaw) continue;
 
       const slideXmlObject = await parseStringPromise(slideXmlRaw);
-      const shapes = extractShapesFromSlide(slideXmlObject, slidePath, zip);
+
+      // 1. Đọc file _rels của slide để tạo bản đồ tra cứu hyperlink
+      const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
+      const slideRelationships = new Map<string, string>();
+      const slideRelsEntry = zip.getEntry(slideRelsPath);
+      if (slideRelsEntry) {
+        const slideRelsXml = await parseStringPromise(slideRelsEntry.getData().toString('utf-8'));
+        if (slideRelsXml.Relationships.Relationship) {
+          for (const rel of slideRelsXml.Relationships.Relationship) {
+            if (rel.$.TargetMode === 'External') {
+              slideRelationships.set(rel.$.Id, rel.$.Target);
+            }
+          }
+        }
+      }
+
+      // 2. Truyền slideRelationships vào extractShapesFromSlide
+      const shapes = extractShapesFromSlide(slideXmlObject, slidePath, zip, slideRelationships);
 
       // Lấy tên layout của slide
       let layoutName = 'Unknown';
