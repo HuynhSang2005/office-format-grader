@@ -170,10 +170,26 @@ export async function parseWordWithFormat(
       docXmlEntry.getData().toString("utf-8"),
       { explicitChildren: true, preserveChildrenOrder: true }
     );
-    const mainContent = parseBlockContent(
-      docXml["w:document"][0]["w:body"][0],
-      relationships
-    );
+
+    // Tìm key của document (thường là 'w:document')
+    const docKey = Object.keys(docXml).find(key => key.endsWith(':document'));
+    if (!docKey) throw new Error("Không tìm thấy node document chính.");
+    const docArr = docXml[docKey];
+    const docNode = Array.isArray(docArr) ? docArr[0] : docArr;
+
+    if (!docNode || typeof docNode !== 'object') {
+      throw new Error("Node document chính không hợp lệ hoặc rỗng.");
+    }
+
+    // Tìm key của body (thường là 'w:body')
+    const bodyKey = Object.keys(docNode).find(key => key.endsWith(':body'));
+    if (!bodyKey) {
+      // Nếu không có body thì coi như content rỗng
+      return { content: [], headers: undefined, footers: undefined };
+    }
+    const bodyNode = docNode[bodyKey]?.[0];
+
+    const mainContent = parseBlockContent(bodyNode, relationships);
 
     // Phân tích nội dung các file header
     const headers: HeaderFooterContent[] = [];
@@ -184,11 +200,14 @@ export async function parseWordWithFormat(
           headerXmlEntry.getData().toString("utf-8"),
           { explicitChildren: true, preserveChildrenOrder: true }
         );
-        // Tái sử dụng logic parse block
-        headers.push({
-          type: "default", // Cần logic phức tạp hơn để xác định type 'first'/'even'
-          content: parseBlockContent(headerXml["w:hdr"][0], relationships),
-        });
+        // Tìm key header linh hoạt
+        const headerKey = Object.keys(headerXml).find(key => key.endsWith(':hdr'));
+        if (headerKey) {
+          headers.push({
+            type: "default",
+            content: parseBlockContent(headerXml[headerKey][0], relationships),
+          });
+        }
       }
     }
 
@@ -201,10 +220,14 @@ export async function parseWordWithFormat(
           footerXmlEntry.getData().toString("utf-8"),
           { explicitChildren: true, preserveChildrenOrder: true }
         );
-        footers.push({
-          type: "default",
-          content: parseBlockContent(footerXml["w:ftr"][0], relationships),
-        });
+        // Tìm key footer linh hoạt
+        const footerKey = Object.keys(footerXml).find(key => key.endsWith(':ftr'));
+        if (footerKey) {
+          footers.push({
+            type: "default",
+            content: parseBlockContent(footerXml[footerKey][0], relationships),
+          });
+        }
       }
     }
 
