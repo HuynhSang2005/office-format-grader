@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // 1. Khởi tạo model với API key từ file .env
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" });
 
 // 2. prompt chi tiết
 const promptTemplate = `
@@ -58,7 +58,7 @@ export async function gradeSubmissionWithAI(rubricText: string, submissionJsonSt
     console.log("Đang gửi yêu cầu đến AI...");
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = await response.text(); // <-- Thêm await ở đây
+    const text = await response.text(); 
     console.log("Đã nhận phản hồi từ AI.");
 
     // 5. Trích xuất chuỗi JSON từ phản hồi của AI
