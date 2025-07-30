@@ -9,7 +9,9 @@ import type {
   FormattedTextRun,
   TableData,
   SlideDisplayInfo,
-  TransitionEffect
+  TransitionEffect,
+  AnimationNode,
+  AnimationEffect
 } from '../../types/power_point/powerpointFormat.types';
 import { parseChart } from './chartParser';
 import type { ChartData } from '../../types/power_point/chart.types';
@@ -145,6 +147,45 @@ function extractShapesFromSlide(
 }
 
 /**
+ * HÀM ĐỆ QUY ĐỂ PARSE CÂY ANIMATION
+ * Đây là phiên bản MVP, chỉ xử lý các trường hợp cơ bản nhất.
+ * @param nodeElement - Một node trong cây XML (ví dụ: một thẻ <p:par>, <p:seq>...)
+ */
+function parseAnimationNode(nodeElement: any): AnimationNode {
+    const nodeName = Object.keys(nodeElement).find(k => k.startsWith('p:')) || '';
+    const nodeAttributes = nodeElement[nodeName][0].$;
+
+    const basicNode: Partial<AnimationNode> = {
+        trigger: nodeAttributes?.presetClass || 'onDemand', // onClick
+        delay: nodeAttributes?.delay ? parseInt(nodeAttributes.delay) : undefined,
+    };
+
+    // Nếu là node tuần tự hoặc song song, tiếp tục gọi đệ quy
+    if (nodeName === 'p:par' || nodeName === 'p:seq') {
+        const childNodes = nodeElement[nodeName][0]['p:tnLst']?.[0] || {};
+        return {
+            ...basicNode,
+            type: nodeName === 'p:par' ? 'parallel' : 'sequence',
+            children: Object.keys(childNodes).map(key => parseAnimationNode({ [key]: childNodes[key] }))
+        } as AnimationNode;
+    } else {
+        // Nếu là node hiệu ứng cuối cùng (leaf node)
+        const targetShapeId = nodeElement[nodeName][0]['c:cTn']?.[0]?.['p:tgtEl']?.[0]?.['p:spTgt']?.[0]?.$.spid;
+        // Loại hiệu ứng cần được phân tích sâu hơn từ các thẻ con
+        const effectType = 'unknown'; // Cần logic phức tạp để xác định
+
+        return {
+            ...basicNode,
+            type: 'effect',
+            effect: {
+                shapeId: targetShapeId,
+                type: effectType,
+            } as AnimationEffect,
+        } as AnimationNode;
+    }
+}
+
+/**
  * Phân tích file .pptx để trích xuất cấu trúc và định dạng chi tiết.
  */
 export async function parsePowerPointWithFormat(filePath: string): Promise<ParsedPowerPointFormatData> {
@@ -202,7 +243,6 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       const masterShapesVisible = slideProperties.showMasterSp !== '0';
 
       const displayInfo: SlideDisplayInfo = {
-        // Mặc định là hiển thị nếu master shapes được hiển thị
         showsFooter: masterShapesVisible,
         showsDate: masterShapesVisible,
         showsSlideNumber: masterShapesVisible,
@@ -237,12 +277,25 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
         }
       }
 
+      // Lấy thông tin animation
+      let animations: AnimationNode | undefined = undefined;
+      const timingNode = slideXmlObject['p:sld']['p:timing']?.[0]?.['p:tnLst']?.[0];
+
+      if (timingNode) {
+        // Lấy node gốc của cây (thường là một thẻ <p:par>)
+        const rootTimeNodeKey = Object.keys(timingNode)[0];
+        if (rootTimeNodeKey) {
+          animations = parseAnimationNode({ [rootTimeNodeKey]: timingNode[rootTimeNodeKey] });
+        }
+      }
+
       formattedSlides.push({
         slideNumber: slideCounter++,
         layout: layoutName,
         displayInfo: displayInfo,
         transition: transition,
         shapes,
+        animations: animations ? [animations] : undefined,
       });
     }
 

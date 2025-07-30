@@ -42,6 +42,23 @@ export interface TransitionEffect {
   duration?: number; // Thời gian (ms)
 }
 
+// một hiệu ứng animation cụ thể
+export interface AnimationEffect {
+  shapeId: string; // ID của shape được áp dụng hiệu ứng
+  type: string;    // Loại hiệu ứng, ví dụ: 'flyIn', 'fadeIn'
+}
+
+// một node trong cây animation
+export interface AnimationNode {
+  type: 'parallel' | 'sequence' | 'effect'; // Loại node
+  trigger: string; // 'onClick', 'withPrev', 'afterPrev'
+  duration?: number;
+  delay?: number;
+  effect?: AnimationEffect;
+  children?: AnimationNode[]; // Các node con
+}
+
+
 // một slide đã được phân tích định dạng
 export interface FormattedSlide {
   slideNumber: number;
@@ -49,6 +66,7 @@ export interface FormattedSlide {
   displayInfo: SlideDisplayInfo;
   transition?: TransitionEffect;
   shapes: Shape[];
+  animations?: AnimationNode[];
 }
 
 // Cấu trúc data cuối cùng cho file PowerPoint
@@ -57,3 +75,4 @@ export interface ParsedPowerPointFormatData {
   mediaFiles: string[];
   slides: FormattedSlide[];
 }
+
