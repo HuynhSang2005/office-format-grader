@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import path from 'node:path';
-
 import { scanOfficeFiles } from '../services/fileScanner';
 import { parseExcelFile } from '../services/xlsxParser';
 import { parseWordFile } from '../services/docxParser';
+import { parsePowerPointFile } from '../services/pptxParser';
 
 const fileRoutes = new Hono();
 
@@ -50,14 +50,16 @@ fileRoutes.get('/files/details', async (c) => {
 
   try {
     let data;
-    // Phân loại xử lý dựa trên đuôi file
     switch (extension) {
       case '.xlsx':
         data = await parseExcelFile(safeFilePath);
         break;
       case '.docx':
+        data = await parseWordFile(safeFilePath);
+        break;
       case '.pptx':
-        return c.json({ message: `Trình phân tích cho ${extension} chưa được cài đặt.` }, 501);
+        data = await parsePowerPointFile(safeFilePath);
+        break;
       default:
         return c.json({ error: 'Định dạng file không được hỗ trợ.' }, 400);
     }
@@ -73,48 +75,6 @@ fileRoutes.get('/files/details', async (c) => {
   }
 });
 
-fileRoutes.get('/files/details', async (c) => {
-  // ... code lấy filename và kiểm tra bảo mật giữ nguyên ...
-  const filename = c.req.query('filename');
 
-  if (!filename) {
-    return c.json({ error: 'Tên file là bắt buộc.' }, 400);
-  }
-
-  const safeBaseDir = path.resolve('documents');
-  const safeFilePath = path.join(safeBaseDir, filename);
-
-  if (!safeFilePath.startsWith(safeBaseDir)) {
-      return c.json({ error: 'Truy cập file không hợp lệ.' }, 403);
-  }
-
-  const extension = path.extname(filename).toLowerCase();
-
-  try {
-    let data;
-    switch (extension) {
-      case '.xlsx':
-        data = await parseExcelFile(safeFilePath);
-        break;
-      // THÊM LOGIC MỚI TẠI ĐÂY
-      case '.docx':
-        data = await parseWordFile(safeFilePath);
-        break;
-      case '.pptx':
-        return c.json({ message: `Trình phân tích cho ${extension} chưa được cài đặt.` }, 501);
-      default:
-        return c.json({ error: 'Định dạng file không được hỗ trợ.' }, 400);
-    }
-
-    return c.json({ filename, data });
-
-  } catch (error: any) {
-    // ... khối catch giữ nguyên ...
-    if (error.code === 'ENOENT') {
-        return c.json({ error: `File '${filename}' không tồn tại.` }, 404);
-    }
-    return c.json({ error: error.message || 'Lỗi máy chủ nội bộ.' }, 500);
-  }
-});
 
 export default fileRoutes;
