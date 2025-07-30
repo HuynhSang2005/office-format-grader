@@ -1,6 +1,6 @@
 import AdmZip from 'adm-zip';
 import { parseStringPromise } from 'xml2js';
-import type { ParsedPowerPointData, PowerPointSlide } from '../types/powerpoint.types';
+import type { ParsedPowerPointData, PowerPointSlide } from '../../types/powerpoint.types';
 
 // Method này trích xuất text từ một đối tượng slide đã được parse
 function extractTextFromSlide(slideXmlObject: any): string[] {

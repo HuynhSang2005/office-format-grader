@@ -1,5 +1,5 @@
 import mammoth from 'mammoth';
-import type { WordFormatData } from '../types/wordFormat.types';
+import type { WordFormatData } from '../../types/wordFormat.types';
 
 
 export async function parseWordWithFormat(filePath: string): Promise<WordFormatData> {
