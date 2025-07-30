@@ -11,7 +11,7 @@ app.get('/', (c) => {
 });
 
 app.route('/api', fileRoutes);
-
+app.route('/api', aiRoutes);
 
 export default {
   port: 3000,
