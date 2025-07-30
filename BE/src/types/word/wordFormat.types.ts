@@ -46,6 +46,8 @@ export interface Table {
 // content có thể chứa nhiều loại block
 export interface ParsedWordData {
   content: (Paragraph | Table)[];
+  headers?: HeaderFooterContent[]; 
+  footers?: HeaderFooterContent[];
 }
 
 // Định nghĩa một "image run" - chứa hình ảnh trong docx
@@ -54,4 +56,10 @@ export interface ImageRun {
   imageName: string;
   width: number; // Đơn vị là EMU
   height: number; // Đơn vị là EMU
+}
+
+// Định nghĩa các thông tin về header và footer
+export interface HeaderFooterContent {
+    type: 'default' | 'first' | 'even';
+    content: (Paragraph | Table)[];
 }
