@@ -31,7 +31,18 @@ export interface Paragraph {
   };
 }
 
-// Cấu trúc data cho file Word
-export interface ParsedWordData {
+// Mỗi ô trong bảng có thể chứa nhiều đoạn văn
+export interface TableCell {
   content: Paragraph[];
+}
+
+// Bảng là một mảng 2 chiều chứa các ô
+export interface Table {
+  type: 'table'; // Thêm một thuộc tính để dễ phân biệt
+  rows: TableCell[][];
+}
+
+// content có thể chứa nhiều loại block
+export interface ParsedWordData {
+  content: (Paragraph | Table)[];
 }
