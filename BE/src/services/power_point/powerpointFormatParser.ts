@@ -6,22 +6,45 @@ import type {
   FormattedSlide,
   Shape,
   ShapeTransform,
-  FormattedTextRun
+  FormattedTextRun,
+  TableData
 } from '../../types/power_point/powerpointFormat.types';
 
-// Đơn vị trong PowerPoint là EMU (English Metric Unit). 1 inch = 914400 EMUs.
-// có thể tạm thời giữ nguyên hoặc chuyển đổi sang pixel nếu cần.
-// const EMU_PER_PIXEL = 9525; // Ước tính cho 96 DPI
+// ---- THÊM HÀM TRỢ GIÚP MỚI ĐỂ PARSE BẢNG ----
+function parseTableXml(tableElement: any): TableData {
+  const rows: string[][] = [];
+  const tableRows = tableElement['a:tr'] || [];
 
-// giúp để trích xuất các hình khối và định dạng của chúng từ một slide.
+  for (const tr of tableRows) {
+    const rowCells: string[] = [];
+    const tableCells = tr['a:tc'] || [];
+    for (const tc of tableCells) {
+      let cellText = '';
+      const paragraphs = tc['a:txBody']?.[0]?.['a:p'] || [];
+      for (const p of paragraphs) {
+        const runs = p['a:r'] || [];
+        for (const r of runs) {
+          cellText += r['a:t']?.[0] || '';
+        }
+      }
+      rowCells.push(cellText);
+    }
+    rows.push(rowCells);
+  }
+  return { rows };
+}
+
+/**
+ * Hàm trợ giúp để trích xuất các hình khối và định dạng của chúng từ một slide.
+ */
 function extractShapesFromSlide(slideXmlObject: any): Shape[] {
   const shapes: Shape[] = [];
   const spTree = slideXmlObject?.['p:sld']?.['p:cSld']?.[0]?.['p:spTree']?.[0];
 
   if (!spTree) return [];
 
+  // Xử lý các shape thông thường (text, picture,...)
   const shapeElements = spTree['p:sp'] || [];
-
   for (const shapeElement of shapeElements) {
     // Lấy thông tin cơ bản của shape
     const id = shapeElement['p:nvSpPr'][0]['p:cNvPr'][0].$.id;
@@ -54,6 +77,29 @@ function extractShapesFromSlide(slideXmlObject: any): Shape[] {
     }
 
     shapes.push({ id, name, transform, textRuns });
+  }
+
+  // handle graphic frames (có thể chứa bảng, chart,...) ----
+  const graphicFrames = spTree['p:graphicFrame'] || [];
+  for (const frame of graphicFrames) {
+    const id = frame['p:nvGraphicFramePr'][0]['p:cNvPr'][0].$.id;
+    const name = frame['p:nvGraphicFramePr'][0]['p:cNvPr'][0].$.name;
+    const xfrm = frame['p:xfrm'][0];
+    const transform: ShapeTransform = {
+      x: parseInt(xfrm['a:off'][0].$.x, 10),
+      y: parseInt(xfrm['a:off'][0].$.y, 10),
+      width: parseInt(xfrm['a:ext'][0].$.cx, 10),
+      height: parseInt(xfrm['a:ext'][0].$.cy, 10),
+    };
+
+    // Kiểm tra xem đối tượng có phải là một cái bảng không
+    const tableElement = frame['a:graphic'][0]['a:graphicData'][0]['a:tbl']?.[0];
+    let tableData: TableData | undefined = undefined;
+    if (tableElement) {
+      tableData = parseTableXml(tableElement);
+    }
+
+    shapes.push({ id, name, transform, textRuns: [], tableData });
   }
 
   return shapes;

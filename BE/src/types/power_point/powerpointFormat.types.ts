@@ -13,12 +13,17 @@ export interface FormattedTextRun {
   isItalic: boolean;
 }
 
+export interface TableData {
+  rows: string[][];
+}
+
 // một hình khối (shape)
 export interface Shape {
   id: string;
   name: string;
   transform: ShapeTransform;
   textRuns: FormattedTextRun[];
+  tableData?: TableData;
 }
 
 // một slide đã được phân tích định dạng
