@@ -1,14 +1,8 @@
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
+import type { ScannedFile } from '../types/file.types';
 
-/**
- * Định nghĩa cấu trúc dữ liệu cho một file được quét.
- */
-export interface ScannedFile {
-  name: string;
-  path: string;
-  extension: string;
-}
+
 
 
 export async function scanOfficeFiles(dirPath: string): Promise<ScannedFile[]> {
