@@ -12,9 +12,7 @@ import { parsePowerPointWithFormat } from "../services/power_point/powerpointFor
 const fileRoutes = new Hono();
 
 fileRoutes.get("/files", async (c) => {
-  // Lấy đường dẫn thư mục từ query param, ví dụ: /api/files?path=./test-docs
-  // Nếu không có, dùng thư mục 'documents' làm mặc định
-  const dirPath = c.req.query("path") || "documents";
+  const dirPath = c.req.query("path") || "example";
   try {
     const files = await scanOfficeFiles(dirPath);
     if (files.length === 0) {
@@ -38,7 +36,7 @@ fileRoutes.get('/files/details', async (c) => {
     return errorResponse(c, 'Tên file là bắt buộc.', 400);
   }
 
-  const safeBaseDir = path.resolve('documents');
+  const safeBaseDir = path.resolve('example');
   const safeFilePath = path.join(safeBaseDir, filename);
 
   if (!safeFilePath.startsWith(safeBaseDir)) {
