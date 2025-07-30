@@ -58,10 +58,18 @@ function extractShapesFromSlide(slideXmlObject: any): Shape[] {
   return shapes;
 }
 
-// phân tích file .pptx để trích xuất cấu trúc và định dạng chi tiết.
+/**
+ * Phân tích file .pptx để trích xuất cấu trúc và định dạng chi tiết.
+ */
 export async function parsePowerPointWithFormat(filePath: string): Promise<ParsedPowerPointFormatData> {
   try {
     const zip = new AdmZip(filePath);
+
+    const zipEntries = zip.getEntries();
+    const mediaFiles = zipEntries
+      .filter(entry => entry.entryName.startsWith('ppt/media/'))
+      .map(entry => entry.name); // Chỉ lấy tên file
+
     const relsEntry = zip.getEntry('ppt/_rels/presentation.xml.rels');
     if (!relsEntry) throw new Error('Không tìm thấy file presentation relationships.');
 
@@ -89,6 +97,7 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
 
     return {
       slideCount: formattedSlides.length,
+      mediaFiles: mediaFiles,
       slides: formattedSlides,
     };
   } catch (error) {

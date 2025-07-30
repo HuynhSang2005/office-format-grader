@@ -6,7 +6,7 @@ import { parseExcelFile } from "../services/excel/xlsxParser.ts";
 import { parseWordFile } from "../services/word/docxParser.ts";
 import { parsePowerPointFile } from "../services/power_point/pptxParser.ts";
 import { successResponse, errorResponse } from "../utils/apiResponse";
-import { parseWordWithFormat } from "../services/word/wordFormatParser.ts"; // Import service mới
+import { parseWordWithFormat } from "../services/word/wordFormatParser.ts"; 
 import { parsePowerPointWithFormat } from "../services/power_point/powerpointFormatParser.ts";
 
 const fileRoutes = new Hono();
