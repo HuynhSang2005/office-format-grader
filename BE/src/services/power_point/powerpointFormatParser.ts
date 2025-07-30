@@ -11,6 +11,8 @@ import type {
   SlideDisplayInfo,
   TransitionEffect
 } from '../../types/power_point/powerpointFormat.types';
+import { parseChart } from './chartParser';
+import type { ChartData } from '../../types/power_point/chart.types';
 
 // để phân tích một bảng từ XML
 function parseTableXml(tableElement: any): TableData {
@@ -38,25 +40,26 @@ function parseTableXml(tableElement: any): TableData {
 
 
 // để trích xuất các hình khối và định dạng của chúng từ một slide.
-function extractShapesFromSlide(slideXmlObject: any): Shape[] {
+function extractShapesFromSlide(
+  slideXmlObject: any,
+  slidePath?: string,
+  zip?: AdmZip
+): Shape[] {
   const shapes: Shape[] = [];
   const spTree = slideXmlObject?.['p:sld']?.['p:cSld']?.[0]?.['p:spTree']?.[0];
 
   if (!spTree) return [];
 
   // Gộp cả shape thường và graphicFrame vào một mảng để xử lý chung
-  const allElements = [...(spTree['p:sp'] || []), ...(spTree['p:graphicFrame'] || [])];
-
-  for (const element of allElements) {
+  const shapeElements = spTree['p:sp'] || [];
+  for (const element of shapeElements) {
     // Lấy id, name, transform
-    const nvPr = element['p:nvSpPr']?.[0]?.['p:cNvPr']?.[0] ||
-                 element['p:nvGraphicFramePr']?.[0]?.['p:cNvPr']?.[0];
+    const nvPr = element['p:nvSpPr']?.[0]?.['p:cNvPr']?.[0];
     if (!nvPr) continue;
     const id = nvPr.$.id;
     const name = nvPr.$.name;
 
-    const xfrm = element['p:spPr']?.[0]?.['a:xfrm']?.[0] ||
-                 element['p:xfrm']?.[0];
+    const xfrm = element['p:spPr']?.[0]?.['a:xfrm']?.[0];
     if (!xfrm) continue;
     const transform: ShapeTransform = {
       x: parseInt(xfrm['a:off'][0].$.x, 10),
@@ -75,8 +78,6 @@ function extractShapesFromSlide(slideXmlObject: any): Shape[] {
         const text = r['a:t']?.[0] || '';
         const properties = r['a:rPr']?.[0]?.$ || {};
         const fontInfo = r['a:rPr']?.[0]?.['a:latin']?.[0]?.$ || {};
-
-        // Lấy size (giá trị trong XML là pt * 100, ví dụ 1800 = 18pt)
         const size = properties.sz ? parseInt(properties.sz, 10) / 100 : undefined;
 
         textRuns.push({
@@ -89,14 +90,55 @@ function extractShapesFromSlide(slideXmlObject: any): Shape[] {
       }
     }
 
+    shapes.push({ id, name, transform, textRuns });
+  }
+
+  // Xử lý các graphicFrame (có thể là bảng hoặc biểu đồ)
+  const graphicFrames = spTree['p:graphicFrame'] || [];
+  for (const frame of graphicFrames) {
+    const nvPr = frame['p:nvGraphicFramePr']?.[0]?.['p:cNvPr']?.[0];
+    if (!nvPr) continue;
+    const id = nvPr.$.id;
+    const name = nvPr.$.name;
+    const xfrm = frame['p:xfrm']?.[0];
+    if (!xfrm) continue;
+    const transform: ShapeTransform = {
+      x: parseInt(xfrm['a:off'][0].$.x, 10),
+      y: parseInt(xfrm['a:off'][0].$.y, 10),
+      width: parseInt(xfrm['a:ext'][0].$.cx, 10),
+      height: parseInt(xfrm['a:ext'][0].$.cy, 10),
+    };
+
     // Kiểm tra nếu là bảng thì parse bảng
+    const tableElement = frame['a:graphic']?.[0]?.['a:graphicData']?.[0]?.['a:tbl']?.[0];
     let tableData: TableData | undefined = undefined;
-    const tableElement = element['a:graphic']?.[0]?.['a:graphicData']?.[0]?.['a:tbl']?.[0];
     if (tableElement) {
       tableData = parseTableXml(tableElement);
     }
 
-    shapes.push({ id, name, transform, textRuns, tableData });
+    // Kiểm tra nếu là biểu đồ thì parse biểu đồ
+    let chartData: ChartData | undefined = undefined;
+    const chartRef = frame['a:graphic']?.[0]?.['a:graphicData']?.[0]?.['a:chart']?.[0];
+    if (chartRef && slidePath && zip) {
+      const chartId = chartRef.$['r:id'];
+      const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
+      const slideRelsEntry = zip.getEntry(slideRelsPath);
+      if (slideRelsEntry) {
+        const slideRelsXml = parseStringPromise(slideRelsEntry.getData().toString('utf-8'));
+        slideRelsXml.then((relsXml) => {
+          const chartRel = relsXml.Relationships.Relationship.find((r: any) => r.$.Id === chartId);
+          if (chartRel) {
+            const chartPath = `ppt/charts/${path.basename(chartRel.$.Target)}`;
+            parseChart(zip, chartPath).then((data) => {
+              chartData = data;
+            });
+          }
+        });
+      }
+    }
+
+
+    shapes.push({ id, name, transform, textRuns: [], tableData, chartData });
   }
 
   return shapes;
@@ -131,7 +173,7 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       if (!slideXmlRaw) continue;
 
       const slideXmlObject = await parseStringPromise(slideXmlRaw);
-      const shapes = extractShapesFromSlide(slideXmlObject);
+      const shapes = extractShapesFromSlide(slideXmlObject, slidePath, zip);
 
       // Lấy tên layout của slide
       let layoutName = 'Unknown';

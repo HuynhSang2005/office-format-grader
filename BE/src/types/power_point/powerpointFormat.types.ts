@@ -1,3 +1,5 @@
+import type { ChartData } from "./chart.types";
+
 // thông tin vị trí và kích thước
 export interface ShapeTransform {
   x: number;
@@ -26,6 +28,7 @@ export interface Shape {
   transform: ShapeTransform;
   textRuns: FormattedTextRun[];
   tableData?: TableData;
+  chartData?: ChartData;
 }
 
 export interface SlideDisplayInfo {
