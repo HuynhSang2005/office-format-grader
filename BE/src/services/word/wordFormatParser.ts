@@ -1,6 +1,7 @@
 import AdmZip from 'adm-zip';
 import { parseStringPromise } from 'xml2js';
-import type { ParsedWordData, Paragraph, TextRun } from '../../types/word/wordFormat.types';
+import type { Paragraph, ParsedWordData, TextRun } from '../../types/word/wordFormat.types';
+
 
 export async function parseWordWithFormat(filePath: string): Promise<ParsedWordData> {
   try {
@@ -14,14 +15,13 @@ export async function parseWordWithFormat(filePath: string): Promise<ParsedWordD
     const xmlContent = docXmlEntry.getData().toString('utf-8');
     const parsedXml = await parseStringPromise(xmlContent);
 
-    const paragraphsXml = parsedXml['w:document']['w:body'][0]['p'];
+    const paragraphsXml = parsedXml['w:document']['w:body'][0]['w:p'];
     const extractedContent: Paragraph[] = [];
 
     for (const p of paragraphsXml) {
       const paragraph: Paragraph = { runs: [] };
-      const pPr = p['w:pPr']?.[0]; // Lấy thuộc tính của đoạn văn
+      const pPr = p['w:pPr']?.[0];
 
-      // Lấy ra thông tin định dạng đoạn văn
       if (pPr) {
         // Lấy thông tin căn lề
         const alignment = pPr['w:jc']?.[0]?.$?.val;
@@ -29,7 +29,7 @@ export async function parseWordWithFormat(filePath: string): Promise<ParsedWordD
           paragraph.alignment = alignment;
         }
 
-        // Lấy thông tin thụt lề (đơn vị là twentieths of a point)
+        // Lấy thông tin thụt lề
         const indent = pPr['w:ind']?.[0]?.$;
         if (indent) {
           paragraph.indentation = {
@@ -39,6 +39,27 @@ export async function parseWordWithFormat(filePath: string): Promise<ParsedWordD
             hanging: indent.hanging ? parseInt(indent.hanging) : undefined,
           };
         }
+
+        // ---- LOGIC MỚI: ĐỌC STYLE VÀ LIST ----
+        // Lấy tên style (dùng cho Headings)
+        const style = pPr['w:pStyle']?.[0]?.$?.val;
+        if (style) {
+          paragraph.styleName = style;
+        }
+
+        // Lấy thông tin danh sách (list)
+        const numPr = pPr['w:numPr']?.[0];
+        if (numPr) {
+          const listId = numPr['w:numId']?.[0]?.$?.val;
+          const level = numPr['w:ilvl']?.[0]?.$?.val;
+          if (listId && level) {
+            paragraph.listInfo = {
+              listId: listId,
+              level: parseInt(level),
+            };
+          }
+        }
+        // ------------------------------------
       }
 
       const runsXml = p['w:r'] || [];
@@ -49,17 +70,13 @@ export async function parseWordWithFormat(filePath: string): Promise<ParsedWordD
         const properties = r['w:rPr']?.[0] || {};
         const run: TextRun = { text };
 
-        // Kiểm tra các thuộc tính định dạng
         if (properties['w:b']) run.isBold = true;
         if (properties['w:i']) run.isItalic = true;
         if (properties['w:u']) run.underline = properties['w:u'][0].$.val;
         if (properties['w:color']) run.color = properties['w:color'][0].$.val;
-
-        // Font size được lưu bằng 1/2 point. Ví dụ: 24 = 12pt
         if (properties['w:sz']) run.size = parseInt(properties['w:sz'][0].$.val) / 2;
-
         if (properties['w:rFonts']) {
-            run.font = properties['w:rFonts'][0].$.ascii || properties['w:rFonts'][0].$.hAnsi;
+          run.font = properties['w:rFonts'][0].$.ascii || properties['w:rFonts'][0].$.hAnsi;
         }
 
         paragraph.runs.push(run);
@@ -70,6 +87,7 @@ export async function parseWordWithFormat(filePath: string): Promise<ParsedWordD
       }
     }
 
+    // Đảm bảo trả về đúng cấu trúc ParsedWordData
     return { content: extractedContent };
   } catch (error) {
     console.error(`Lỗi khi phân tích file Word tại ${filePath}:`, error);

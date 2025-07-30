@@ -24,6 +24,11 @@ export interface Paragraph {
     firstLine?: number;
     hanging?: number;
   };
+  styleName?: string; // Để lưu tên style, ví dụ: "Heading1"
+  listInfo?: {
+    listId: string; // ID của danh sách
+    level: number;  // Cấp độ của mục trong danh sách
+  };
 }
 
 // Cấu trúc data cho file Word
