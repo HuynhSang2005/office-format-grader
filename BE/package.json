@@ -19,6 +19,6 @@
     "xml2js": "^0.6.2"
   },
   "scripts": {
-    "start": "bun run src/server.ts"
+    "start": "bun run --hot src/server.ts"
   }
 }
