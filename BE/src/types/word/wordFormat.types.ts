@@ -5,6 +5,7 @@ export interface WordFormatData {
 
 // define "run" - một chuỗi văn bản có cùng định dạng
 export interface TextRun {
+  type: "text";
   text: string;
   isBold?: boolean;
   isItalic?: boolean;
@@ -16,8 +17,8 @@ export interface TextRun {
 
 // define một "paragraph" - chứa một hoặc nhiều "run"
 export interface Paragraph {
-  runs: TextRun[];
-  alignment?: 'left' | 'right' | 'center' | 'justify' | string;
+  runs: (TextRun | ImageRun)[];
+  alignment?: "left" | "right" | "center" | "justify" | string;
   indentation?: {
     left?: number;
     right?: number;
@@ -27,7 +28,7 @@ export interface Paragraph {
   styleName?: string; // Để lưu tên style, ví dụ: "Heading1"
   listInfo?: {
     listId: string; // ID của danh sách
-    level: number;  // Cấp độ của mục trong danh sách
+    level: number; // Cấp độ của mục trong danh sách
   };
 }
 
@@ -38,11 +39,19 @@ export interface TableCell {
 
 // Bảng là một mảng 2 chiều chứa các ô
 export interface Table {
-  type: 'table'; // Thêm một thuộc tính để dễ phân biệt
+  type: "table"; // Thêm một thuộc tính để dễ phân biệt
   rows: TableCell[][];
 }
 
 // content có thể chứa nhiều loại block
 export interface ParsedWordData {
   content: (Paragraph | Table)[];
+}
+
+// Định nghĩa một "image run" - chứa hình ảnh trong docx
+export interface ImageRun {
+  type: "image";
+  imageName: string;
+  width: number; // Đơn vị là EMU
+  height: number; // Đơn vị là EMU
 }
