@@ -6,6 +6,7 @@ import { parseExcelFile } from "../services/xlsxParser";
 import { parseWordFile } from "../services/docxParser";
 import { parsePowerPointFile } from "../services/pptxParser";
 import { successResponse, errorResponse } from "../utils/apiResponse";
+import { parseWordWithFormat } from "../services/wordFormatParser.ts"; // Import service mới
 
 const fileRoutes = new Hono();
 
@@ -28,65 +29,62 @@ fileRoutes.get("/files", async (c) => {
   }
 });
 
-fileRoutes.get("/files/details", async (c) => {
-  const filename = c.req.query("filename");
-
-  const mode = c.req.query("mode") || "content";
+// Nâng cấp route GET /files/details
+fileRoutes.get('/files/details', async (c) => {
+  const filename = c.req.query('filename');
+  const mode = c.req.query('mode') || 'content';
 
   if (!filename) {
-    return errorResponse(c, "Tên file là bắt buộc.", 400);
+    return errorResponse(c, 'Tên file là bắt buộc.', 400);
   }
 
-  // chỉ cho phép truy cập file trong thư mục 'documents' và để ngăn chặn tấn công Path Traversal (vd: ../../tên_file)
-  const safeBaseDir = path.resolve("documents");
+  const safeBaseDir = path.resolve('documents');
   const safeFilePath = path.join(safeBaseDir, filename);
 
   if (!safeFilePath.startsWith(safeBaseDir)) {
-    return errorResponse(c, "Truy cập file không hợp lệ.", 403);
+      return errorResponse(c, 'Truy cập file không hợp lệ.', 403);
   }
 
-  // Phân nhánh logic dựa trên 'mode'
-  if (mode === "full") {
-    
-    return errorResponse(
-      c,
-      `Chức năng phân tích đầy đủ (full mode) cho file '${filename}' chưa được cài đặt.`,
-      501
-    ); // 501 Not Implemented
-  } else if (mode === "content") {
+  const extension = path.extname(filename).toLowerCase();
 
-    const extension = path.extname(filename).toLowerCase();
-
-    try {
-      let data;
+  try {
+    let data;
+    if (mode === 'full') {
+      // ---- LOGIC CHO MODE 'FULL' ----
       switch (extension) {
-        case ".xlsx":
+        case '.docx':
+          data = await parseWordWithFormat(safeFilePath);
+          break;
+        case '.pptx':
+        case '.xlsx':
+          return errorResponse(c, `Chức năng phân tích đầy đủ cho ${extension} chưa được cài đặt.`, 501);
+        default:
+          return errorResponse(c, 'Định dạng file không được hỗ trợ cho chế độ full.', 400);
+      }
+    } else if (mode === 'content') {
+      // ---- LOGIC CHO MODE 'CONTENT' (giữ nguyên) ----
+      switch (extension) {
+        case '.xlsx':
           data = await parseExcelFile(safeFilePath);
           break;
-        case ".docx":
+        case '.docx':
           data = await parseWordFile(safeFilePath);
           break;
-        case ".pptx":
+        case '.pptx':
           data = await parsePowerPointFile(safeFilePath);
           break;
         default:
-          return errorResponse(c, "Định dạng file không được hỗ trợ.", 400);
+          return errorResponse(c, 'Định dạng file không được hỗ trợ.', 400);
       }
-
-      return successResponse(c, { filename, data });
-    } catch (error: any) {
-      // Xử lý lỗi, ví dụ file không tồn tại
-      if (error.code === "ENOENT") {
-        return errorResponse(c, `File '${filename}' không tồn tại.`, 404);
-      }
-      return errorResponse(c, error.message || "Lỗi máy chủ nội bộ.", 500);
+    } else {
+      return errorResponse(c, `Chế độ (mode) '${mode}' không hợp lệ.`, 400);
     }
-  } else {
-    return errorResponse(
-      c,
-      `Chế độ (mode) '${mode}' không hợp lệ. Chỉ chấp nhận 'content' hoặc 'full'.`,
-      400
-    );
+    return successResponse(c, { filename, mode, details: data });
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+        return errorResponse(c, `File '${filename}' không tồn tại.`, 404);
+    }
+    return errorResponse(c, error.message || 'Lỗi máy chủ nội bộ.', 500);
   }
 });
 
