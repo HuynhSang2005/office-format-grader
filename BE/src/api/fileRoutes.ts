@@ -7,6 +7,7 @@ import { parseWordFile } from "../services/docxParser";
 import { parsePowerPointFile } from "../services/pptxParser";
 import { successResponse, errorResponse } from "../utils/apiResponse";
 import { parseWordWithFormat } from "../services/wordFormatParser.ts"; // Import service mới
+import { parsePowerPointWithFormat } from "../services/powerpointFormatParser.ts";
 
 const fileRoutes = new Hono();
 
@@ -54,6 +55,8 @@ fileRoutes.get('/files/details', async (c) => {
           data = await parseWordWithFormat(safeFilePath);
           break;
         case '.pptx':
+          data = await parsePowerPointWithFormat(safeFilePath);
+          break;
         case '.xlsx':
           return errorResponse(c, `Chức năng phân tích đầy đủ cho ${extension} chưa được cài đặt.`, 501);
         default:
