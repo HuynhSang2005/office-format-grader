@@ -29,7 +29,6 @@ fileRoutes.get("/files", async (c) => {
   }
 });
 
-// Nâng cấp route GET /files/details
 fileRoutes.get('/files/details', async (c) => {
   const filename = c.req.query('filename');
   const mode = c.req.query('mode') || 'content';
@@ -50,7 +49,6 @@ fileRoutes.get('/files/details', async (c) => {
   try {
     let data;
     if (mode === 'full') {
-      // ---- LOGIC CHO MODE 'FULL' ----
       switch (extension) {
         case '.docx':
           data = await parseWordWithFormat(safeFilePath);
@@ -62,7 +60,6 @@ fileRoutes.get('/files/details', async (c) => {
           return errorResponse(c, 'Định dạng file không được hỗ trợ cho chế độ full.', 400);
       }
     } else if (mode === 'content') {
-      // ---- LOGIC CHO MODE 'CONTENT' (giữ nguyên) ----
       switch (extension) {
         case '.xlsx':
           data = await parseExcelFile(safeFilePath);
