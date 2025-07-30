@@ -77,6 +77,24 @@ export interface FormattedSlide {
 export interface ParsedPowerPointFormatData {
   slideCount: number;
   mediaFiles: string[];
+  theme?: ThemeData;
   slides: FormattedSlide[];
 }
 
+// Cấu trúc theme cho PowerPoint
+export interface ColorScheme {
+  [name: string]: string; // Ví dụ: { accent1: 'FFFFFF', dk1: '000000' }
+}
+
+// Cấu trúc font scheme cho PowerPoint
+export interface FontScheme {
+  majorFont: string;
+  minorFont: string;
+}
+
+// Cấu trúc theme cho PowerPoint
+export interface ThemeData {
+  name: string;
+  colorScheme: ColorScheme;
+  fontScheme: FontScheme;
+}

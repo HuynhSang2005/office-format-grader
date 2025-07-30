@@ -11,7 +11,9 @@ import type {
   SlideDisplayInfo,
   TransitionEffect,
   AnimationNode,
-  AnimationEffect
+  AnimationEffect,
+  ThemeData,
+  ColorScheme
 } from '../../types/power_point/powerpointFormat.types';
 import { parseChart } from './chartParser';
 import type { ChartData } from '../../types/power_point/chart.types';
@@ -213,6 +215,47 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       (r: any) => r.$.Type.endsWith('/slide')
     );
 
+    let themeData: ThemeData | undefined = undefined;
+    const presentationRelsEntry = zip.getEntry('ppt/_rels/presentation.xml.rels');
+    if (presentationRelsEntry) {
+      const presentationRelsXml = await parseStringPromise(presentationRelsEntry.getData().toString('utf-8'));
+      const themeRel = presentationRelsXml.Relationships.Relationship.find(
+        (r: any) => r.$.Type.endsWith('/theme')
+      );
+
+      if (themeRel) {
+        const themePath = `ppt/${themeRel.$.Target}`;
+        const themeXmlRaw = zip.getEntry(themePath)?.getData().toString('utf-8');
+        if (themeXmlRaw) {
+          const themeXml = await parseStringPromise(themeXmlRaw);
+          const themeElements = themeXml['a:theme']['a:themeElements'][0];
+          const themeName = themeXml['a:theme'].$.name;
+
+          // Trích xuất bảng màu (Color Scheme)
+          const colorSchemeNode = themeElements['a:clrScheme'][0];
+          const colors: ColorScheme = {};
+          for (const colorKey in colorSchemeNode) {
+            if (colorKey.startsWith('a:')) {
+              const colorName = colorKey.substring(2);
+              const srgbClr = colorSchemeNode[colorKey][0]['a:srgbClr']?.[0].$.val;
+              if (srgbClr) colors[colorName] = srgbClr;
+            }
+          }
+
+          // Trích xuất bộ font (Font Scheme)
+          const fontSchemeNode = themeElements['a:fontScheme'][0];
+          const majorFont = fontSchemeNode['a:majorFont'][0]['a:latin'][0].$.typeface;
+          const minorFont = fontSchemeNode['a:minorFont'][0]['a:latin'][0].$.typeface;
+
+          themeData = {
+            name: themeName,
+            colorScheme: colors,
+            fontScheme: { majorFont, minorFont },
+          };
+        }
+      }
+    }
+
     const formattedSlides: FormattedSlide[] = [];
     let slideCounter = 1;
 
@@ -337,6 +380,7 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
     return {
       slideCount: formattedSlides.length,
       mediaFiles,
+      theme: themeData,
       slides: formattedSlides,
     };
   } catch (error) {
