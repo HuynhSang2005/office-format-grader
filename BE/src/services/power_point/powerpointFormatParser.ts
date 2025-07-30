@@ -6,7 +6,7 @@ import type {
   Shape,
   ShapeTransform,
   FormattedTextRun
-} from '../../types/powerpointFormat.types';
+} from '../../types/power_point/powerpointFormat.types';
 
 // Đơn vị trong PowerPoint là EMU (English Metric Unit). 1 inch = 914400 EMUs.
 // có thể tạm thời giữ nguyên hoặc chuyển đổi sang pixel nếu cần.

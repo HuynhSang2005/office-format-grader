@@ -1,6 +1,6 @@
 import AdmZip from 'adm-zip';
 import { parseStringPromise } from 'xml2js';
-import type { ParsedWordData } from '../../types/word.types';
+import type { ParsedWordData } from '../../types/word/word.types';
 
 export async function parseWordFile(filePath: string): Promise<ParsedWordData> {
   try {

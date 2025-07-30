@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { ParsedExcelData } from '../../types/excel.types';
+import type { ParsedExcelData } from '../../types/excel/excel.types';
 
 
 export async function parseExcelFile(filePath: string): Promise<ParsedExcelData> {
