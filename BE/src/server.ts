@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import fileRoutes from './api/fileRoutes';
+import aiRoutes from './api/aiRoutes';
 
 const app = new Hono();
 
