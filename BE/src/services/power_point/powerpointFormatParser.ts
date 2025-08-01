@@ -17,6 +17,8 @@ import type {
 } from '../../types/power_point/powerpointFormat.types';
 import { parseChart } from './chartParser';
 import type { ChartData } from '../../types/power_point/chart.types';
+import { parseMasterOrLayout } from './styleParser';
+import type { SlideLayoutData } from '../../types/power_point/powerpointStyles';
 
 // để phân tích một bảng từ XML
 function parseTableXml(tableElement: any): TableData {
@@ -97,7 +99,7 @@ function extractShapesFromSlide(
           isItalic: properties.i === '1',
           font: fontInfo.typeface,
           size: size,
-          hyperlink: hyperlink, // <-- Thêm hyperlink vào đây
+          hyperlink: hyperlink, 
         });
       }
     }
@@ -158,7 +160,6 @@ function extractShapesFromSlide(
 
 /**
  * HÀM ĐỆ QUY ĐỂ PARSE CÂY ANIMATION
- * Đây là phiên bản MVP, chỉ xử lý các trường hợp cơ bản nhất.
  * @param nodeElement - Một node trong cây XML (ví dụ: một thẻ <p:par>, <p:seq>...)
  */
 function parseAnimationNode(nodeElement: any): AnimationNode {
@@ -201,6 +202,55 @@ function parseAnimationNode(nodeElement: any): AnimationNode {
 export async function parsePowerPointWithFormat(filePath: string): Promise<ParsedPowerPointFormatData> {
   try {
     const zip = new AdmZip(filePath);
+
+    // Lấy danh sách các slide master và layout
+    const masterPaths: string[] = [];
+    const layoutPaths: string[] = [];
+
+    // Duyệt qua presentation.xml để lấy danh sách master và layout
+    const presentationEntry = zip.getEntry('ppt/presentation.xml');
+    if (presentationEntry) {
+      const presentationXml = await parseStringPromise(presentationEntry.getData().toString('utf-8'));
+      // Lấy masterIdList
+      const masterIdList = presentationXml['p:presentation']?.['p:sldMasterIdLst']?.[0]?.['p:sldMasterId'] || [];
+      for (const master of masterIdList) {
+        const rId = master.$['r:id'];
+        // Tìm đường dẫn master từ presentation.xml.rels
+        const presRelsEntry = zip.getEntry('ppt/_rels/presentation.xml.rels');
+        if (presRelsEntry) {
+          const presRelsXml = await parseStringPromise(presRelsEntry.getData().toString('utf-8'));
+          const rel = presRelsXml.Relationships.Relationship.find((r: any) => r.$.Id === rId);
+          if (rel) {
+            const masterPath = `ppt/${rel.$.Target.replace(/^\//, '')}`;
+            masterPaths.push(masterPath);
+
+            // Lấy layout từ master .rels
+            const masterRelsPath = `ppt/slideMasters/_rels/${path.basename(masterPath)}.rels`;
+            const masterRelsEntry = zip.getEntry(masterRelsPath);
+            if (masterRelsEntry) {
+              const masterRelsXml = await parseStringPromise(masterRelsEntry.getData().toString('utf-8'));
+              const layoutRels = masterRelsXml.Relationships.Relationship.filter((r: any) =>
+                r.$.Type.endsWith('/slideLayout')
+              );
+              for (const layoutRel of layoutRels) {
+                const layoutPath = `ppt/${layoutRel.$.Target.replace(/^\//, '')}`;
+                if (!layoutPaths.includes(layoutPath)) layoutPaths.push(layoutPath);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const masterData = new Map<string, SlideLayoutData>();
+    for (const mPath of masterPaths) {
+      masterData.set(mPath, await parseMasterOrLayout(zip, mPath));
+    }
+
+    const layoutData = new Map<string, SlideLayoutData>();
+    for (const lPath of layoutPaths) {
+      layoutData.set(lPath, await parseMasterOrLayout(zip, lPath));
+    }
 
     // Lấy danh sách file media
     const mediaFiles = zip.getEntries()
