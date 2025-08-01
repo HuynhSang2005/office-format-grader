@@ -2,7 +2,6 @@ import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { ScannedFile } from '../types/file.types';
 
-
 export async function scanOfficeFiles(dirPath: string): Promise<ScannedFile[]> {
   // Các định dạng file chúng ta muốn tìm
   const allowedExtensions = ['.docx', '.pptx', '.xlsx'];
