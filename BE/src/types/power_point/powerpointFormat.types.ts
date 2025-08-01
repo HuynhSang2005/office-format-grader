@@ -49,18 +49,19 @@ export interface TransitionEffect {
 
 // một hiệu ứng animation cụ thể
 export interface AnimationEffect {
-  shapeId: string; // ID của shape được áp dụng hiệu ứng
-  type: string;    // Loại hiệu ứng, ví dụ: 'flyIn', 'fadeIn'
+  shapeId: string;       // ID của shape được áp dụng hiệu ứng
+  effectType?: string;    // Loại hiệu ứng, ví dụ: 'flyIn', 'wipe'
+  direction?: string;     // Hướng của hiệu ứng, ví dụ: 'fromBottom'
 }
 
 // một node trong cây animation
 export interface AnimationNode {
-  type: 'parallel' | 'sequence' | 'effect'; // Loại node
-  trigger: string; // 'onClick', 'withPrev', 'afterPrev'
+  type: 'parallel' | 'sequence' | 'effect';
+  trigger: string;       // 'onClick', 'withPrev', 'afterPrev'
   duration?: number;
   delay?: number;
-  effect?: AnimationEffect;
-  children?: AnimationNode[]; // Các node con
+  effect?: AnimationEffect; // Chỉ chứa thông tin về hiệu ứng
+  children?: AnimationNode[];
 }
 
 
@@ -71,7 +72,7 @@ export interface FormattedSlide {
   displayInfo: SlideDisplayInfo;
   transition?: TransitionEffect;
   shapes: Shape[];
-  animations?: AnimationNode[];
+  animations?: AnimationNode;
   notes?: string;
 }
 

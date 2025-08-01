@@ -13,7 +13,7 @@ import type {
 import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
 import { parseMasterOrLayout } from '../parsers/styleParser';
 import { extractShapesFromSlide } from '../parsers/shapeParser';
-import { parseAnimationNode } from '../parsers/animationParser';
+import { parseAnimationNode } from '../animationParser';
 async function parseNotesForSlide(zip: AdmZip, slidePath: string): Promise<string | undefined> {
   try {
     const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
@@ -282,17 +282,15 @@ export async function parsePowerPointFormat(
           animations = parseAnimationNode({ [rootTimeNodeKey]: timingNode[rootTimeNodeKey] });
         }
       }
-      // ---- LOGIC MỚI: GỌI HÀM PARSE NOTES ----
       const notes = await parseNotesForSlide(zip, slidePath);
-      // ----------------------------------------
       formattedSlides.push({
         slideNumber: slideCounter++,
         layout: layoutName,
         displayInfo: displayInfo,
         transition: transition,
         shapes,
-        animations: animations ? [animations] : undefined,
-        notes: notes, // <-- Thêm kết quả vào đây
+        animations: animations,
+        notes: notes, 
       });
     }
     return {
