@@ -1,5 +1,5 @@
 import AdmZip from "adm-zip";
-import { parseStringPromise } from "xml2js";
+import { parseXmlString } from "../shared/xmlHelpers";
 import type {
   ParsedWordData,
   Paragraph,
@@ -8,7 +8,7 @@ import type {
   TableCell,
   ImageRun,
   HeaderFooterContent,
-} from "../../types/word/wordFormat.types";
+} from "../../../types/word/wordFormat.types";
 
 function parseParagraph(
   pNode: any,
@@ -148,7 +148,7 @@ export async function parseWordWithFormat(
     const footerRels: { id: string; path: string }[] = [];
 
     if (relsEntry) {
-      const relsXml = await parseStringPromise(
+      const relsXml = await parseXmlString(
         relsEntry.getData().toString("utf-8")
       );
       for (const rel of relsXml.Relationships.Relationship) {
@@ -166,9 +166,8 @@ export async function parseWordWithFormat(
     // Phân tích nội dung chính của tài liệu
     const docXmlEntry = zip.getEntry("word/document.xml");
     if (!docXmlEntry) throw new Error("File document.xml không tồn tại...");
-    const docXml = await parseStringPromise(
-      docXmlEntry.getData().toString("utf-8"),
-      { explicitChildren: true, preserveChildrenOrder: true }
+    const docXml = await parseXmlString(
+      docXmlEntry.getData().toString("utf-8")
     );
 
     // Tìm key của document (thường là 'w:document')
@@ -196,9 +195,8 @@ export async function parseWordWithFormat(
     for (const rel of headerRels) {
       const headerXmlEntry = zip.getEntry(`word/${rel.path}`);
       if (headerXmlEntry) {
-        const headerXml = await parseStringPromise(
-          headerXmlEntry.getData().toString("utf-8"),
-          { explicitChildren: true, preserveChildrenOrder: true }
+        const headerXml = await parseXmlString(
+          headerXmlEntry.getData().toString("utf-8")
         );
         // Tìm key header linh hoạt
         const headerKey = Object.keys(headerXml).find(key => key.endsWith(':hdr'));
@@ -216,9 +214,8 @@ export async function parseWordWithFormat(
     for (const rel of footerRels) {
       const footerXmlEntry = zip.getEntry(`word/${rel.path}`);
       if (footerXmlEntry) {
-        const footerXml = await parseStringPromise(
-          footerXmlEntry.getData().toString("utf-8"),
-          { explicitChildren: true, preserveChildrenOrder: true }
+        const footerXml = await parseXmlString(
+          footerXmlEntry.getData().toString("utf-8")
         );
         // Tìm key footer linh hoạt
         const footerKey = Object.keys(footerXml).find(key => key.endsWith(':ftr'));
