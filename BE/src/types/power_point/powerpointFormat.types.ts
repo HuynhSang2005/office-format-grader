@@ -15,6 +15,7 @@ export interface FormattedTextRun {
   isItalic: boolean;
   font?: string;   
   size?: number;
+  color?: string;
   hyperlink?: string;
 }
 

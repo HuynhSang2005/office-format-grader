@@ -55,5 +55,6 @@ export function resolveTextStyle(
     isItalic: finalStyle.isItalic || false,
     font: finalStyle.font,
     size: finalStyle.size,
+    color: finalStyle.color
   };
 }
