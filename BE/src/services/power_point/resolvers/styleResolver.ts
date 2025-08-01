@@ -55,6 +55,5 @@ export function resolveTextStyle(
     isItalic: finalStyle.isItalic || false,
     font: finalStyle.font,
     size: finalStyle.size,
-    // Có thể mở rộng thêm thuộc tính khác nếu cần
   };
 }
