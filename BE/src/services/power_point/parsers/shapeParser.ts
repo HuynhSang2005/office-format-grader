@@ -1,7 +1,7 @@
-// Shape parser for PowerPoint
 import type { Shape, ShapeTransform, FormattedTextRun, ThemeData } from '../../../types/power_point/powerpointFormat.types';
 import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
 import { resolveTextStyle } from '../resolvers/styleResolver';
+import type { WordArtEffect } from '../../../types/power_point/powerpointFormat.types';
 
 export function extractShapesFromSlide(
   slideXmlObject: any,
@@ -54,4 +54,41 @@ export function extractShapesFromSlide(
     shapes.push({ id, name, transform, textRuns });
   }
   return shapes;
+}
+
+// --- THÊM HÀM HELPER MỚI ĐỂ PARSE HIỆU ỨNG WORDART ---
+function parseWordArtEffects(spPrNode: any): WordArtEffect | undefined {
+    if (!spPrNode) return undefined;
+
+    const effects: WordArtEffect = {};
+    let hasEffects = false;
+
+    // 1. Phân tích hiệu ứng tô màu (Fill)
+    const gradFill = spPrNode['a:gradFill']?.[0];
+    if (gradFill) {
+        hasEffects = true;
+        const colors = gradFill['a:gsLst']?.[0]?.['a:gs']
+            .map((gs: any) => gs['a:srgbClr']?.[0]?.$?.val)
+            .filter(Boolean);
+        effects.fill = { type: 'gradient', colors };
+    }
+
+    // 2. Phân tích hiệu ứng đổ bóng (Shadow)
+    const effectList = spPrNode['a:effectLst']?.[0];
+    if (effectList) {
+        const shadow = effectList['a:prstShdw']?.[0];
+        if (shadow?.$) {
+            hasEffects = true;
+            effects.shadow = {
+                type: shadow.$.prst,
+                color: shadow['a:srgbClr']?.[0]?.$?.val,
+                blur: shadow.$?.blurRad ? parseInt(shadow.$.blurRad) : undefined,
+                direction: shadow.$?.dir ? parseInt(shadow.$.dir) : undefined,
+            };
+        }
+    }
+
+    // Có thể mở rộng thêm các hiệu ứng khác như <a:scene3d>, <a:reflection> ở đây
+
+    return hasEffects ? effects : undefined;
 }

@@ -31,6 +31,7 @@ export interface Shape {
   textRuns: FormattedTextRun[];
   tableData?: TableData;
   chartData?: ChartData;
+  wordArt?: WordArtEffect;
 }
 
 export interface SlideDisplayInfo {
@@ -100,4 +101,10 @@ export interface ThemeData {
   name: string;
   colorScheme: ColorScheme;
   fontScheme: FontScheme;
+}
+// define các hiệu ứng WordArt có thể có
+export interface WordArtEffect {
+  fill?: { type: string; colors?: string[] }; // ví dụ: { type: 'gradient', colors: ['#FF0000', '#0000FF'] }
+  shadow?: { type: string; color?: string; blur?: number; direction?: number };
+  // Có thể thêm các hiệu ứng khác như 3D, glow, reflection...
 }
