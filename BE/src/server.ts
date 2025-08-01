@@ -6,7 +6,7 @@ const app = new Hono();
 
 app.get('/', (c) => {
   return c.json({
-    message: 'Chào mừng đến với API của dự án Office Format Analyzer!',
+    message: 'Chào mừng đến với API của project Office Format Analyzer!',
     status: 'ok'
   });
 });
