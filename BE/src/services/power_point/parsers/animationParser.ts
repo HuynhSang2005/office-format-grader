@@ -1,5 +1,5 @@
 // Animation parser for PowerPoint
-import type { AnimationNode, AnimationEffect } from '../../types/power_point/powerpointFormat.types';
+import type { AnimationNode, AnimationEffect } from '../../../types/power_point/powerpointFormat.types';
 
 export function parseAnimationNode(nodeElement: any): AnimationNode {
     const nodeName = Object.keys(nodeElement).find(k => k.startsWith('p:')) || '';
