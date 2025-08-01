@@ -19,6 +19,7 @@ import { parseChart } from './chartParser';
 import type { ChartData } from '../../types/power_point/chart.types';
 import { parseMasterOrLayout } from './styleParser';
 import type { SlideLayoutData } from '../../types/power_point/powerpointStyles';
+import { resolveTextStyle } from './styleResolver';
 
 // để phân tích một bảng từ XML
 function parseTableXml(tableElement: any): TableData {
@@ -48,9 +49,12 @@ function parseTableXml(tableElement: any): TableData {
 // để trích xuất các hình khối và định dạng của chúng từ một slide.
 function extractShapesFromSlide(
   slideXmlObject: any,
-  slidePath?: string,
-  zip?: AdmZip,
-  relationships?: Map<string, string>
+  relationships: Map<string, string>,
+  layoutData: SlideLayoutData,
+  masterData: SlideLayoutData,
+  themeData: ThemeData,
+  slidePath: string,
+  zip: AdmZip
 ): Shape[] {
   const shapes: Shape[] = [];
   const spTree = slideXmlObject?.['p:sld']?.['p:cSld']?.[0]?.['p:spTree']?.[0];
@@ -59,14 +63,14 @@ function extractShapesFromSlide(
 
   // Gộp cả shape thường và graphicFrame vào một mảng để xử lý chung
   const shapeElements = spTree['p:sp'] || [];
-  for (const element of shapeElements) {
+  for (const shapeElement of shapeElements) {
     // Lấy id, name, transform
-    const nvPr = element['p:nvSpPr']?.[0]?.['p:cNvPr']?.[0];
+    const nvPr = shapeElement['p:nvSpPr']?.[0]?.['p:cNvPr']?.[0];
     if (!nvPr) continue;
     const id = nvPr.$.id;
     const name = nvPr.$.name;
 
-    const xfrm = element['p:spPr']?.[0]?.['a:xfrm']?.[0];
+    const xfrm = shapeElement['p:spPr']?.[0]?.['a:xfrm']?.[0];
     if (!xfrm) continue;
     const transform: ShapeTransform = {
       x: parseInt(xfrm['a:off'][0].$.x, 10),
@@ -77,15 +81,15 @@ function extractShapesFromSlide(
 
     // Lấy các đoạn text và định dạng của chúng
     const textRuns: FormattedTextRun[] = [];
-    const paragraphs = element['p:txBody']?.[0]?.['a:p'] || [];
+    const paragraphs = shapeElement['p:txBody']?.[0]?.['a:p'] || [];
 
     for (const p of paragraphs) {
       const runs = p['a:r'] || [];
       for (const r of runs) {
         const text = r['a:t']?.[0] || '';
-        const properties = r['a:rPr']?.[0]?.$ || {};
-        const fontInfo = r['a:rPr']?.[0]?.['a:latin']?.[0]?.$ || {};
-        const size = properties.sz ? parseInt(properties.sz, 10) / 100 : undefined;
+
+        // ---- THAY THẾ LOGIC CŨ BẰNG LỜI GỌI RESOLVER ----
+        const resolvedStyle = resolveTextStyle(r, p, shapeElement, layoutData, masterData, themeData);
 
         let hyperlink: string | undefined = undefined;
         const hlinkClick = r['a:rPr']?.[0]?.['a:hlinkClick']?.[0];
@@ -95,11 +99,11 @@ function extractShapesFromSlide(
 
         textRuns.push({
           text,
-          isBold: properties.b === '1',
-          isItalic: properties.i === '1',
-          font: fontInfo.typeface,
-          size: size,
-          hyperlink: hyperlink, 
+          isBold: !!resolvedStyle.isBold,
+          isItalic: !!resolvedStyle.isItalic,
+          font: resolvedStyle.font,
+          size: resolvedStyle.size,
+          hyperlink,
         });
       }
     }
@@ -320,6 +324,8 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
       const slideRelationships = new Map<string, string>();
       const slideRelsEntry = zip.getEntry(slideRelsPath);
+      let layoutPathForSlide: string | undefined = undefined;
+      let masterPathForSlide: string | undefined = undefined;
       if (slideRelsEntry) {
         const slideRelsXml = await parseStringPromise(slideRelsEntry.getData().toString('utf-8'));
         if (slideRelsXml.Relationships.Relationship) {
@@ -327,12 +333,41 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
             if (rel.$.TargetMode === 'External') {
               slideRelationships.set(rel.$.Id, rel.$.Target);
             }
+            // Tìm layout cho slide
+            if (rel.$.Type && rel.$.Type.endsWith('/slideLayout')) {
+              layoutPathForSlide = `ppt/${rel.$.Target.replace(/^\//, '')}`;
+            }
+            // Tìm master cho slide (nếu có)
+            if (rel.$.Type && rel.$.Type.endsWith('/slideMaster')) {
+              masterPathForSlide = `ppt/${rel.$.Target.replace(/^\//, '')}`;
+            }
           }
         }
       }
 
-      // 2. Truyền slideRelationships vào extractShapesFromSlide
-      const shapes = extractShapesFromSlide(slideXmlObject, slidePath, zip, slideRelationships);
+      // fallback: nếu không tìm thấy masterPathForSlide, lấy master đầu tiên
+      if (!masterPathForSlide && masterPaths.length > 0) {
+        masterPathForSlide = masterPaths[0];
+      }
+      // fallback: nếu không tìm thấy layoutPathForSlide, lấy layout đầu tiên
+      if (!layoutPathForSlide && layoutPaths.length > 0) {
+        layoutPathForSlide = layoutPaths[0];
+      }
+
+      // Lấy đúng SlideLayoutData, nếu không có thì bỏ qua slide này
+      const layoutDataForSlide = layoutPathForSlide ? layoutData.get(layoutPathForSlide) : undefined;
+      const masterDataForSlide = masterPathForSlide ? masterData.get(masterPathForSlide) : undefined;
+      if (!layoutDataForSlide || !masterDataForSlide) continue;
+
+      const shapes = extractShapesFromSlide(
+        slideXmlObject,
+        slideRelationships,
+        layoutDataForSlide,
+        masterDataForSlide,
+        themeData ?? { name: '', colorScheme: {}, fontScheme: { majorFont: '', minorFont: '' } }, // đảm bảo không undefined
+        slidePath,
+        zip
+      );
 
       // Lấy tên layout của slide
       let layoutName = 'Unknown';
@@ -361,9 +396,9 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       const masterShapesVisible = slideProperties.showMasterSp !== '0';
 
       const displayInfo: SlideDisplayInfo = {
-        showsFooter: masterShapesVisible,
-        showsDate: masterShapesVisible,
-        showsSlideNumber: masterShapesVisible,
+        showsFooter: !!masterShapesVisible,
+        showsDate: !!masterShapesVisible,
+        showsSlideNumber: !!masterShapesVisible,
       };
 
       // Tìm các placeholder cụ thể bị ẩn trên slide này
@@ -373,9 +408,9 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
 
       if (phs) {
         for (const ph of phs) {
-          if (ph.$.type === 'ftr') displayInfo.showsFooter = ph.$.sz !== '0';
-          if (ph.$.type === 'dt') displayInfo.showsDate = ph.$.sz !== '0';
-          if (ph.$.type === 'sldNum') displayInfo.showsSlideNumber = ph.$.sz !== '0';
+          if (ph.$.type === 'ftr') displayInfo.showsFooter = ph.$.sz !== '0' ? true : false;
+          if (ph.$.type === 'dt') displayInfo.showsDate = ph.$.sz !== '0' ? true : false;
+          if (ph.$.type === 'sldNum') displayInfo.showsSlideNumber = ph.$.sz !== '0' ? true : false;
         }
       }
 
