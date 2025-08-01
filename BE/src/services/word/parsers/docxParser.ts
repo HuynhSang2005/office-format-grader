@@ -1,5 +1,5 @@
 import AdmZip from 'adm-zip';
-import { parseStringPromise } from 'xml2js';
+import { parseXmlString } from '../shared/xmlHelpers';
 import type { ParsedWordData } from '../../../types/word/word.types';
 
 export async function parseWordFile(filePath: string): Promise<ParsedWordData> {
@@ -13,7 +13,7 @@ export async function parseWordFile(filePath: string): Promise<ParsedWordData> {
     }
 
     const xmlContent = docXmlEntry.getData().toString('utf-8');
-    const parsedXml = await parseStringPromise(xmlContent);
+    const parsedXml = await parseXmlString(xmlContent);
 
     // Cấu trúc XML của Word: w:document -> w:body -> w:p (paragraph)
     const paragraphsXml = parsedXml['w:document']['w:body'][0]['w:p'];
