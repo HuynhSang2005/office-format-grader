@@ -1,9 +1,11 @@
-import type { Shape, ShapeTransform, FormattedTextRun, ThemeData } from '../../../types/power_point/powerpointFormat.types';
+import type { Shape, ShapeTransform, FormattedTextRun, ThemeData, TableData, ChartData, SmartArtData } from '../../../types/power_point/powerpointFormat.types';
 import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
 import { resolveTextStyle } from '../resolvers/styleResolver';
 import type { WordArtEffect } from '../../../types/power_point/powerpointFormat.types';
+import { parseSmartArt } from './smartArtParser';
+import path from 'node:path';
 
-export function extractShapesFromSlide(
+export async function extractShapesFromSlide(
   slideXmlObject: any,
   relationships: Map<string, string>,
   layoutData: SlideLayoutData,
@@ -11,7 +13,7 @@ export function extractShapesFromSlide(
   themeData: ThemeData,
   slidePath: string,
   zip: any
-): Shape[] {
+): Promise<Shape[]> {
   const shapes: Shape[] = [];
   const spTree = slideXmlObject?.['p:sld']?.['p:cSld']?.[0]?.['p:spTree']?.[0];
   if (!spTree) return [];
@@ -53,6 +55,58 @@ export function extractShapesFromSlide(
     }
     shapes.push({ id, name, transform, textRuns });
   }
+
+  // --- Xử lý <p:graphicFrame> để nhận diện SmartArt, Table, Chart ---
+  const graphicFrames = spTree['p:graphicFrame'] || [];
+  for (const frame of graphicFrames) {
+    const nvPr = frame['p:nvGraphicFramePr']?.[0]?.['p:cNvPr']?.[0];
+    if (!nvPr) continue;
+    const id = nvPr.$.id;
+    const name = nvPr.$.name;
+    const xfrm = frame['p:xfrm']?.[0];
+    if (!xfrm) continue;
+    const transform: ShapeTransform = {
+      x: parseInt(xfrm['a:off'][0].$.x, 10),
+      y: parseInt(xfrm['a:off'][0].$.y, 10),
+      width: parseInt(xfrm['a:ext'][0].$.cx, 10),
+      height: parseInt(xfrm['a:ext'][0].$.cy, 10),
+    };
+
+    const graphicData = frame['a:graphic']?.[0]?.['a:graphicData']?.[0];
+    const graphicUri = graphicData?.$?.uri;
+
+    let tableData: TableData | undefined = undefined;
+    let chartData: ChartData | undefined = undefined;
+    let smartArt: SmartArtData | undefined = undefined;
+
+    // Phân loại đối tượng dựa trên URI
+    if (graphicUri && graphicUri.includes('/diagram')) {
+      // ---- LOGIC MỚI: XỬ LÝ SMARTART ----
+      const diagramRelId = graphicData['dgm:relIds']?.[0]?.$?.['r:id'];
+      if (diagramRelId) {
+        const dataPath = relationships.get(diagramRelId); // Tra cứu trong .rels của slide
+        if (dataPath) {
+          const fullDataPath = `ppt/diagrams/${path.basename(dataPath)}`;
+          smartArt = await parseSmartArt(zip, fullDataPath);
+        }
+      }
+    } else if (graphicData['a:tbl']) {
+      // ... logic parse table cũ ...
+    } else if (graphicData['a:chart']) {
+      // ... logic parse chart cũ ...
+    }
+
+    shapes.push({
+      id,
+      name,
+      transform,
+      textRuns: [],
+      tableData,
+      chartData,
+      smartArt
+    });
+  }
+
   return shapes;
 }
 

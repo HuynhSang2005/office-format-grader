@@ -32,12 +32,25 @@ export interface Shape {
   tableData?: TableData;
   chartData?: ChartData;
   wordArt?: WordArtEffect;
+  smartArt?: SmartArtData;
 }
 
 export interface SlideDisplayInfo {
   showsFooter: boolean;
   showsDate: boolean;
   showsSlideNumber: boolean;
+}
+
+// Dữ liệu tổng thể của một đối tượng SmartArt
+export interface SmartArtData {
+  layout?: string; // Tên layout của SmartArt
+  nodes: SmartArtNode[]; // Các node gốc của cây
+}
+
+// Mỗi node trong SmartArt có thể chứa các node con
+export interface SmartArtNode {
+  text: string;
+  children: SmartArtNode[];
 }
 
 export interface TransitionEffect {
@@ -53,6 +66,8 @@ export interface AnimationEffect {
   shapeId: string;       // ID của shape được áp dụng hiệu ứng
   effectType?: string;    // Loại hiệu ứng, ví dụ: 'flyIn', 'wipe'
   direction?: string;     // Hướng của hiệu ứng, ví dụ: 'fromBottom'
+  wordArt?: WordArtEffect; // Hiệu ứng đặc biệt cho WordArt
+  smartArt?: SmartArtData; // Dữ liệu SmartArt nếu có
 }
 
 // một node trong cây animation
