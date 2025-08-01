@@ -4,71 +4,53 @@ import path from 'node:path';
 import type {
   ParsedPowerPointFormatData,
   FormattedSlide,
-  Shape,
-  ShapeTransform,
-  FormattedTextRun,
-  TableData,
   SlideDisplayInfo,
   TransitionEffect,
   AnimationNode,
-  AnimationEffect,
   ThemeData,
   ColorScheme
-} from '../../types/power_point/powerpointFormat.types';
-import { parseChart } from './chartParser';
-import type { ChartData } from '../../types/power_point/chart.types';
-import { parseMasterOrLayout } from './styleParser';
-import type { SlideLayoutData } from '../../types/power_point/powerpointStyles';
-import { resolveTextStyle } from './styleResolver';
-import { parseTableXml } from './tableParser';
-
-import { extractShapesFromSlide } from './shapeParser';
-import { parseAnimationNode } from './animationParser';
-
-
-
-
-
-/**
- * Phân tích file .pptx để trích xuất cấu trúc và định dạng chi tiết.
- */
-export async function parsePowerPointWithFormat(filePath: string): Promise<ParsedPowerPointFormatData> {
+} from '../../../types/power_point/powerpointFormat.types';
+import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
+import { parseMasterOrLayout } from '../parsers/styleParser';
+import { extractShapesFromSlide } from '../parsers/shapeParser';
+import { parseAnimationNode } from '../parsers/animationParser';
+export async function parsePowerPointFormat(
+  zip: AdmZip,
+  filePath: string
+): Promise<ParsedPowerPointFormatData> {
   try {
-    const zip = new AdmZip(filePath);
-
-    // Lấy danh sách các slide master và layout
+    // Khai báo các biến phạm vi hàm
     const masterPaths: string[] = [];
     const layoutPaths: string[] = [];
 
-    // Duyệt qua presentation.xml để lấy danh sách master và layout
     const presentationEntry = zip.getEntry('ppt/presentation.xml');
-    if (presentationEntry) {
-      const presentationXml = await parseStringPromise(presentationEntry.getData().toString('utf-8'));
-      // Lấy masterIdList
-      const masterIdList = presentationXml['p:presentation']?.['p:sldMasterIdLst']?.[0]?.['p:sldMasterId'] || [];
-      for (const master of masterIdList) {
-        const rId = master.$['r:id'];
-        // Tìm đường dẫn master từ presentation.xml.rels
-        const presRelsEntry = zip.getEntry('ppt/_rels/presentation.xml.rels');
-        if (presRelsEntry) {
-          const presRelsXml = await parseStringPromise(presRelsEntry.getData().toString('utf-8'));
-          const rel = presRelsXml.Relationships.Relationship.find((r: any) => r.$.Id === rId);
-          if (rel) {
-            const masterPath = `ppt/${rel.$.Target.replace(/^\//, '')}`;
-            masterPaths.push(masterPath);
+    if (!presentationEntry) throw new Error('Không tìm thấy file ppt/presentation.xml');
+    const presentationXml = await parseStringPromise(presentationEntry.getData().toString('utf-8'));
 
-            // Lấy layout từ master .rels
-            const masterRelsPath = `ppt/slideMasters/_rels/${path.basename(masterPath)}.rels`;
-            const masterRelsEntry = zip.getEntry(masterRelsPath);
-            if (masterRelsEntry) {
-              const masterRelsXml = await parseStringPromise(masterRelsEntry.getData().toString('utf-8'));
-              const layoutRels = masterRelsXml.Relationships.Relationship.filter((r: any) =>
-                r.$.Type.endsWith('/slideLayout')
-              );
-              for (const layoutRel of layoutRels) {
-                const layoutPath = `ppt/${layoutRel.$.Target.replace(/^\//, '')}`;
-                if (!layoutPaths.includes(layoutPath)) layoutPaths.push(layoutPath);
-              }
+    // Lấy masterIdList
+    const masterIdList = presentationXml['p:presentation']?.['p:sldMasterIdLst']?.[0]?.['p:sldMasterId'] || [];
+    for (const master of masterIdList) {
+      const rId = master.$['r:id'];
+      // Tìm đường dẫn master từ presentation.xml.rels
+      const presRelsEntry = zip.getEntry('ppt/_rels/presentation.xml.rels');
+      if (presRelsEntry) {
+        const presRelsXml = await parseStringPromise(presRelsEntry.getData().toString('utf-8'));
+        const rel = presRelsXml.Relationships.Relationship.find((r: any) => r.$.Id === rId);
+        if (rel) {
+          const masterPath = `ppt/${rel.$.Target.replace(/^\//, '')}`;
+          masterPaths.push(masterPath);
+
+          // Lấy layout từ master .rels
+          const masterRelsPath = `ppt/slideMasters/_rels/${path.basename(masterPath)}.rels`;
+          const masterRelsEntry = zip.getEntry(masterRelsPath);
+          if (masterRelsEntry) {
+            const masterRelsXml = await parseStringPromise(masterRelsEntry.getData().toString('utf-8'));
+            const layoutRels = masterRelsXml.Relationships.Relationship.filter((r: any) =>
+              r.$.Type.endsWith('/slideLayout')
+            );
+            for (const layoutRel of layoutRels) {
+              const layoutPath = `ppt/${layoutRel.$.Target.replace(/^\//, '')}`;
+              if (!layoutPaths.includes(layoutPath)) layoutPaths.push(layoutPath);
             }
           }
         }
@@ -98,6 +80,8 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       (r: any) => r.$.Type.endsWith('/slide')
     );
 
+
+    // Xử lý themeData
     let themeData: ThemeData | undefined = undefined;
     const presentationRelsEntry = zip.getEntry('ppt/_rels/presentation.xml.rels');
     if (presentationRelsEntry) {
@@ -105,7 +89,6 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       const themeRel = presentationRelsXml.Relationships.Relationship.find(
         (r: any) => r.$.Type.endsWith('/theme')
       );
-
       if (themeRel) {
         const themePath = `ppt/${themeRel.$.Target}`;
         const themeXmlRaw = zip.getEntry(themePath)?.getData().toString('utf-8');
@@ -113,7 +96,6 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
           const themeXml = await parseStringPromise(themeXmlRaw);
           const themeElements = themeXml['a:theme']['a:themeElements'][0];
           const themeName = themeXml['a:theme'].$.name;
-
           // Trích xuất bảng màu (Color Scheme)
           const colorSchemeNode = themeElements['a:clrScheme'][0];
           const colors: ColorScheme = {};
@@ -124,12 +106,10 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
               if (srgbClr) colors[colorName] = srgbClr;
             }
           }
-
           // Trích xuất bộ font (Font Scheme)
           const fontSchemeNode = themeElements['a:fontScheme'][0];
           const majorFont = fontSchemeNode['a:majorFont'][0]['a:latin'][0].$.typeface;
           const minorFont = fontSchemeNode['a:minorFont'][0]['a:latin'][0].$.typeface;
-
           themeData = {
             name: themeName,
             colorScheme: colors,
@@ -141,14 +121,11 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
 
     const formattedSlides: FormattedSlide[] = [];
     let slideCounter = 1;
-
     for (const slideEntry of slideEntries) {
       const slidePath = `ppt/${slideEntry.$.Target}`;
       const slideXmlRaw = zip.getEntry(slidePath)?.getData().toString('utf-8');
       if (!slideXmlRaw) continue;
-
       const slideXmlObject = await parseStringPromise(slideXmlRaw);
-
       // 1. Đọc file _rels của slide để tạo bản đồ tra cứu hyperlink
       const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
       const slideRelationships = new Map<string, string>();
@@ -173,7 +150,6 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
           }
         }
       }
-
       // fallback: nếu không tìm thấy masterPathForSlide, lấy master đầu tiên
       if (!masterPathForSlide && masterPaths.length > 0) {
         masterPathForSlide = masterPaths[0];
@@ -182,22 +158,19 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
       if (!layoutPathForSlide && layoutPaths.length > 0) {
         layoutPathForSlide = layoutPaths[0];
       }
-
       // Lấy đúng SlideLayoutData, nếu không có thì bỏ qua slide này
       const layoutDataForSlide = layoutPathForSlide ? layoutData.get(layoutPathForSlide) : undefined;
       const masterDataForSlide = masterPathForSlide ? masterData.get(masterPathForSlide) : undefined;
       if (!layoutDataForSlide || !masterDataForSlide) continue;
-
       const shapes = extractShapesFromSlide(
         slideXmlObject,
         slideRelationships,
         layoutDataForSlide,
         masterDataForSlide,
-        themeData ?? { name: '', colorScheme: {}, fontScheme: { majorFont: '', minorFont: '' } }, // đảm bảo không undefined
+        themeData ?? { name: '', colorScheme: {}, fontScheme: { majorFont: '', minorFont: '' } },
         slidePath,
         zip
       );
-
       // Lấy tên layout của slide
       let layoutName = 'Unknown';
       const layoutId = slideXmlObject['p:sld']?.['p:sldLayout']?.[0]?.$?.['r:id'];
@@ -219,22 +192,18 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
           }
         }
       }
-
       // lấy thông tin header, footer, slide number
       const slideProperties = slideXmlObject['p:sld']['p:cSld'][0].$ || {};
       const masterShapesVisible = slideProperties.showMasterSp !== '0';
-
       const displayInfo: SlideDisplayInfo = {
         showsFooter: !!masterShapesVisible,
         showsDate: !!masterShapesVisible,
         showsSlideNumber: !!masterShapesVisible,
       };
-
       // Tìm các placeholder cụ thể bị ẩn trên slide này
       const phs = slideXmlObject['p:sld']['p:cSld'][0]['p:spTree'][0]['p:sp']
         ?.map((sp: any) => sp['p:nvSpPr']?.[0]?.['p:nvPr']?.[0]?.['p:ph']?.[0])
         .filter(Boolean);
-
       if (phs) {
         for (const ph of phs) {
           if (ph.$.type === 'ftr') displayInfo.showsFooter = ph.$.sz !== '0' ? true : false;
@@ -242,45 +211,37 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
           if (ph.$.type === 'sldNum') displayInfo.showsSlideNumber = ph.$.sz !== '0' ? true : false;
         }
       }
-
       // lấy ra transition effect 
       let transition: TransitionEffect | undefined = undefined;
       const transitionNode = slideXmlObject['p:sld']['p:transition']?.[0];
-
       if (transitionNode) {
-          const durationStr = transitionNode.$?.dur;
-          const effectTypeKey = Object.keys(transitionNode).find(
-              key => key !== '$' && key !== 'p:sound'
-          ); // Loại trừ thẻ sound
-
-          if (effectTypeKey) {
-              transition = {
-                  type: effectTypeKey.replace('p:', ''),
-                  duration: durationStr ? parseInt(durationStr, 10) : undefined,
-              };
-
-              const soundNode = transitionNode['p:sound']?.[0];
-              if (soundNode) {
-                  const soundNameNode = soundNode['a:prstSnd']?.[0]; // Âm thanh có sẵn
-                  if (soundNameNode && soundNameNode.$?.prst) {
-                      transition.sound = { name: soundNameNode.$.prst };
-                  }
-              }
+        const durationStr = transitionNode.$?.dur;
+        const effectTypeKey = Object.keys(transitionNode).find(
+          key => key !== '$' && key !== 'p:sound'
+        );
+        if (effectTypeKey) {
+          transition = {
+            type: effectTypeKey.replace('p:', ''),
+            duration: durationStr ? parseInt(durationStr, 10) : undefined,
+          };
+          const soundNode = transitionNode['p:sound']?.[0];
+          if (soundNode) {
+            const soundNameNode = soundNode['a:prstSnd']?.[0];
+            if (soundNameNode && soundNameNode.$?.prst) {
+              transition.sound = { name: soundNameNode.$.prst };
+            }
           }
+        }
       }
-
       // Lấy thông tin animation
       let animations: AnimationNode | undefined = undefined;
       const timingNode = slideXmlObject['p:sld']['p:timing']?.[0]?.['p:tnLst']?.[0];
-
       if (timingNode) {
-        // Lấy node gốc của cây (thường là một thẻ <p:par>)
         const rootTimeNodeKey = Object.keys(timingNode)[0];
         if (rootTimeNodeKey) {
           animations = parseAnimationNode({ [rootTimeNodeKey]: timingNode[rootTimeNodeKey] });
         }
       }
-
       formattedSlides.push({
         slideNumber: slideCounter++,
         layout: layoutName,
@@ -290,7 +251,6 @@ export async function parsePowerPointWithFormat(filePath: string): Promise<Parse
         animations: animations ? [animations] : undefined,
       });
     }
-
     return {
       slideCount: formattedSlides.length,
       mediaFiles,

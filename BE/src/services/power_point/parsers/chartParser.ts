@@ -2,7 +2,7 @@ import AdmZip from "adm-zip";
 import { parseStringPromise } from "xml2js";
 import * as XLSX from 'xlsx';
 import path from 'node:path';
-import type { ChartData, ChartSeries } from "../../types/power_point/chart.types";
+import type { ChartData, ChartSeries } from "../../../types/power_point/chart.types";
 
 // Hàm helper để đọc dữ liệu từ file excel nhúng
 function getExcelDataFromReference(workbook: XLSX.WorkBook, formula: string | undefined): any[] {

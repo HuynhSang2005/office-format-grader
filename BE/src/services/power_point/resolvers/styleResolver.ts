@@ -1,5 +1,5 @@
-import type { ThemeData } from "../../types/power_point/powerpointFormat.types";
-import type { SlideLayoutData, TextStyle } from "../../types/power_point/powerpointStyles";
+import type { ThemeData } from "../../../types/power_point/powerpointFormat.types";
+import type { SlideLayoutData, TextStyle } from "../../../types/power_point/powerpointStyles";
 
 function parseTextStyleFromRprNode(rPrNode: any): TextStyle {
   if (!rPrNode) return {};

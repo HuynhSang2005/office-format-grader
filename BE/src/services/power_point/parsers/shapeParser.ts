@@ -1,6 +1,7 @@
 // Shape parser for PowerPoint
-import type { Shape, ShapeTransform, FormattedTextRun, SlideLayoutData, ThemeData } from '../../types/power_point/powerpointFormat.types';
-import { resolveTextStyle } from './styleResolver';
+import type { Shape, ShapeTransform, FormattedTextRun, ThemeData } from '../../../types/power_point/powerpointFormat.types';
+import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
+import { resolveTextStyle } from '../resolvers/styleResolver';
 
 export function extractShapesFromSlide(
   slideXmlObject: any,
