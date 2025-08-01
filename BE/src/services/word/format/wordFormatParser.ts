@@ -1,5 +1,5 @@
 import AdmZip from "adm-zip";
-import { parseXmlString } from "../shared/xmlHelpers";
+import { parseXmlString } from "../../shared/xmlHelpers";
 import type {
   ParsedWordData,
   Paragraph,
