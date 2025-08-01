@@ -1,9 +1,10 @@
-import type { Shape, ShapeTransform, FormattedTextRun, ThemeData, TableData, ChartData, SmartArtData } from '../../../types/power_point/powerpointFormat.types';
+import type { Shape, ShapeTransform, FormattedTextRun, ThemeData, TableData, SmartArtData } from '../../../types/power_point/powerpointFormat.types';
 import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
 import { resolveTextStyle } from '../resolvers/styleResolver';
 import type { WordArtEffect } from '../../../types/power_point/powerpointFormat.types';
 import { parseSmartArt } from './smartArtParser';
 import path from 'node:path';
+import type { ChartData } from '../../../types/power_point/chart.types';
 
 export async function extractShapesFromSlide(
   slideXmlObject: any,

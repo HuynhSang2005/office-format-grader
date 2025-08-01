@@ -4,11 +4,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 
-// Import các service cần thiết
-import { parseWordWithFormat } from '../services/word/wordFormatParser';
-import { parsePowerPointWithFormat } from '../services/power_point/powerpointFormatParser';
 import { gradeSubmissionWithAI } from '../services/aiChecker';
-import { parseWordFile } from '../services/word/docxParser';
+import { parseWordWithFormat } from '../services/word/format/wordFormatParser';
+import { parsePowerPointFormat } from '../services/power_point/format/powerpointFormatParser';
+import { parseWordFile as parseWordContentOnly } from '../services/word/parsers/docxParser';
+import { createSubmissionSummary } from '../services/submissionSummarizer';
 
 const aiRoutes = new Hono();
 
@@ -32,31 +32,52 @@ aiRoutes.post('/ai-checker', async (c) => {
     await fs.writeFile(rubricPath, rubricBuffer);
     await fs.writeFile(submissionPath, submissionBuffer);
 
-    // 2. Dùng parser để lấy dữ liệu từ file tạm
-    console.log("Đang phân tích file...");
-    const rubricTextData = await parseWordFile(rubricPath);
-    const rubricText = rubricTextData.paragraphs.join('\n');
+    // 2. Dùng các parser để lấy dữ liệu thô, chi tiết
+    const rubricTextData = await parseWordContentOnly(rubricPath);
 
-    let submissionJson;
+    let submissionRawData;
     const submissionExt = path.extname(submissionFile.filename).toLowerCase();
 
     if (submissionExt === '.docx') {
-      submissionJson = await parseWordWithFormat(submissionPath);
+      submissionRawData = await parseWordWithFormat(submissionPath);
     } else if (submissionExt === '.pptx') {
-      submissionJson = await parsePowerPointWithFormat(submissionPath);
+      const AdmZip = (await import('adm-zip')).default;
+      const zip = new AdmZip(submissionPath);
+      submissionRawData = await parsePowerPointFormat(zip, submissionPath);
     } else {
       throw new Error("Định dạng file bài nộp không được hỗ trợ.");
     }
 
-    // 3. Gọi service AI để chấm điểm
-    const result = await gradeSubmissionWithAI(rubricText, JSON.stringify(submissionJson, null, 2));
+    // 3. Gọi Summarizer để biến đổi dữ liệu
+    // Sửa lỗi: ép kiểu type cho submissionExt.slice(1)
+    const submissionType = submissionExt === '.docx' ? 'docx' : submissionExt === '.pptx' ? 'pptx' : undefined;
+    if (!submissionType) {
+      throw new Error("Định dạng file bài nộp không được hỗ trợ.");
+    }
 
-    return successResponse(c, result, "AI đã hoàn thành việc chấm điểm.");
+    const submissionSummary = createSubmissionSummary(
+      [{ filename: submissionFile.filename, type: submissionType, rawData: submissionRawData }],
+      { filename: rubricFile.filename, rawData: { paragraphs: rubricTextData?.paragraphs?.join('\n') ?? '' } }
+    );
+
+    // 4. Chuẩn bị dữ liệu cho AI và Client
+    // Sửa lỗi: kiểm tra undefined trước khi truy cập property
+    const summarizedJsonForAI = JSON.stringify(submissionSummary?.submission?.files?.[0]?.format ?? {}, null, 2);
+    const rubricTextForAI = submissionSummary?.submission?.rubric?.content ?? '';
+
+    // 5. Gọi AI với dữ liệu đã tóm tắt
+    const result = await gradeSubmissionWithAI(rubricTextForAI, summarizedJsonForAI);
+
+    // 6. Trả về kết quả cuối cùng cho client
+    return successResponse(
+      c,
+      { gradingResult: result, submissionDetails: submissionSummary },
+      "AI đã hoàn thành việc chấm điểm."
+    );
 
   } catch (error: any) {
     return errorResponse(c, error.message, 500);
   } finally {
-    // 4. Luôn luôn xóa thư mục tạm sau khi hoàn thành
     await fs.rm(tempDir, { recursive: true, force: true });
   }
 });

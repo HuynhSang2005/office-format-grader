@@ -2,12 +2,12 @@ import { Hono } from "hono";
 import path from "node:path";
 
 import { scanOfficeFiles } from "../services/fileScanner";
-import { parseExcelFile } from "../services/excel/xlsxParser.ts";
-import { parseWordFile } from "../services/word/docxParser.ts";
-import { parsePowerPointFile } from "../services/power_point/pptxParser.ts";
+import { parseExcelFile } from "../services/excel/xlsxParser";
+import { parseWordFile } from "../services/word/parsers/docxParser";
+import { parsePowerPointFile } from "../services/power_point/parsers/pptxParser";
 import { successResponse, errorResponse } from "../utils/apiResponse";
-import { parseWordWithFormat } from "../services/word/wordFormatParser.ts"; 
-import { parsePowerPointWithFormat } from "../services/power_point/powerpointFormatParser.ts";
+import { parseWordWithFormat } from "../services/word/format/wordFormatParser";
+import { parsePowerPointFormat } from "../services/power_point/format/powerpointFormatParser";
 
 const fileRoutes = new Hono();
 
@@ -53,7 +53,11 @@ fileRoutes.get('/files/details', async (c) => {
           data = await parseWordWithFormat(safeFilePath);
           break;
         case '.pptx':
-          data = await parsePowerPointWithFormat(safeFilePath);
+          // Đổi tên hàm cho đồng bộ, nếu bạn muốn dùng WithFormat thì export lại alias
+          data = await parsePowerPointFormat(
+            new (await import('adm-zip')).default(safeFilePath),
+            safeFilePath
+          );
           break;
         case '.xlsx':
           return errorResponse(c, `Chức năng phân tích đầy đủ cho ${extension} chưa được cài đặt.`, 501);

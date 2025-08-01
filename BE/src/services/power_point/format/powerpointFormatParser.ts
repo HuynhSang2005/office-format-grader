@@ -13,7 +13,7 @@ import type {
 import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
 import { parseMasterOrLayout } from '../parsers/styleParser';
 import { extractShapesFromSlide } from '../parsers/shapeParser';
-import { parseAnimationNode } from '../animationParser';
+import { parseAnimationTree } from '../parsers/animationParser';
 async function parseNotesForSlide(zip: AdmZip, slidePath: string): Promise<string | undefined> {
   try {
     const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
@@ -202,7 +202,7 @@ export async function parsePowerPointFormat(
       const layoutDataForSlide = layoutPathForSlide ? layoutData.get(layoutPathForSlide) : undefined;
       const masterDataForSlide = masterPathForSlide ? masterData.get(masterPathForSlide) : undefined;
       if (!layoutDataForSlide || !masterDataForSlide) continue;
-      const shapes = extractShapesFromSlide(
+      const shapes = await extractShapesFromSlide(
         slideXmlObject,
         slideRelationships,
         layoutDataForSlide,
@@ -279,7 +279,8 @@ export async function parsePowerPointFormat(
       if (timingNode) {
         const rootTimeNodeKey = Object.keys(timingNode)[0];
         if (rootTimeNodeKey) {
-          animations = parseAnimationNode({ [rootTimeNodeKey]: timingNode[rootTimeNodeKey] });
+          const parsed = parseAnimationTree({ [rootTimeNodeKey]: timingNode[rootTimeNodeKey] });
+          animations = parsed === null ? undefined : parsed; // Sửa lỗi: chuyển null thành undefined
         }
       }
       const notes = await parseNotesForSlide(zip, slidePath);
