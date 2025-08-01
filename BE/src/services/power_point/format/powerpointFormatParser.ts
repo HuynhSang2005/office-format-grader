@@ -14,6 +14,46 @@ import type { SlideLayoutData } from '../../../types/power_point/powerpointStyle
 import { parseMasterOrLayout } from '../parsers/styleParser';
 import { extractShapesFromSlide } from '../parsers/shapeParser';
 import { parseAnimationNode } from '../parsers/animationParser';
+async function parseNotesForSlide(zip: AdmZip, slidePath: string): Promise<string | undefined> {
+  try {
+    const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
+    const slideRelsEntry = zip.getEntry(slideRelsPath);
+    if (!slideRelsEntry) return undefined;
+
+    const slideRelsXml = await parseStringPromise(slideRelsEntry.getData().toString('utf-8'));
+    if (!slideRelsXml.Relationships.Relationship) return undefined;
+
+    const notesRel = slideRelsXml.Relationships.Relationship.find(
+      (r: any) => r.$.Type.endsWith('/notesSlide')
+    );
+
+    if (!notesRel) return undefined;
+
+    const notesPath = `ppt/notesSlides/${path.basename(notesRel.$.Target)}`;
+    const notesXmlRaw = zip.getEntry(notesPath)?.getData().toString('utf-8');
+    if (!notesXmlRaw) return undefined;
+
+    const notesXml = await parseStringPromise(notesXmlRaw);
+
+    // Trích xuất tất cả các đoạn text từ trong notes
+    let notesText = '';
+    const paragraphs = notesXml['p:notes']['p:cSld'][0]['p:spTree'][0]['p:sp']?.[0]?.['p:txBody']?.[0]?.['a:p'] || [];
+
+    for (const p of paragraphs) {
+      const runs = p['a:r'] || [];
+      for (const r of runs) {
+        notesText += r['a:t']?.[0] || '';
+      }
+      notesText += '\n'; // Thêm ký tự xuống dòng giữa các paragraph
+    }
+
+    return notesText.trim() || undefined;
+
+  } catch (error) {
+    console.warn(`Could not parse notes for slide ${slidePath}:`, error);
+    return undefined;
+  }
+}
 export async function parsePowerPointFormat(
   zip: AdmZip,
   filePath: string
@@ -242,6 +282,9 @@ export async function parsePowerPointFormat(
           animations = parseAnimationNode({ [rootTimeNodeKey]: timingNode[rootTimeNodeKey] });
         }
       }
+      // ---- LOGIC MỚI: GỌI HÀM PARSE NOTES ----
+      const notes = await parseNotesForSlide(zip, slidePath);
+      // ----------------------------------------
       formattedSlides.push({
         slideNumber: slideCounter++,
         layout: layoutName,
@@ -249,6 +292,7 @@ export async function parsePowerPointFormat(
         transition: transition,
         shapes,
         animations: animations ? [animations] : undefined,
+        notes: notes, // <-- Thêm kết quả vào đây
       });
     }
     return {

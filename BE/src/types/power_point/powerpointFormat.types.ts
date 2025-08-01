@@ -72,6 +72,7 @@ export interface FormattedSlide {
   transition?: TransitionEffect;
   shapes: Shape[];
   animations?: AnimationNode[];
+  notes?: string;
 }
 
 // Cấu trúc data cuối cùng cho file PowerPoint
