@@ -1,3 +1,5 @@
+import type { ChartData } from "../power_point/chart.types";
+
 export interface WordFormatData {
   html: string;
   messages: any[]; // Để chứa warning cảnh báo hoặc error từ mammoth
@@ -18,7 +20,7 @@ export interface TextRun {
 
 // define một "paragraph" - chứa một hoặc nhiều "run"
 export interface Paragraph {
-  runs: (TextRun | ImageRun)[];
+  runs: (TextRun | Drawing )[];
   alignment?: "left" | "right" | "center" | "justify" | string;
   indentation?: {
     left?: number;
@@ -51,12 +53,14 @@ export interface ParsedWordData {
   footers?: HeaderFooterContent[];
 }
 
-// Định nghĩa một "image run" - chứa hình ảnh trong docx
-export interface ImageRun {
-  type: "image";
-  imageName: string;
-  width: number; // Đơn vị là EMU
-  height: number; // Đơn vị là EMU
+// Định nghĩa một "drawing" - chứa hình ảnh trong docx
+export interface Drawing {
+  type: 'drawing';
+  drawingType: 'image' | 'chart';
+  imageName?: string;
+  width?: number;
+  height?: number;
+  chartData?: ChartData;
 }
 
 // Định nghĩa các thông tin về header và footer

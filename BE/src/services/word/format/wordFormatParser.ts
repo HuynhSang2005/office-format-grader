@@ -6,11 +6,13 @@ import type {
   TextRun,
   Table,
   TableCell,
-  ImageRun,
+  Drawing,
   HeaderFooterContent,
 } from "../../../types/word/wordFormat.types";
+import { parseChart } from "../../power_point/parsers/chartParser";
 
-function parseRun(r: any, relationships: Map<string, string>, hyperlink?: string): TextRun | ImageRun | null {
+
+function parseRun(r: any, relationships: Map<string, string>, hyperlink?: string): TextRun | Drawing | null {
   // Xử lý image run
   const drawing = r["w:drawing"]?.[0];
   if (drawing) {
@@ -23,7 +25,8 @@ function parseRun(r: any, relationships: Map<string, string>, hyperlink?: string
     if (embedId && extent) {
       const imageName = relationships.get(embedId) || "unknown";
       return {
-        type: "image",
+        type: "drawing",
+        drawingType: "image",
         imageName: imageName,
         width: parseInt(extent.cx),
         height: parseInt(extent.cy),
@@ -55,18 +58,17 @@ function parseRun(r: any, relationships: Map<string, string>, hyperlink?: string
   return run;
 }
 
-function parseParagraph(
+async function parseParagraph(
   pNode: any,
-  relationships: Map<string, string>
-): Paragraph {
+  relationships: Map<string, string>,
+  zip?: AdmZip // Truyền zip vào để đọc chart
+): Promise<Paragraph> {
   const paragraph: Paragraph = { runs: [] };
   const pPr = pNode["w:pPr"]?.[0];
   if (pPr) {
     // Lấy thông tin căn lề
     const alignment = pPr["w:jc"]?.[0]?.$?.val;
-    if (alignment) {
-      paragraph.alignment = alignment;
-    }
+    if (alignment) paragraph.alignment = alignment;
     // Lấy thông tin thụt lề
     const indent = pPr["w:ind"]?.[0]?.$;
     if (indent) {
@@ -79,9 +81,7 @@ function parseParagraph(
     }
     // Lấy tên style (dùng cho Headings)
     const style = pPr["w:pStyle"]?.[0]?.$?.val;
-    if (style) {
-      paragraph.styleName = style;
-    }
+    if (style) paragraph.styleName = style;
     // Lấy thông tin danh sách (list)
     const numPr = pPr["w:numPr"]?.[0];
     if (numPr) {
@@ -98,15 +98,57 @@ function parseParagraph(
 
   const runsXml = pNode["w:r"] || [];
   for (const r of runsXml) {
-    const run = parseRun(r, relationships);
-    if (run) {
-      paragraph.runs.push(run);
+    const drawing = r['w:drawing']?.[0];
+
+    if (drawing) {
+      const inline = drawing['wp:inline']?.[0];
+      if (!inline) continue; // Bỏ qua các loại drawing khác
+
+      const extent = inline['wp:extent']?.[0]?.$;
+      const graphicData = inline['a:graphic']?.[0]?.['a:graphicData']?.[0];
+      const uri = graphicData?.$?.uri;
+
+      // KIỂM TRA XEM LÀ CHART HAY IMAGE
+      if (uri && uri.includes('/drawingml/2006/chart')) {
+        // ---- XỬ LÝ CHART ----
+        const chartRefId = graphicData['c:chart']?.[0]?.$?.['r:id'];
+        if (chartRefId && zip) {
+          const chartPath = relationships.get(chartRefId);
+          if (chartPath) {
+            // Gọi đến chart parser chung
+            const chartData = await parseChart(zip, `word/${chartPath}`);
+            const drawingRun: Drawing = {
+              type: 'drawing',
+              drawingType: 'chart',
+              chartData: chartData,
+              width: parseInt(extent.cx),
+              height: parseInt(extent.cy)
+            };
+            paragraph.runs.push(drawingRun);
+          }
+        }
+      } else {
+        // ---- XỬ LÝ IMAGE (logic cũ) ----
+        const embedId = graphicData?.['pic:pic']?.[0]?.['pic:blipFill']?.[0]?.['a:blip']?.[0]?.$?.['r:embed'];
+        if (embedId && extent) {
+          const imageName = relationships.get(embedId) || 'unknown';
+          const imageRun: Drawing = {
+            type: 'drawing',
+            drawingType: 'image',
+            imageName: imageName,
+            width: parseInt(extent.cx),
+            height: parseInt(extent.cy),
+          };
+          paragraph.runs.push(imageRun);
+        }
+      }
     }
   }
+
   return paragraph;
 }
 
-function parseTable(tblNode: any, relationships: Map<string, string>): Table {
+async function parseTable(tblNode: any, relationships: Map<string, string>, zip?: AdmZip): Promise<Table> {
   const table: Table = { type: "table", rows: [] };
   const tableRowsXml = tblNode["w:tr"] || [];
 
@@ -118,7 +160,7 @@ function parseTable(tblNode: any, relationships: Map<string, string>): Table {
       const cell: TableCell = { content: [] };
       const paragraphsXml = tc["w:p"] || [];
       for (const p of paragraphsXml) {
-        cell.content.push(parseParagraph(p, relationships));
+        cell.content.push(await parseParagraph(p, relationships, zip));
       }
       row.push(cell);
     }
@@ -127,18 +169,19 @@ function parseTable(tblNode: any, relationships: Map<string, string>): Table {
   return table;
 }
 
-function parseBlockContent(
+async function parseBlockContent(
   bodyNode: any,
-  relationships: Map<string, string>
-): (Paragraph | Table)[] {
+  relationships: Map<string, string>,
+  zip?: AdmZip
+): Promise<(Paragraph | Table)[]> {
   const content: (Paragraph | Table)[] = [];
   const children = bodyNode?.$$ || []; // $$ để lấy tất cả các node con
 
   for (const element of children) {
     if (element["#name"] === "w:p") {
-      content.push(parseParagraph(element, relationships));
+      content.push(await parseParagraph(element, relationships, zip));
     } else if (element["#name"] === "w:tbl") {
-      content.push(parseTable(element, relationships));
+      content.push(await parseTable(element, relationships, zip));
     }
   }
   return content;
@@ -197,7 +240,7 @@ export async function parseWordWithFormat(
     }
     const bodyNode = docNode[bodyKey]?.[0];
 
-    const mainContent = parseBlockContent(bodyNode, relationships);
+    const mainContent = await parseBlockContent(bodyNode, relationships, zip);
 
     // Phân tích nội dung các file header
     const headers: HeaderFooterContent[] = [];
@@ -212,7 +255,7 @@ export async function parseWordWithFormat(
         if (headerKey) {
           headers.push({
             type: "default",
-            content: parseBlockContent(headerXml[headerKey][0], relationships),
+            content: await parseBlockContent(headerXml[headerKey][0], relationships, zip),
           });
         }
       }
@@ -231,7 +274,7 @@ export async function parseWordWithFormat(
         if (footerKey) {
           footers.push({
             type: "default",
-            content: parseBlockContent(footerXml[footerKey][0], relationships),
+            content: await parseBlockContent(footerXml[footerKey][0], relationships, zip),
           });
         }
       }
