@@ -13,6 +13,7 @@ export interface TextRun {
   font?: string;
   size?: number; // Đơn vị: point
   color?: string;
+  hyperlink?: string;
 }
 
 // define một "paragraph" - chứa một hoặc nhiều "run"

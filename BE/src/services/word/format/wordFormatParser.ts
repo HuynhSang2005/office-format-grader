@@ -10,6 +10,51 @@ import type {
   HeaderFooterContent,
 } from "../../../types/word/wordFormat.types";
 
+function parseRun(r: any, relationships: Map<string, string>, hyperlink?: string): TextRun | ImageRun | null {
+  // Xử lý image run
+  const drawing = r["w:drawing"]?.[0];
+  if (drawing) {
+    const extent = drawing["wp:inline"]?.[0]?.["wp:extent"]?.[0]?.$;
+    const embedId =
+      drawing["wp:inline"]?.[0]?.["a:graphic"]?.[0]?.["a:graphicData"]?.[0]?.[
+        "pic:pic"
+      ]?.[0]?.["pic:blipFill"]?.[0]?.["a:blip"]?.[0]?.$?.["r:embed"];
+
+    if (embedId && extent) {
+      const imageName = relationships.get(embedId) || "unknown";
+      return {
+        type: "image",
+        imageName: imageName,
+        width: parseInt(extent.cx),
+        height: parseInt(extent.cy),
+      };
+    }
+    return null;
+  }
+
+  // Xử lý text run
+  const text = r["w:t"]?.[0]?._ || r["w:t"]?.[0] || "";
+  if (!text) return null;
+
+  const properties = r["w:rPr"]?.[0] || {};
+  const run: TextRun = { type: "text", text };
+
+  if (properties["w:b"]) run.isBold = true;
+  if (properties["w:i"]) run.isItalic = true;
+  if (properties["w:u"]) run.underline = properties["w:u"][0].$.val;
+  if (properties["w:color"]) run.color = properties["w:color"][0].$.val;
+  if (properties["w:sz"])
+    run.size = parseInt(properties["w:sz"][0].$.val) / 2;
+  if (properties["w:rFonts"]) {
+    run.font =
+      properties["w:rFonts"][0].$.ascii ||
+      properties["w:rFonts"][0].$.hAnsi;
+  }
+  if (hyperlink) run.hyperlink = hyperlink;
+
+  return run;
+}
+
 function parseParagraph(
   pNode: any,
   relationships: Map<string, string>
@@ -53,44 +98,8 @@ function parseParagraph(
 
   const runsXml = pNode["w:r"] || [];
   for (const r of runsXml) {
-    // check là có phải là drawing không
-    const drawing = r["w:drawing"]?.[0];
-
-    if (drawing) {
-      const extent = drawing["wp:inline"]?.[0]?.["wp:extent"]?.[0]?.$;
-      const embedId =
-        drawing["wp:inline"]?.[0]?.["a:graphic"]?.[0]?.["a:graphicData"]?.[0]?.[
-          "pic:pic"
-        ]?.[0]?.["pic:blipFill"]?.[0]?.["a:blip"]?.[0]?.$?.["r:embed"];
-
-      if (embedId && extent) {
-        const imageName = relationships.get(embedId) || "unknown";
-        const imageRun: ImageRun = {
-          type: "image",
-          imageName: imageName,
-          width: parseInt(extent.cx),
-          height: parseInt(extent.cy),
-        };
-        paragraph.runs.push(imageRun);
-      }
-    } else {
-      const text = r["w:t"]?.[0]?._ || r["w:t"]?.[0] || "";
-      if (!text) continue;
-
-      const properties = r["w:rPr"]?.[0] || {};
-      const run: TextRun = { type: "text", text };
-
-      if (properties["w:b"]) run.isBold = true;
-      if (properties["w:i"]) run.isItalic = true;
-      if (properties["w:u"]) run.underline = properties["w:u"][0].$.val;
-      if (properties["w:color"]) run.color = properties["w:color"][0].$.val;
-      if (properties["w:sz"])
-        run.size = parseInt(properties["w:sz"][0].$.val) / 2;
-      if (properties["w:rFonts"]) {
-        run.font =
-          properties["w:rFonts"][0].$.ascii ||
-          properties["w:rFonts"][0].$.hAnsi;
-      }
+    const run = parseRun(r, relationships);
+    if (run) {
       paragraph.runs.push(run);
     }
   }

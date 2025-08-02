@@ -33,7 +33,12 @@ aiRoutes.post('/ai-checker', async (c) => {
     await fs.writeFile(submissionPath, submissionBuffer);
 
     // 2. Dùng các parser để lấy dữ liệu thô, chi tiết
-    const rubricTextData = await parseWordContentOnly(rubricPath);
+    let rubricTextData;
+    try {
+      rubricTextData = await parseWordContentOnly(rubricPath);
+    } catch (err: any) {
+      return errorResponse(c, "Không thể phân tích file Word: " + (err.message || err), 400);
+    }
 
     let submissionRawData;
     const submissionExt = path.extname(submissionFile.filename).toLowerCase();

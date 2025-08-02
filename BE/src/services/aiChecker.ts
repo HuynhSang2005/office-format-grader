@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // 1. Khởi tạo model với API key từ file .env
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" });
+const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite", generationConfig: { temperature: 0 } });
 
 // 2. prompt chi tiết
 const promptTemplate = `
@@ -16,12 +16,13 @@ Hãy thực hiện các yêu cầu sau:
 1.  Duyệt qua từng mục trong [TIÊU CHÍ CHẤM ĐIỂM].
 2.  Đối chiếu từng tiêu chí với thông tin có trong [DỮ LIỆU BÀI NỘP DẠNG JSON].
 3.  Cho điểm cho từng tiêu chí một cách hợp lý và đưa ra một lời giải thích ngắn gọn, súc tích tại sao lại cho điểm như vậy.
+4.  **Tổng điểm tối đa (totalMaxScore) luôn là 10. Hãy phân bổ điểm cho các tiêu chí sao cho tổng maxScore của tất cả tiêu chí đúng bằng 10.**
 
 QUAN TRỌNG: Vui lòng trả về kết quả dưới dạng một đối tượng JSON duy nhất, nằm trong một khối mã markdown (\`\`\`json ... \`\`\`). Không có bất kỳ văn bản giải thích nào khác bên ngoài khối mã JSON. Cấu trúc JSON phải như sau:
 
 {
   "totalAchievedScore": <tổng điểm đạt được>,
-  "totalMaxScore": <tổng điểm tối đa>,
+  "totalMaxScore": 10,
   "details": [
     {
       "criterion": "<tên tiêu chí>",
