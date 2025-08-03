@@ -133,7 +133,7 @@ export function createSubmissionSummary(
         };
     });
 
-    // Định dạng ngày giờ Việt Nam (Asia/Ho_Chi_Minh)
+    // format ngày giờ Việt Nam (Asia/Ho_Chi_Minh)
     const submittedAt = DateTime.now().setZone('Asia/Ho_Chi_Minh').toFormat('dd/MM/yyyy HH:mm:ss');
 
     return {
