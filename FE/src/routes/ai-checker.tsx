@@ -17,16 +17,31 @@ function AICheckerPage() {
   const [rubricFile, setRubricFile] = useState<UploadedFile | null>(null);
   const [submissionFile, setSubmissionFile] = useState<UploadedFile | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: gradeSubmission, 
-  });
-
-  const handleFileDrop = async (files: File[], fileSetter: React.Dispatch<React.SetStateAction<UploadedFile | null>>) => {
+  // Xử lý upload file và chuyển sang base64
+  const handleFileDrop = async (
+    files: File[],
+    fileSetter: React.Dispatch<React.SetStateAction<UploadedFile | null>>
+  ) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    try {
+      const base64Content = await encodeFileToBase64(file);
+      fileSetter({
+        filename: file.name,
+        content: base64Content,
+      });
+    } catch (error) {
+      alert("Lỗi mã hóa file: " + (error as Error).message);
+    }
   };
+
+  // Gửi request chấm điểm
+  const mutation = useMutation({
+    mutationFn: gradeSubmission,
+  });
 
   const handleSubmit = () => {
     if (!rubricFile || !submissionFile) {
-      // Có thể dùng notification của Mantine để thông báo lỗi này
       alert("Vui lòng tải lên cả hai file!");
       return;
     }
@@ -43,6 +58,27 @@ function AICheckerPage() {
       </div>
 
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <Stack>
+          <Title order={4}>1. Tải lên file Tiêu chí (.docx)</Title>
+          <FileDropzone
+            onDrop={(files) => handleFileDrop(files, setRubricFile)}
+            accept={{
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            }}
+          />
+          {rubricFile && <Text c="green" fw={500}>Đã chọn: {rubricFile.filename}</Text>}
+        </Stack>
+        <Stack>
+          <Title order={4}>2. Tải lên file Bài nộp (.pptx, .docx)</Title>
+          <FileDropzone
+            onDrop={(files) => handleFileDrop(files, setSubmissionFile)}
+            accept={{
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            }}
+          />
+          {submissionFile && <Text c="green" fw={500}>Đã chọn: {submissionFile.filename}</Text>}
+        </Stack>
       </SimpleGrid>
 
       <Button size="lg" fullWidth onClick={handleSubmit} loading={mutation.isPending}>
@@ -52,12 +88,12 @@ function AICheckerPage() {
       {/* Hiển thị lỗi nếu có */}
       {mutation.isError && (
         <Alert icon={<AlertCircle size={16} />} title="Có lỗi xảy ra!" color="red" withCloseButton onClose={() => mutation.reset()}>
-          {mutation.error.message}
+          {(mutation.error as Error).message}
         </Alert>
       )}
 
       {/* Hiển thị kết quả khi thành công */}
-      {mutation.isSuccess && <ResultsTable result={mutation.data} />}
+      {mutation.isSuccess && <ResultsTable result={mutation.data as GradingResult} />}
     </Stack>
   );
 }
