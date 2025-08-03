@@ -1,5 +1,5 @@
 import { Group, Text, rem } from '@mantine/core';
-import { Dropzone, IMAGE_MIME_TYPE } from '@mantine/dropzone';
+import { Dropzone } from '@mantine/dropzone';
 import type { DropzoneProps } from '@mantine/dropzone';
 import { Upload, X, FileText } from 'lucide-react';
 
