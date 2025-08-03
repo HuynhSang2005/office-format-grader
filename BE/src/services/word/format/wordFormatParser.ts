@@ -100,51 +100,33 @@ async function parseParagraph(
 
   const runsXml = pNode["w:r"] || [];
   for (const r of runsXml) {
-    const drawing = r['w:drawing']?.[0];
-
-    if (drawing) {
-      const inline = drawing['wp:inline']?.[0];
-      if (!inline) continue; // Bỏ qua các loại drawing khác
-
-      const extent = inline['wp:extent']?.[0]?.$;
-      const graphicData = inline['a:graphic']?.[0]?.['a:graphicData']?.[0];
-      const uri = graphicData?.$?.uri;
-
-      // KIỂM TRA XEM LÀ CHART HAY IMAGE
-      if (uri && uri.includes('/drawingml/2006/chart')) {
-        // ---- XỬ LÝ CHART ----
-        const chartRefId = graphicData['c:chart']?.[0]?.$?.['r:id'];
-        if (chartRefId && zip) {
-          const chartPath = relationships.get(chartRefId);
-          if (chartPath) {
-            // Gọi đến chart parser chung
-            const chartData = await parseChart(zip, `word/${chartPath}`);
-            const drawingRun: Drawing = {
-              type: 'drawing',
-              drawingType: 'chart',
-              chartData: chartData,
-              width: parseInt(extent.cx),
-              height: parseInt(extent.cy)
-            };
-            paragraph.runs.push(drawingRun);
-          }
-        }
-      } else {
-        // ---- XỬ LÝ IMAGE (logic cũ) ----
-        const embedId = graphicData?.['pic:pic']?.[0]?.['pic:blipFill']?.[0]?.['a:blip']?.[0]?.$?.['r:embed'];
-        if (embedId && extent) {
-          const imageName = relationships.get(embedId) || 'unknown';
-          const imageRun: Drawing = {
-            type: 'drawing',
-            drawingType: 'image',
-            imageName: imageName,
+    // Nếu là chart (drawing dạng chart) thì xử lý đặc biệt
+    const drawing = r["w:drawing"]?.[0];
+    const inline = drawing?.["wp:inline"]?.[0];
+    const graphicData = inline?.["a:graphic"]?.[0]?.["a:graphicData"]?.[0];
+    const uri = graphicData?.$?.uri;
+    if (drawing && inline && uri && uri.includes("/drawingml/2006/chart") && zip) {
+      const extent = inline["wp:extent"]?.[0]?.$;
+      const chartRefId = graphicData["c:chart"]?.[0]?.$?.["r:id"];
+      if (chartRefId) {
+        const chartPath = relationships.get(chartRefId);
+        if (chartPath && extent) {
+          const chartData = await parseChart(zip, `word/${chartPath}`);
+          const drawingRun: Drawing = {
+            type: "drawing",
+            drawingType: "chart",
+            chartData: chartData,
             width: parseInt(extent.cx),
             height: parseInt(extent.cy),
           };
-          paragraph.runs.push(imageRun);
+          paragraph.runs.push(drawingRun);
+          continue;
         }
       }
     }
+    // Còn lại: dùng parseRun cho mọi trường hợp khác (text, image, ...)
+    const run = parseRun(r, relationships);
+    if (run) paragraph.runs.push(run);
   }
 
   return paragraph;

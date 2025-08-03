@@ -41,3 +41,7 @@ export async function parseWordFile(filePath: string): Promise<ParsedWordData> {
     throw new Error('Không thể phân tích file Word.');
   }
 }
+
+export async function parseWordContent(filePath: string): Promise<{ paragraphs: string[] }> {
+  return parseWordFile(filePath);
+}

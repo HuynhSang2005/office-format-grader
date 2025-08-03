@@ -7,6 +7,10 @@ import { scanOfficeFiles } from "../services/fileScanner";
 import { successResponse, errorResponse } from "../utils/apiResponse";
 import { parseWordWithFormat } from "../services/word/format/wordFormatParser";
 import { parsePowerPointFormat } from "../services/power_point/format/powerpointFormatParser";
+import { parseExcelFile } from "../services/excel/xlsxParser";
+import { parseWordFile } from "../services/word/parsers/docxParser";
+import { parsePowerPointFile } from "../services/power_point/parsers/pptxParser";
+import { parseExcelFile as parseExcelContentOnly } from "../services/excel/xlsxParser";
 import {
   exportDetailsToExcel,
   generateExcelBuffer,
@@ -60,37 +64,62 @@ fileRoutes.post("/files/details", async (c) => {
       if (extension === ".docx") {
         parsedData = await parseWordWithFormat(tempFilePath);
       } else if (extension === ".pptx") {
-        parsedData = await parsePowerPointFormat(
-          new (
-            await import("adm-zip")
-          ).default(tempFilePath),
-          tempFilePath
-        );
+        // PowerPoint cần truyền zip object và path
+        const AdmZip = (await import("adm-zip")).default;
+        parsedData = await parsePowerPointFormat(new AdmZip(tempFilePath), tempFilePath);
+      } else if (extension === ".xlsx") {
+        parsedData = await parseExcelFile(tempFilePath);
+      } else {
+        throw new Error(`Định dạng file ${extension} không được hỗ trợ.`);
+      }
+    } else if (mode === "content") {
+      if (extension === ".docx") {
+        parsedData = await parseWordFile(tempFilePath);
+      } else if (extension === ".pptx") {
+        parsedData = await parsePowerPointFile(tempFilePath);
+      } else if (extension === ".xlsx") {
+        parsedData = await parseExcelContentOnly(tempFilePath);
       } else {
         throw new Error(`Định dạng file ${extension} không được hỗ trợ.`);
       }
     } else {
-      // mode === 'content'
-      // TODO: Thêm logic gọi các parser content-only nếu cần
-      throw new Error(
-        "Chế độ 'content' chưa được triển khai cho việc upload file."
-      );
+      throw new Error("Chế độ không hợp lệ. Chỉ hỗ trợ 'full' hoặc 'content'.");
     }
 
     // 4. Xử lý định dạng output
     if (output === "excel") {
-      const workbook = exportDetailsToExcel(parsedData, file.filename);
-      const buffer = await generateExcelBuffer(workbook);
+      if (extension === ".docx") {
+        // parsedData chắc chắn là ParsedWordData
+        const workbook = exportDetailsToExcel(parsedData as any, file.filename);
+        const buffer = await generateExcelBuffer(workbook);
 
-      c.header(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      );
-      c.header(
-        "Content-Disposition",
-        `attachment; filename="analysis-${file.filename}.xlsx"`
-      );
-      return c.body(buffer);
+        c.header(
+          "Content-Type",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        c.header(
+          "Content-Disposition",
+          `attachment; filename="analysis-${file.filename}.xlsx"`
+        );
+        return c.body(buffer);
+      } else if (extension === ".pptx") {
+        // parsedData chắc chắn là ParsedPowerPointFormatData
+        const workbook = exportDetailsToExcel(parsedData as any, file.filename);
+        const buffer = await generateExcelBuffer(workbook);
+
+        c.header(
+          "Content-Type",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        c.header(
+          "Content-Disposition",
+          `attachment; filename="analysis-${file.filename}.xlsx"`
+        );
+        return c.body(buffer);
+      } else if (extension === ".xlsx") {
+        // Chưa hỗ trợ xuất lại Excel cho file Excel
+        return errorResponse(c, "Export to Excel is not supported for Excel files.", 400);
+      }
     } else {
       // Mặc định trả về JSON
       return successResponse(c, {
