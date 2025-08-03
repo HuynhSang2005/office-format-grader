@@ -8,6 +8,7 @@ import type {
   TableCell,
   Drawing,
   HeaderFooterContent,
+  DocumentMetadata,
 } from "../../../types/word/wordFormat.types";
 import { parseChart } from "../../power_point/parsers/chartParser";
 
@@ -215,6 +216,30 @@ export async function parseWordWithFormat(
       }
     }
 
+    // ---- LOGIC MỚI: TRÍCH XUẤT METADATA ----
+    const metadata: DocumentMetadata = {};
+
+    // 1. Đọc file app.xml (số trang, số từ...)
+    const appXmlEntry = zip.getEntry("docProps/app.xml");
+    if (appXmlEntry) {
+      const appXml = await parseXmlString(appXmlEntry.getData().toString("utf-8"));
+      const props = appXml.Properties;
+      if (props?.Pages?.[0]) metadata.pageCount = parseInt(props.Pages[0]);
+      if (props?.Words?.[0]) metadata.wordCount = parseInt(props.Words[0]);
+      if (props?.Characters?.[0]) metadata.charCount = parseInt(props.Characters[0]);
+    }
+
+    // 2. Đọc file core.xml (tác giả, ngày tạo...)
+    const coreXmlEntry = zip.getEntry("docProps/core.xml");
+    if (coreXmlEntry) {
+      const coreXml = await parseXmlString(coreXmlEntry.getData().toString("utf-8"));
+      const props = coreXml['cp:coreProperties'];
+      if (props?.['dc:creator']?.[0]) metadata.author = props['dc:creator'][0];
+      if (props?.['dcterms:created']?.[0]?._) metadata.createdAt = props['dcterms:created'][0]._;
+      if (props?.['dcterms:modified']?.[0]?._) metadata.modifiedAt = props['dcterms:modified'][0]._;
+    }
+    // ------------------------------------
+
     // Phân tích nội dung chính của tài liệu
     const docXmlEntry = zip.getEntry("word/document.xml");
     if (!docXmlEntry) throw new Error("File document.xml không tồn tại...");
@@ -236,7 +261,7 @@ export async function parseWordWithFormat(
     const bodyKey = Object.keys(docNode).find(key => key.endsWith(':body'));
     if (!bodyKey) {
       // Nếu không có body thì coi như content rỗng
-      return { content: [], headers: undefined, footers: undefined };
+      return { content: [], headers: undefined, footers: undefined, metadata: Object.keys(metadata).length > 0 ? metadata : undefined };
     }
     const bodyNode = docNode[bodyKey]?.[0];
 
@@ -284,6 +309,7 @@ export async function parseWordWithFormat(
       content: mainContent,
       headers: headers.length > 0 ? headers : undefined,
       footers: footers.length > 0 ? footers : undefined,
+      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     };
   } catch (error) {
     console.error(`Lỗi khi phân tích file Word tại ${filePath}:`, error);

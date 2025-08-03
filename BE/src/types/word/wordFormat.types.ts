@@ -51,6 +51,7 @@ export interface ParsedWordData {
   content: (Paragraph | Table)[];
   headers?: HeaderFooterContent[]; 
   footers?: HeaderFooterContent[];
+  metadata?: DocumentMetadata;
 }
 
 // Định nghĩa một "drawing" - chứa hình ảnh trong docx
@@ -67,4 +68,13 @@ export interface Drawing {
 export interface HeaderFooterContent {
     type: 'default' | 'first' | 'even';
     content: (Paragraph | Table)[];
+}
+
+export interface DocumentMetadata {
+  author?: string;
+  createdAt?: string;
+  modifiedAt?: string;
+  pageCount?: number;
+  wordCount?: number;
+  charCount?: number;
 }
