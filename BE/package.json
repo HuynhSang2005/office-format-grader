@@ -12,10 +12,13 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@types/adm-zip": "^0.5.7",
+    "@types/luxon": "^3.7.1",
     "@types/xml2js": "^0.4.14",
     "adm-zip": "^0.5.16",
     "dotenv": "^17.2.1",
+    "exceljs": "^4.4.0",
     "hono": "^4.8.10",
+    "luxon": "^3.7.1",
     "mammoth": "^1.9.1",
     "xlsx": "^0.18.5",
     "xml2js": "^0.6.2"
