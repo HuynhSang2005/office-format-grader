@@ -5,7 +5,7 @@
 </p>
 
 <h1 align="center">
-  Office Format Analyzer API
+  Office Format Grader AI API
 </h1>
 
 <p align="center"><strong>Phân tích và chấm điểm file Microsoft Office bằng GenAI • Xây dựng bằng Bun.js + Hono</strong></p>
