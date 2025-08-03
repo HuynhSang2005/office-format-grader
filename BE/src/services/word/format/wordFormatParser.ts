@@ -9,6 +9,7 @@ import type {
   Drawing,
   HeaderFooterContent,
   DocumentMetadata,
+  TocItem,
 } from "../../../types/word/wordFormat.types";
 import { parseChart } from "../../power_point/parsers/chartParser";
 
@@ -170,18 +171,46 @@ async function parseTable(tblNode: any, relationships: Map<string, string>, zip?
   return table;
 }
 
+// Lưu ý: Hàm này cần là async vì parseParagraph và parseTable đều là async
+
 async function parseBlockContent(
   bodyNode: any,
   relationships: Map<string, string>,
   zip?: AdmZip
 ): Promise<(Paragraph | Table)[]> {
   const content: (Paragraph | Table)[] = [];
-  const children = bodyNode?.$$ || []; // $$ để lấy tất cả các node con
+  const children = bodyNode?.$$ || [];
 
-  for (const element of children) {
-    if (element["#name"] === "w:p") {
-      content.push(await parseParagraph(element, relationships, zip));
-    } else if (element["#name"] === "w:tbl") {
+  for (let i = 0; i < children.length; i++) {
+    const element = children[i];
+
+    if (element['#name'] === 'w:p') {
+      const paragraph = await parseParagraph(element, relationships, zip);
+
+      // KIỂM TRA XEM ĐOẠN VĂN NÀY CÓ CHỨA ẢNH KHÔNG
+      const imageRun = paragraph.runs.find(
+        r => r.type === 'drawing' && (r as Drawing).drawingType === 'image'
+      ) as Drawing | undefined;
+
+      if (imageRun) {
+        // Nếu có, nhìn sang element tiếp theo
+        const nextElement = children[i + 1];
+        if (nextElement && nextElement['#name'] === 'w:p') {
+          const nextParagraph = await parseParagraph(nextElement, relationships, zip);
+          // Nếu đoạn văn tiếp theo có style là 'Caption'
+          if (nextParagraph.styleName === 'Caption') {
+            // Gán text của nó làm chú thích cho ảnh, chỉ lấy các TextRun
+            imageRun.caption = nextParagraph.runs
+              .filter(r => r.type === 'text')
+              .map(r => (r as TextRun).text)
+              .join('');
+            i++;
+          }
+        }
+      }
+      content.push(paragraph);
+
+    } else if (element['#name'] === 'w:tbl') {
       content.push(await parseTable(element, relationships, zip));
     }
   }
@@ -216,7 +245,7 @@ export async function parseWordWithFormat(
       }
     }
 
-    // ---- LOGIC MỚI: TRÍCH XUẤT METADATA ----
+    // lấy metadata từ app.xml và core.xml
     const metadata: DocumentMetadata = {};
 
     // 1. Đọc file app.xml (số trang, số từ...)
@@ -238,7 +267,6 @@ export async function parseWordWithFormat(
       if (props?.['dcterms:created']?.[0]?._) metadata.createdAt = props['dcterms:created'][0]._;
       if (props?.['dcterms:modified']?.[0]?._) metadata.modifiedAt = props['dcterms:modified'][0]._;
     }
-    // ------------------------------------
 
     // Phân tích nội dung chính của tài liệu
     const docXmlEntry = zip.getEntry("word/document.xml");
@@ -305,11 +333,27 @@ export async function parseWordWithFormat(
       }
     }
 
+    // Phân tích mục lục (Table of Contents)
+    const toc: TocItem[] = [];
+    for (const block of mainContent) {
+      // Mục lục chỉ nằm trong các đoạn văn
+      if ('runs' in block && typeof block.styleName === 'string' && block.styleName.startsWith('TOC')) {
+        toc.push({
+          level: parseInt(block.styleName.replace('TOC', '')),
+          text: block.runs
+            .filter(r => r.type === 'text')
+            .map(r => (r as TextRun).text)
+            .join(''),
+        });
+      }
+    }
+
     return {
       content: mainContent,
       headers: headers.length > 0 ? headers : undefined,
       footers: footers.length > 0 ? footers : undefined,
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+      toc: toc.length > 0 ? toc : undefined, 
     };
   } catch (error) {
     console.error(`Lỗi khi phân tích file Word tại ${filePath}:`, error);

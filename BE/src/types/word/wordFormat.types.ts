@@ -52,9 +52,10 @@ export interface ParsedWordData {
   headers?: HeaderFooterContent[]; 
   footers?: HeaderFooterContent[];
   metadata?: DocumentMetadata;
+  toc?: TocItem[];
 }
 
-// Định nghĩa một "drawing" - chứa hình ảnh trong docx
+// define một "drawing" - chứa hình ảnh trong docx
 export interface Drawing {
   type: 'drawing';
   drawingType: 'image' | 'chart';
@@ -62,9 +63,10 @@ export interface Drawing {
   width?: number;
   height?: number;
   chartData?: ChartData;
+  caption?: string;
 }
 
-// Định nghĩa các thông tin về header và footer
+// define các thông tin về header và footer
 export interface HeaderFooterContent {
     type: 'default' | 'first' | 'even';
     content: (Paragraph | Table)[];
@@ -77,4 +79,10 @@ export interface DocumentMetadata {
   pageCount?: number;
   wordCount?: number;
   charCount?: number;
+}
+
+//define các mục trong bảng mục lục (Table of Contents)
+export interface TocItem {
+  level: number;
+  text: string;
 }
