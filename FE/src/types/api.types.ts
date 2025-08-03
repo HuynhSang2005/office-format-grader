@@ -1,5 +1,3 @@
-// src/types/api.types.ts
-
 export interface UploadedFile {
   filename: string;
   content: string; 

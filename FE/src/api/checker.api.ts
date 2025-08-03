@@ -5,7 +5,12 @@ interface GradePayload {
   submissionFile: UploadedFile;
 }
 
-export async function gradeSubmission(payload: GradePayload): Promise<GradingResult> {
+export interface GradeResponse {
+  gradingResult: GradingResult;
+  submissionDetails: any;
+}
+
+export async function gradeSubmission(payload: GradePayload): Promise<GradeResponse> {
   const response = await fetch('http://localhost:3000/api/ai-checker', {
     method: 'POST',
     headers: {

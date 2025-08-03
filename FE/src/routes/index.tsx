@@ -17,7 +17,7 @@ import { analyzeFile } from '../api/analyzer.api';
 import { encodeFileToBase64 } from '../lib/fileUtils';
 import type { UploadedFile } from '../types/api.types';
 import { FileDropzone } from '../components/FileDropzone';
-import { AlertCircle, CheckCircle, FileText, FileDown } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, FileDown, X } from 'lucide-react';
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -82,9 +82,20 @@ function HomePage() {
               }}
             />
             {analysisFile && (
-              <Text c="green" fw={500} ta="center">
-                Đã chọn: {analysisFile.filename}
-              </Text>
+              <Group justify="center" gap="xs">
+                <Text c="green" fw={500} ta="center">
+                  Đã chọn: {analysisFile.filename}
+                </Text>
+                <Button
+                  size="xs"
+                  color="red"
+                  variant="subtle"
+                  onClick={() => setAnalysisFile(null)}
+                  leftSection={<X size={16} />}
+                >
+                  Hủy
+                </Button>
+              </Group>
             )}
 
             <Group grow>

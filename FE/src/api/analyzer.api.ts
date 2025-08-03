@@ -55,4 +55,14 @@ export async function analyzeFile({ file, mode, output }: { file: UploadedFile, 
         const errorData = await response.json();
         throw new Error(errorData.error?.message || 'Lỗi khi phân tích file.');
     }
+
+    if (output === 'excel') {
+        // Nếu là excel thì tải file về, không trả về dữ liệu
+        await downloadFile(response, file.filename);
+        return { message: `File ${file.filename}.xlsx đã được tải về.` };
+    } else {
+        // Nếu là json thì trả về dữ liệu để hiển thị
+        const data = await response.json();
+        return data.data.details ?? data.data; // tuỳ theo BE trả về
+    }
 }

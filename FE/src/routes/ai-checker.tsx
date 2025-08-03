@@ -1,13 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
-import { Title, Text, Stack, SimpleGrid, Button, Alert } from '@mantine/core';
+import { Title, Text, Stack, SimpleGrid, Button, Alert, Group } from '@mantine/core';
 import { FileDropzone } from '../components/FileDropzone';
 import { ResultsTable } from '../components/ResultsTable';
 import { encodeFileToBase64 } from '../lib/fileUtils';
 import type { UploadedFile, GradingResult } from '../types/api.types';
 import { gradeSubmission } from '../api/checker.api';
-import { AlertCircle } from 'lucide-react';
+import type { GradeResponse } from '../api/checker.api'; 
+import { AlertCircle, X } from 'lucide-react';
 
 export const Route = createFileRoute('/ai-checker')({
   component: AICheckerPage,
@@ -37,7 +38,7 @@ function AICheckerPage() {
   }, []);
 
   // Cung cấp kiểu dữ liệu cho useMutation để tăng cường type-safety
-  const mutation = useMutation<GradingResult, Error, { rubricFile: UploadedFile; submissionFile: UploadedFile }>({
+  const mutation = useMutation<GradeResponse, Error, { rubricFile: UploadedFile; submissionFile: UploadedFile }>({
     mutationFn: gradeSubmission,
   });
 
@@ -70,7 +71,22 @@ function AICheckerPage() {
             onDrop={(files) => handleFileDrop(files, setRubricFile)}
             accept={{ 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'] }}
           />
-          {rubricFile && <Text c="green" fw={500} ta="center">Đã chọn: {rubricFile.filename}</Text>}
+          {rubricFile && (
+            <Group justify="center" gap="xs">
+              <Text c="green" fw={500} ta="center">
+                Đã chọn: {rubricFile.filename}
+              </Text>
+              <Button
+                size="xs"
+                color="red"
+                variant="subtle"
+                onClick={() => setRubricFile(null)}
+                leftSection={<X size={16} />}
+              >
+                Hủy
+              </Button>
+            </Group>
+          )}
         </Stack>
         <Stack>
           <Title order={4} ta="center">2. Tải lên file Bài nộp (.pptx, .docx)</Title>
@@ -81,7 +97,22 @@ function AICheckerPage() {
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
             }}
           />
-          {submissionFile && <Text c="green" fw={500} ta="center">Đã chọn: {submissionFile.filename}</Text>}
+          {submissionFile && (
+            <Group justify="center" gap="xs">
+              <Text c="green" fw={500} ta="center">
+                Đã chọn: {submissionFile.filename}
+              </Text>
+              <Button
+                size="xs"
+                color="red"
+                variant="subtle"
+                onClick={() => setSubmissionFile(null)}
+                leftSection={<X size={16} />}
+              >
+                Hủy
+              </Button>
+            </Group>
+          )}
         </Stack>
       </SimpleGrid>
 
@@ -104,7 +135,9 @@ function AICheckerPage() {
       )}
 
       {/* Hiển thị kết quả khi thành công */}
-      {mutation.isSuccess && <ResultsTable result={mutation.data} />}
+      {mutation.isSuccess && (
+        <ResultsTable result={mutation.data.gradingResult} />
+      )}
     </Stack>
   );
 }
