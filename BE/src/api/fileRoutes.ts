@@ -1,16 +1,16 @@
 import { Hono } from "hono";
 import path from "node:path";
+import os from "os";
+import { promises as fs } from "fs";
 
 import { scanOfficeFiles } from "../services/fileScanner";
-import { parseExcelFile } from "../services/excel/xlsxParser";
-import { parseWordFile } from "../services/word/parsers/docxParser";
-import { parsePowerPointFile } from "../services/power_point/parsers/pptxParser";
 import { successResponse, errorResponse } from "../utils/apiResponse";
 import { parseWordWithFormat } from "../services/word/format/wordFormatParser";
 import { parsePowerPointFormat } from "../services/power_point/format/powerpointFormatParser";
-import { exportDetailsToExcel, generateExcelBuffer } from "../shared/services/excelExporter";
-import type { ParsedPowerPointFormatData } from "../types/power_point/powerpointFormat.types";
-import type { ParsedWordData } from "../types/word/wordFormat.types";
+import {
+  exportDetailsToExcel,
+  generateExcelBuffer,
+} from "../shared/services/excelExporter";
 
 const fileRoutes = new Hono();
 
@@ -31,95 +31,81 @@ fileRoutes.get("/files", async (c) => {
   }
 });
 
-fileRoutes.get('/files/details', async (c) => {
-    const filename = c.req.query('filename');
-    const mode = c.req.query('mode') || 'content';
-    const output = c.req.query('output');
+/**
+ * Route này nhận một file được upload (mã hóa base64),
+ * phân tích nó ở chế độ 'full' hoặc 'content',
+ * và trả về kết quả dưới dạng JSON hoặc file Excel.
+ */
+fileRoutes.post("/files/details", async (c) => {
+  const { mode = "full", output } = c.req.query();
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "office-analyzer-"));
 
-    if (!filename) {
-        return errorResponse(c, 'Tên file là bắt buộc.', 400);
+  try {
+    // 1. Nhận payload chứa file từ client
+    const { file } = await c.req.json();
+    if (!file || !file.filename || !file.content) {
+      return errorResponse(c, "Dữ liệu file tải lên không hợp lệ.", 400);
     }
 
-    const safeBaseDir = path.resolve('example');
-    const safeFilePath = path.join(safeBaseDir, filename);
+    // 2. Giải mã Base64 và lưu vào file tạm
+    const fileBuffer = Buffer.from(file.content, "base64");
+    const tempFilePath = path.join(tempDir, file.filename);
+    await fs.writeFile(tempFilePath, fileBuffer);
 
-    if (!safeFilePath.startsWith(safeBaseDir)) {
-        return errorResponse(c, 'Truy cập file không hợp lệ.', 403);
+    // 3. Gọi parser phù hợp dựa trên đuôi file
+    let parsedData;
+    const extension = path.extname(file.filename).toLowerCase();
+
+    if (mode === "full") {
+      if (extension === ".docx") {
+        parsedData = await parseWordWithFormat(tempFilePath);
+      } else if (extension === ".pptx") {
+        parsedData = await parsePowerPointFormat(
+          new (
+            await import("adm-zip")
+          ).default(tempFilePath),
+          tempFilePath
+        );
+      } else {
+        throw new Error(`Định dạng file ${extension} không được hỗ trợ.`);
+      }
+    } else {
+      // mode === 'content'
+      // TODO: Thêm logic gọi các parser content-only nếu cần
+      throw new Error(
+        "Chế độ 'content' chưa được triển khai cho việc upload file."
+      );
     }
 
-    const extension = path.extname(filename).toLowerCase();
+    // 4. Xử lý định dạng output
+    if (output === "excel") {
+      const workbook = exportDetailsToExcel(parsedData, file.filename);
+      const buffer = await generateExcelBuffer(workbook);
 
-    try {
-        let parsedData;
-        if (mode === 'full') {
-            switch (extension) {
-                case '.docx':
-                    parsedData = await parseWordWithFormat(safeFilePath);
-                    break;
-                case '.pptx':
-                    parsedData = await parsePowerPointFormat(
-                        new (await import('adm-zip')).default(safeFilePath),
-                        safeFilePath
-                    );
-                    break;
-                case '.xlsx':
-                    return errorResponse(c, `Chức năng phân tích đầy đủ cho ${extension} chưa được cài đặt.`, 501);
-                default:
-                    return errorResponse(c, 'Định dạng file không được hỗ trợ cho chế độ full.', 400);
-            }
-        } else if (mode === 'content') {
-            switch (extension) {
-                case '.xlsx':
-                    parsedData = await parseExcelFile(safeFilePath);
-                    break;
-                case '.docx':
-                    parsedData = await parseWordFile(safeFilePath);
-                    break;
-                case '.pptx':
-                    parsedData = await parsePowerPointFile(safeFilePath);
-                    break;
-                default:
-                    return errorResponse(c, 'Định dạng file không được hỗ trợ.', 400);
-            }
-        } else {
-            return errorResponse(c, `Chế độ (mode) '${mode}' không hợp lệ.`, 400);
-        }
-
-        // Nếu yêu cầu xuất Excel, chỉ hỗ trợ cho Word hoặc PowerPoint đã phân tích chi tiết (mode=full)
-        if (output === 'excel') {
-            console.log("Đang tạo file Excel...");
-            // Chỉ hỗ trợ xuất Excel cho Word hoặc PowerPoint đã phân tích chi tiết (mode=full)
-            if (
-                (mode === 'full' && (extension === '.docx' || extension === '.pptx')) &&
-                (parsedData && (
-                    ('content' in parsedData && Array.isArray(parsedData.content)) || // Word
-                    ('slides' in parsedData && Array.isArray(parsedData.slides))     // PowerPoint
-                ))
-            ) {
-                const workbook = exportDetailsToExcel(parsedData as ParsedWordData | ParsedPowerPointFormatData, filename);
-                const buffer = await generateExcelBuffer(workbook);
-
-                c.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-                c.header('Content-Disposition', `attachment; filename="analysis-${filename}.xlsx"`);
-                return c.body(buffer);
-            } else {
-                return errorResponse(
-                    c,
-                    'Excel export is only supported for Word (.docx) or PowerPoint (.pptx) files in full mode.',
-                    400
-                );
-            }
-        }
-
-        // Nếu không có output=excel, trả về JSON như cũ
-        return successResponse(c, { filename, mode, details: parsedData });
-
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return errorResponse(c, `File '${filename}' không tồn tại.`, 404);
-        }
-        return errorResponse(c, error.message || 'Lỗi máy chủ nội bộ.', 500);
+      c.header(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      c.header(
+        "Content-Disposition",
+        `attachment; filename="analysis-${file.filename}.xlsx"`
+      );
+      return c.body(buffer);
+    } else {
+      // Mặc định trả về JSON
+      return successResponse(c, {
+        filename: file.filename,
+        mode,
+        details: parsedData,
+      });
     }
+  } catch (error: any) {
+    return errorResponse(c, error.message, 500);
+  } finally {
+    // 5. Luôn luôn dọn dẹp thư mục tạm sau khi xử lý xong
+    await fs.rm(tempDir, { recursive: true, force: true });
+    console.log(`Đã dọn dẹp thư mục tạm: ${tempDir}`);
+  }
 });
 
 export default fileRoutes;
