@@ -105,6 +105,18 @@ function summarizePptx(rawPptx: ParsedPowerPointFormatData) {
     };
 }
 
+function extractStudentInfo(filename: string) {
+    // Ví dụ: 2112345-NguyenVanA-BaiThietKePowerPoint.pptx
+    //        2112345-NguyenVanA-BaiTapWord.docx
+    // Tách theo dấu gạch ngang
+    const base = filename ? filename.split('.')[0] : '';
+    const parts = base ? base.split('-') : [];
+    return {
+        id: parts[0] || 'Unknown',
+        name: parts[1] ? parts[1].replace(/_/g, ' ') : 'Unknown'
+    };
+}
+
 /**
  * Hàm chính để tạo đối tượng submission cuối cùng.
  */
@@ -112,10 +124,8 @@ export function createSubmissionSummary(
     submissionFiles: { filename: string, type: 'docx' | 'pptx', rawData: any }[],
     rubricFile: { filename: string, rawData: any }
 ) {
-    const studentInfo = { // Giả định lấy từ filename hoặc một nguồn khác
-        id: submissionFiles[0]?.filename.split('_')[0] || 'Unknown',
-        name: submissionFiles[0]?.filename.split('_')[1] || 'Unknown',
-    };
+    // Lấy thông tin sinh viên từ tên file đầu tiên
+    const studentInfo = extractStudentInfo(submissionFiles[0]?.filename || '');
 
     const summarizedFiles = submissionFiles.map(file => {
         let format;
@@ -138,7 +148,7 @@ export function createSubmissionSummary(
 
     return {
         submission: {
-            filename: "submission.zip", // Giả định
+            filename: submissionFiles[0]?.filename || "Unknown",
             submittedAt,
             student: studentInfo,
             files: summarizedFiles,
