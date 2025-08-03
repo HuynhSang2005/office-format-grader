@@ -8,7 +8,7 @@
 </p>
 
 <h1 align="center">
-  Office Format Analyzer 📄 ➜ 🤖
+  Office Format Grader AI 📄 ➜ 🤖
 </h1>
 
 <p align="center">
