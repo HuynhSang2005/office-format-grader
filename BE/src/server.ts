@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import fileRoutes from './api/fileRoutes';
 import aiRoutes from './api/aiRoutes';
+import { cors } from 'hono/cors';
 
 const app = new Hono();
 
@@ -10,6 +11,8 @@ app.get('/', (c) => {
     status: 'ok'
   });
 });
+
+app.use('/*', cors());
 
 app.route('/api', fileRoutes);
 app.route('/api', aiRoutes);
