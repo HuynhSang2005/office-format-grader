@@ -119,3 +119,58 @@ export function exportDetailsToExcel(
 
     return workbook;
 }
+
+/**
+ * Tạo file Excel báo cáo kết quả chấm điểm của AI.
+ * @param aiResult - Đối tượng JSON chứa kết quả chấm điểm từ AI.
+ * @param submissionInfo - Thông tin về bài nộp (tên file, sinh viên...).
+ * @returns Một đối tượng Workbook của exceljs.
+ */
+export function exportGradingResultToExcel(aiResult: any, submissionInfo: any): ExcelJS.Workbook {
+    const workbook = createWorkbook();
+    const sheet = workbook.addWorksheet('Kết quả chấm điểm');
+
+    // --- Vùng Header của báo cáo ---
+    sheet.mergeCells('A1:E1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = 'BÁO CÁO CHẤM ĐIỂM BẰNG AI';
+    titleCell.font = { name: 'Calibri', size: 16, bold: true };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    sheet.addRow([]); // Dòng trống
+    sheet.addRow(['Tên file bài nộp:', submissionInfo.filename]);
+    sheet.addRow(['Sinh viên:', submissionInfo.student.name]);
+    sheet.addRow(['MSSV:', submissionInfo.student.id]);
+    sheet.addRow(['Ngày nộp:', new Date(submissionInfo.submittedAt).toLocaleString()]);
+
+    sheet.getCell('A7').value = 'Tổng điểm:';
+    sheet.getCell('B7').value = `${aiResult.totalAchievedScore} / ${aiResult.totalMaxScore}`;
+    sheet.getCell('A7').font = { bold: true };
+    sheet.getCell('B7').font = { bold: true };
+
+    sheet.addRow([]); // Dòng trống
+
+    // --- Bảng điểm chi tiết ---
+    const headerRow = sheet.addRow(['STT', 'Tiêu chí', 'Điểm tối đa', 'Điểm đạt được', 'Lý do / Nhận xét của AI']);
+    styleHeaderRow(headerRow);
+
+    aiResult.details.forEach((item: any, index: number) => {
+        sheet.addRow([
+            index + 1,
+            item.criterion,
+            item.maxScore,
+            item.achievedScore,
+            item.reason
+        ]);
+    });
+
+    // --- Định dạng cột ---
+    sheet.getColumn('A').width = 5;
+    sheet.getColumn('B').width = 40;
+    sheet.getColumn('C').width = 15;
+    sheet.getColumn('D').width = 15;
+    sheet.getColumn('E').width = 60;
+    sheet.getColumn('E').alignment = { wrapText: true }; // Tự động xuống dòng cho lý do dài
+
+    return workbook;
+}
