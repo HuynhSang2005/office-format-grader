@@ -190,5 +190,5 @@ curl -X POST -F "files=@bai.docx" -F "files=@tieuchi.docx" http://localhost:3000
 ---
 
 <p align="center">
-  <i>Xây dựng bởi <img src="https://bun.sh/logo.svg" height="16" /> Bun.js + <img src="https://raw.githubusercontent.com/honojs/hono/main/docs/images/hono-title.png" height="16" /> Hono</i>
+  <i>Built with ❤️ <img src="https://bun.sh/logo.svg" height="16" /> Bun.js + <img src="https://raw.githubusercontent.com/honojs/hono/main/docs/images/hono-title.png" height="16" /> Hono</i>
 </p>
