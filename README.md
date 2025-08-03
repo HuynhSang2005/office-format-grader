@@ -1,46 +1,104 @@
-# 🧩 Office Format Analyzer – Pet Project
+<p align="center">
+  <img src="https://bun.sh/logo.svg" width="60" />
+  &nbsp;
+  <img src="https://raw.githubusercontent.com/honojs/hono/main/docs/images/hono-title.png" height="60" />
+  &nbsp;
+  <img src="https://vitejs.dev/logo-with-shadow.png" width="70" />
+  &nbsp;
+</p>
 
-Office Format Analyzer là một dự án cá nhân với mục tiêu xây dựng một công cụ có khả năng **quét, phân tích và trích xuất nội dung cũng như định dạng** từ các file Microsoft Office như `.docx`, `.pptx`, `.xlsx`. Dự án được chia thành hai phần chính:
+<h1 align="center">
+  Office Format Analyzer 📄 ➜ 🤖
+</h1>
 
----
-
-## 🛠️ Backend API (Hoàn thành)
-
-Thư mục `BE/` chứa toàn bộ mã nguồn của API backend, được xây dựng bằng:
-
-- **Runtime:** Bun.js
-- **Framework:** Hono
-- **Ngôn ngữ:** TypeScript
-
-### Các chức năng chính:
-- Trích xuất nội dung văn bản và bảng từ file Word, PowerPoint, Excel
-- Phân tích định dạng sâu (`mode=full`) cho `.docx` và `.pptx`
-- Trả về dữ liệu có cấu trúc dạng JSON
-- Stateless và modular, dễ tích hợp về sau
-
-➡️ Xem chi tiết tại [`BE/README.md`](./BE/README.md)
+<p align="center">
+  Ứng dụng AI giúp phân tích và chấm điểm các file Microsoft Office (.docx, .pptx) một cách tự động và chính xác.
+</p>
 
 ---
 
-## 🎨 Frontend UI (Sắp triển khai)
+## 📌 Giới Thiệu
 
-Thư mục `FE/` hiện tại mới được khởi tạo. Trong tương lai, frontend sẽ được phát triển để:
+**Office Format Analyzer** là hệ thống 2 thành phần:
 
-- Tải lên và xem nội dung file trực tiếp trên giao diện web
-- Hiển thị cấu trúc và định dạng theo dạng trực quan
-- Tương tác với API hiện có từ backend
+- **Backend**: xử lý file Office, phân tích cấu trúc định dạng (text, bảng, heading, layout...), tạo output JSON chuẩn để gửi tới GenAI (Gemini 2.5).
+- **Frontend**: giao diện web giúp người dùng tải lên bài làm và rubric, nhận điểm số + nhận xét từ AI.
 
----
-
-## 🚀 Mục Tiêu Tổng Quan
-
-- 🔍 Phân tích file Office không cần cài đặt phần mềm Office
-- 💡 Học và thực hành xử lý định dạng văn bản, parsing XML
-- 🧱 Thực hành thiết kế hệ thống chia tách rõ ràng giữa BE và FE
-- 📦 Có thể phát triển thành công cụ nội bộ hoặc open-source demo
+> ✅ Mục tiêu: hỗ trợ học sinh – sinh viên nộp bài `.docx` / `.pptx` và được **chấm điểm tự động**, có phản hồi tức thì, tiết kiệm thời gian giảng viên.
 
 ---
 
-## 📌 Ghi chú
+## 🧱 Cấu Trúc Repo
 
-Dự án đang được phát triển với tinh thần học, khám phá và thử nghiệm các techstack mới. Mọi đóng góp hoặc phản hồi đều được chào đón!
+```bash
+office-format-analyzer/
+├── BE/           # Backend API - phân tích định dạng + chấm điểm AI
+├── FE/           # Frontend React - giao diện upload và hiển thị kết quả
+└── README.md     # (Bạn đang ở đây)
+````
+
+---
+
+## 🛠️ Công Nghệ Chính
+
+| Layer        | Stack                                                                 |
+| ------------ | --------------------------------------------------------------------- |
+| **Backend**  | Bun.js, Hono, TypeScript, adm-zip, xml2js, Gemini 2.5 Flash (via API) |
+| **Frontend** | React + Vite, TailwindCSS v4, Mantine UI, TanStack Router & Query     |
+| **Runtime**  | Bun.js cho cả frontend lẫn backend (siêu tốc và đồng bộ)              |
+
+---
+
+## 🚀 Cách Chạy Dự Án (Local)
+
+### 1. Backend (BE/)
+
+```bash
+cd BE/
+bun install
+bun run start
+```
+
+Truy cập API tại: `http://localhost:3000/api`
+
+---
+
+### 2. Frontend (FE/)
+
+```bash
+cd FE/
+bun install
+bun run dev
+```
+
+Mở trình duyệt tại: `http://localhost:5173`
+
+> ⚙️ Cấu hình biến môi trường `.env` cho FE:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+---
+
+## 📌 Tiến Trình Hiện Tại
+
+* ✅ Đã hoàn thiện toàn bộ API (BE): phân tích định dạng + chấm điểm với GenAI
+* ✅ FE đã dựng UI, hiển thị kết quả AI rõ ràng, dễ dùng
+* 🔄 Đang tiếp tục phát triển các tính năng nâng cao (biểu đồ điểm, drag folder...)
+
+---
+
+## 💡 Định Hướng Tương Lai
+
+* [ ] Thêm chức năng nhập nhiều bài tập, trả về bảng điểm tổng hợp
+* [ ] Cho phép chọn loại rubric nâng cao (có trọng số từng mục)
+* [ ] Tạo dashboard dành cho giáo viên
+* [ ] Triển khai full-stack lên Vercel / Railway
+
+---
+
+<p align="center">
+  <i>Dự án giáo dục bởi Nguyễn Huỳnh Sang ✨ — Tích hợp GenAI để tự động hoá chấm điểm tài liệu.</i>
+</p>
+
