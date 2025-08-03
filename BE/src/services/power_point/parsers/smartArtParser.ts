@@ -2,12 +2,6 @@ import AdmZip from "adm-zip";
 import { parseStringPromise } from "xml2js";
 import type { SmartArtData, SmartArtNode } from "../../../types/power_point/powerpointFormat.types";
 
-/**
- * Phân tích file data1.xml của SmartArt để lấy text và cấu trúc cây.
- * @param zip - Đối tượng AdmZip.
- * @param dataPath - Đường dẫn đến file data1.xml.
- * @returns Dữ liệu SmartArt đã được phân tích.
- */
 export async function parseSmartArt(zip: AdmZip, dataPath: string): Promise<SmartArtData | undefined> {
     const dataXmlRaw = zip.getEntry(dataPath)?.getData().toString("utf-8");
     if (!dataXmlRaw) return undefined;

@@ -1,4 +1,3 @@
-// Table parser for PowerPoint
 import type { TableData } from '../../../types/power_point/powerpointFormat.types';
 
 export function parseTableXml(tableElement: any): TableData {

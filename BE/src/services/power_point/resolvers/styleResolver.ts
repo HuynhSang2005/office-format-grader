@@ -1,9 +1,7 @@
 import type { ThemeData, FormattedTextRun } from "../../../types/power_point/powerpointFormat.types";
 import type { SlideLayoutData, TextStyle } from "../../../types/power_point/powerpointStyles";
 
-/**
- * "Bộ giải quyết style" cho một text run, đi ngược chuỗi kế thừa để tìm ra style cuối cùng.
- */
+
 export function resolveTextStyle(
   textRunNode: any,
   paragraphNode: any,
