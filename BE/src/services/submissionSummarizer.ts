@@ -1,7 +1,7 @@
 import type { ParsedWordData } from '../types/word/wordFormat.types';
 import type { ParsedPowerPointFormatData } from '../types/power_point/powerpointFormat.types';
+import { DateTime } from 'luxon';
 
-// Hàm helper để lấy text từ một Paragraph
 function getTextFromParagraphs(paragraphs: any[]): string[] {
     return paragraphs.map(p => p.runs.map((r: any) => r.text).join('')).filter(Boolean);
 }
@@ -133,10 +133,13 @@ export function createSubmissionSummary(
         };
     });
 
+    // Định dạng ngày giờ Việt Nam (Asia/Ho_Chi_Minh)
+    const submittedAt = DateTime.now().setZone('Asia/Ho_Chi_Minh').toFormat('dd/MM/yyyy HH:mm:ss');
+
     return {
         submission: {
             filename: "submission.zip", // Giả định
-            submittedAt: new Date().toISOString(),
+            submittedAt,
             student: studentInfo,
             files: summarizedFiles,
             rubric: {
