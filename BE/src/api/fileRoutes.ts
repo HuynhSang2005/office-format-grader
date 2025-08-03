@@ -85,7 +85,7 @@ fileRoutes.get('/files/details', async (c) => {
             return errorResponse(c, `Chế độ (mode) '${mode}' không hợp lệ.`, 400);
         }
 
-        // ---- LOGIC MỚI: KIỂM TRA OUTPUT ----
+        // Nếu yêu cầu xuất Excel, chỉ hỗ trợ cho Word hoặc PowerPoint đã phân tích chi tiết (mode=full)
         if (output === 'excel') {
             console.log("Đang tạo file Excel...");
             // Chỉ hỗ trợ xuất Excel cho Word hoặc PowerPoint đã phân tích chi tiết (mode=full)
@@ -110,7 +110,6 @@ fileRoutes.get('/files/details', async (c) => {
                 );
             }
         }
-        // ------------------------------------
 
         // Nếu không có output=excel, trả về JSON như cũ
         return successResponse(c, { filename, mode, details: parsedData });
