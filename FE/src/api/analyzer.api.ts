@@ -1,3 +1,5 @@
+import type { UploadedFile } from '../types/api.types';
+
 async function downloadFile(response: Response, filename: string) {
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
@@ -35,5 +37,22 @@ export async function getFileDetails({ filename, mode, output }: { filename: str
     } else {
         const data = await response.json();
         return data.data.details;
+    }
+}
+
+export async function analyzeFile({ file, mode, output }: { file: UploadedFile, mode: string, output: string }) {
+    const url = `http://localhost:3000/api/files/details?mode=${mode}&output=${output}`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ file }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Lỗi khi phân tích file.');
     }
 }
