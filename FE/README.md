@@ -5,7 +5,7 @@
 </p>
 
 <h1 align="center">
-  Office Format Analyzer — Frontend
+ Office Format Grader AI — Frontend
 </h1>
 
 <p align="center"><strong>Giao diện người dùng để phân tích và chấm điểm tài liệu Office với GenAI</strong></p>
