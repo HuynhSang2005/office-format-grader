@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import type { ParsedWordData } from '../../types/word/wordFormat.types';
 import type { ParsedPowerPointFormatData } from '../../types/power_point/powerpointFormat.types';
+import type { Paragraph, Table, TableCell, TextRun } from '../../types/word/wordFormat.types';
 
 // Hàm để tạo một workbook mới với các thuộc tính mặc định
 // có thể sử dụng để tạo file Excel mới.
@@ -50,7 +51,7 @@ export function exportDetailsToExcel(
 ): ExcelJS.Workbook {
     const workbook = createWorkbook();
 
-    // --- Sheet 1: Tổng quan ---
+    // --- Sheet 1: Tổng quan (giữ nguyên logic cũ) ---
     const overviewSheet = workbook.addWorksheet('Tổng quan');
     overviewSheet.addRow(['Tên File Gốc', originalFilename]);
     overviewSheet.addRow(['Thời Gian Phân Tích', new Date().toLocaleString()]);
@@ -70,52 +71,97 @@ export function exportDetailsToExcel(
     overviewSheet.getColumn(1).width = 20;
     overviewSheet.getColumn(2).width = 50;
 
-    // --- Sheet 2: Nội dung chi tiết ---
-    const detailsSheet = workbook.addWorksheet('Nội dung chi tiết');
-    if ('slides' in parsedData) { // PowerPoint
-        const headerRow = detailsSheet.addRow(['Slide #', 'Layout', 'Loại Đối Tượng', 'Tên Đối Tượng', 'Nội dung Text']);
-        styleHeaderRow(headerRow);
+    // --- Xử lý dữ liệu chi tiết tùy theo loại file ---
+    if ('slides' in parsedData) { // Dữ liệu PowerPoint
+        // === Sheet 2: Cấu trúc Slide ===
+        const slidesSheet = workbook.addWorksheet('Cấu trúc Slide');
+        const slidesHeader = slidesSheet.addRow(['Slide #', 'Layout', 'Ghi chú (Notes)', 'Hiệu ứng Transition', 'Có Âm thanh']);
+        styleHeaderRow(slidesHeader);
+        parsedData.slides.forEach(slide => {
+            slidesSheet.addRow([
+                slide.slideNumber,
+                slide.layout,
+                slide.notes,
+                slide.transition?.type,
+                slide.transition?.sound?.name,
+            ]);
+        });
+        slidesSheet.columns.forEach(c => { c.width = 25; });
 
+        // === Sheet 3: Chi tiết Text & Format ===
+        const textSheet = workbook.addWorksheet('Chi tiết Text');
+        const textHeader = textSheet.addRow(['Slide #', 'Shape ID', 'Shape Name', 'Loại Run', 'Nội dung', 'Font', 'Size', 'Bold', 'Italic', 'Color', 'Hyperlink']);
+        styleHeaderRow(textHeader);
         parsedData.slides.forEach(slide => {
             slide.shapes.forEach(shape => {
-                const type =
-                    (shape.tableData ? 'Table'
-                    : (shape.chartData ? 'Chart' : 'Shape'));
-                const textContent = Array.isArray(shape.textRuns)
-                    ? shape.textRuns
-                        .filter(r => typeof r.text === 'string')
-                        .map(r => r.text)
-                        .join('')
-                    : '';
-                detailsSheet.addRow([slide.slideNumber, slide.layout, type, shape.name, textContent]);
+                shape.textRuns.forEach(run => {
+                    textSheet.addRow([
+                        slide.slideNumber, shape.id, shape.name, 'Text',
+                        run.text, run.font, run.size, run.isBold, run.isItalic, run.color, run.hyperlink
+                    ]);
+                });
             });
         });
-    } else { // Word
-        const headerRow = detailsSheet.addRow(['Loại Block', 'Nội dung Text', 'Chi tiết Style']);
-        styleHeaderRow(headerRow);
+        textSheet.columns.forEach(c => { c.width = 20; });
+        
+    } else { // Dữ liệu Word
+        // === Sheet 2: Paragraphs & Text Runs ===
+        const contentSheet = workbook.addWorksheet('Paragraphs & Text Runs');
+        const contentHeader = contentSheet.addRow(['Block #', 'Loại Block', 'Nội dung Text', 'Style', 'Căn lề', 'Font', 'Size', 'Bold', 'Italic', 'Color', 'Hyperlink']);
+        styleHeaderRow(contentHeader);
+        parsedData.content.forEach((block, index) => {
+            if ('runs' in block) {
+                if (block.runs.length === 0) {
+                     contentSheet.addRow([index + 1, 'Paragraph', '', block.styleName, block.alignment]);
+                } else {
+                    block.runs.forEach((run, runIndex) => {
+                        if(run.type === 'text') {
+                             contentSheet.addRow([
+                                runIndex === 0 ? index + 1 : '',
+                                runIndex === 0 ? 'Paragraph' : '',
+                                run.text,
+                                runIndex === 0 ? block.styleName : '',
+                                runIndex === 0 ? block.alignment : '',
+                                run.font, run.size, run.isBold, run.isItalic, run.color, run.hyperlink
+                            ]);
+                        }
+                    });
+                }
+            }
+        });
+        contentSheet.columns.forEach(c => { c.width = 20; });
 
-        parsedData.content.forEach(block => {
-            if ('runs' in block) { // Paragraph
-                const textContent = block.runs
-                    .filter(r => r.type === 'text')
-                    .map(r => (r as any).text || '')
-                    .join('');
-                const styleDetails = JSON.stringify({ alignment: block.alignment, styleName: block.styleName });
-                detailsSheet.addRow(['Paragraph', textContent, styleDetails]);
-            } else if ('type' in block && block.type === 'table') { // Table
-                detailsSheet.addRow(['Table', `Bảng ${block.rows.length}x${block.rows[0]?.length || 0}`, '']);
+        // === Sheet 3: Tables ===
+        const tablesSheet = workbook.addWorksheet('Tables');
+        tablesSheet.addRow(['Block #', 'Row #', 'Cell #', 'Nội dung Cell']); // Header
+        parsedData.content.forEach((block, index) => {
+            if ('type' in block && block.type === 'table') {
+                // block: Table
+                block.rows.forEach((row: TableCell[], rowIndex: number) => {
+                    row.forEach((cell: TableCell, cellIndex: number) => {
+                        const cellText = cell.content
+                            .map((p: Paragraph) =>
+                                p.runs
+                                    .filter((r): r is TextRun => r.type === 'text')
+                                    .map((r: TextRun) => r.text)
+                                    .join('')
+                            )
+                            .join('\n');
+                        tablesSheet.addRow([index + 1, rowIndex + 1, cellIndex + 1, cellText]);
+                    });
+                });
             }
         });
     }
-    detailsSheet.columns.forEach(column => { column.width = 30; });
 
-    // --- Sheet 3: Tài nguyên ---
+    // --- Sheet cuối: Tài nguyên (chung cho cả 2) ---
     const resourcesSheet = workbook.addWorksheet('Tài nguyên');
     if ('mediaFiles' in parsedData) {
         const headerRow = resourcesSheet.addRow(['Loại', 'Tên File']);
         styleHeaderRow(headerRow);
         parsedData.mediaFiles?.forEach(file => resourcesSheet.addRow(['Media', file]));
     }
+    // Có thể bổ sung thêm xuất khẩu tài nguyên khác ở đây nếu cần thiết
 
     return workbook;
 }

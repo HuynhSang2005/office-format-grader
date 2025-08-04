@@ -10,6 +10,7 @@ import { parsePowerPointFormat } from '../services/power_point/format/powerpoint
 // import { parseWordFile as parseWordContentOnly } from '../services/word/parsers/docxParser';
 import { createSubmissionSummary } from '../services/submissionSummarizer';
 import { exportGradingResultToExcel, generateExcelBuffer } from '../shared/services/excelExporter';
+import { sanitizeFilename } from '../services/shared/sanitizeFilename';
 
 const aiRoutes = new Hono();
 
@@ -95,7 +96,10 @@ aiRoutes.post('/ai-checker', async (c) => {
             const buffer = await generateExcelBuffer(workbook);
 
             c.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            c.header('Content-Disposition', `attachment; filename="grading-report-${submissionFile.filename}.xlsx"`);
+            c.header(
+                'Content-Disposition',
+                `attachment; filename="${sanitizeFilename(`grading-report-${submissionFile.filename}.xlsx`)}"`
+            );
             return c.body(buffer);
         }
 

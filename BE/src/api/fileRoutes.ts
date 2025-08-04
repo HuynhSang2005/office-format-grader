@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import path from "node:path";
 import os from "os";
 import { promises as fs } from "fs";
-
+import { sanitizeFilename } from '../services/shared/sanitizeFilename'; 
 import { scanOfficeFiles } from "../services/fileScanner";
 import { successResponse, errorResponse } from "../utils/apiResponse";
 import { parseWordWithFormat } from "../services/word/format/wordFormatParser";
@@ -99,8 +99,10 @@ fileRoutes.post("/files/details", async (c) => {
         );
         c.header(
           "Content-Disposition",
-          `attachment; filename="analysis-${file.filename}.xlsx"`
+          `attachment; filename="${sanitizeFilename(`analysis-${file.filename}.xlsx`)}"`
         );
+
+        
         return c.body(buffer);
       } else if (extension === ".pptx") {
         // parsedData chắc chắn là ParsedPowerPointFormatData
@@ -113,7 +115,7 @@ fileRoutes.post("/files/details", async (c) => {
         );
         c.header(
           "Content-Disposition",
-          `attachment; filename="analysis-${file.filename}.xlsx"`
+          `attachment; filename="${sanitizeFilename(`analysis-${file.filename}.xlsx`)}"`
         );
         return c.body(buffer);
       } else if (extension === ".xlsx") {
