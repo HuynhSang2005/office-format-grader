@@ -1,3 +1,9 @@
+// Helper: find XML key flexibly (with or without prefix)
+function findXmlKey(obj: any, suffix: string): string | undefined {
+  return Object.keys(obj).find(
+    key => key.endsWith(suffix) || key.toLowerCase() === suffix.replace(':', '').toLowerCase()
+  );
+}
 import AdmZip from "adm-zip";
 import { parseXmlString } from "../../shared/xmlHelpers";
 import type {
@@ -215,15 +221,17 @@ export async function parseWordWithFormat(
       const relsXml = await parseXmlString(
         relsEntry.getData().toString("utf-8")
       );
-      for (const rel of relsXml.Relationships.Relationship) {
-        const id = rel.$.Id;
-        const target = rel.$.Target;
-        const type = rel.$.Type;
-        relationships.set(id, target);
-
-        // Tìm các tham chiếu đến header và footer
-        if (type.endsWith("/header")) headerRels.push({ id, path: target });
-        if (type.endsWith("/footer")) footerRels.push({ id, path: target });
+      const rels = relsXml.Relationships?.Relationship;
+      if (rels && Array.isArray(rels)) {
+        for (const rel of rels) {
+          const id = rel.$.Id;
+          const target = rel.$.Target;
+          const type = rel.$.Type;
+          relationships.set(id, target);
+          // Tìm các tham chiếu đến header và footer
+          if (type.endsWith("/header")) headerRels.push({ id, path: target });
+          if (type.endsWith("/footer")) footerRels.push({ id, path: target });
+        }
       }
     }
 
@@ -257,8 +265,8 @@ export async function parseWordWithFormat(
       docXmlEntry.getData().toString("utf-8")
     );
 
-    // Tìm key của document (thường là 'w:document')
-    const docKey = Object.keys(docXml).find(key => key.endsWith(':document'));
+    // Tìm key của document (có thể là 'w:document', 'document', hoặc có prefix khác)
+    const docKey = findXmlKey(docXml, ':document') || findXmlKey(docXml, 'document');
     if (!docKey) throw new Error("Không tìm thấy node document chính.");
     const docArr = docXml[docKey];
     const docNode = Array.isArray(docArr) ? docArr[0] : docArr;
@@ -267,8 +275,8 @@ export async function parseWordWithFormat(
       throw new Error("Node document chính không hợp lệ hoặc rỗng.");
     }
 
-    // Tìm key của body (thường là 'w:body')
-    const bodyKey = Object.keys(docNode).find(key => key.endsWith(':body'));
+    // Tìm key của body (có thể là 'w:body', 'body', hoặc có prefix khác)
+    const bodyKey = findXmlKey(docNode, ':body') || findXmlKey(docNode, 'body');
     if (!bodyKey) {
       // Nếu không có body thì coi như content rỗng
       return { content: [], headers: undefined, footers: undefined, metadata: Object.keys(metadata).length > 0 ? metadata : undefined };
@@ -286,7 +294,7 @@ export async function parseWordWithFormat(
           headerXmlEntry.getData().toString("utf-8")
         );
         // Tìm key header linh hoạt
-        const headerKey = Object.keys(headerXml).find(key => key.endsWith(':hdr'));
+        const headerKey = findXmlKey(headerXml, ':hdr') || findXmlKey(headerXml, 'hdr') || findXmlKey(headerXml, 'header');
         if (headerKey) {
           headers.push({
             type: "default",
@@ -305,7 +313,7 @@ export async function parseWordWithFormat(
           footerXmlEntry.getData().toString("utf-8")
         );
         // Tìm key footer linh hoạt
-        const footerKey = Object.keys(footerXml).find(key => key.endsWith(':ftr'));
+        const footerKey = findXmlKey(footerXml, ':ftr') || findXmlKey(footerXml, 'ftr') || findXmlKey(footerXml, 'footer');
         if (footerKey) {
           footers.push({
             type: "default",
