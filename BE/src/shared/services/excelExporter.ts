@@ -201,13 +201,16 @@ export function exportGradingResultToExcel(aiResult: any, submissionInfo: any): 
     styleHeaderRow(headerRow);
 
     aiResult.details.forEach((item: any, index: number) => {
-        sheet.addRow([
+        const row = sheet.addRow([
             index + 1,
             item.criterion,
             item.maxScore,
             item.achievedScore,
             item.reason
         ]);
+        // Căn giữa cho các cột điểm
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(4).alignment = { horizontal: 'center' };
     });
 
     // --- Định dạng cột ---
