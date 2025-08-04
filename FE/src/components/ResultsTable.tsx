@@ -1,16 +1,12 @@
 import { Table, Title, Paper } from '@mantine/core';
+import type { GradingResult } from '../types/api.types'; 
 
-// template data để hiển thị giao diện
-const mockData = {
-  totalAchievedScore: 8.5,
-  totalMaxScore: 10,
-  details: [
-    { criterion: 'Tên file đúng cấu trúc', maxScore: 0.5, achievedScore: 0.5, reason: 'Tên file tuân thủ đúng quy ước.' },
-    { criterion: 'Sử dụng Animation', maxScore: 1.0, achievedScore: 0.5, reason: 'Có sử dụng animation nhưng chưa đa dạng.' },
-  ]
-};
 
-export function ResultsTable({ result = mockData }) {
+export function ResultsTable({ result }: { result: GradingResult }) {
+  if (!result || !result.details) {
+    return null;
+  }
+
   const rows = result.details.map((item, index) => (
     <Table.Tr key={index}>
       <Table.Td>{item.criterion}</Table.Td>
@@ -20,7 +16,7 @@ export function ResultsTable({ result = mockData }) {
   ));
 
   return (
-    <Paper withBorder shadow="md" p="md" mt="xl" radius="md">
+    <Paper withBorder shadow="md" p="md" mt="xl" radius="md" w="100%">
         <Title order={3} mb="md">Kết Quả Chấm Điểm</Title>
         <Title order={4} c="blue">
             Tổng điểm: {result.totalAchievedScore} / {result.totalMaxScore}
