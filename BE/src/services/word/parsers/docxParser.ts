@@ -1,13 +1,7 @@
 import AdmZip from 'adm-zip';
-import { parseStringPromise } from 'xml2js';
-// Giả sử type của bạn được đặt tên là ParsedWordContentData
+import { parseXmlString } from '../../shared/xmlHelpers';
 import type { ParsedWordContentData } from '../../../types/word/word.types';
 
-/**
- * Hàm helper để trích xuất text từ một node paragraph (<w:p>).
- * @param pNode - Node XML của một đoạn văn.
- * @returns Chuỗi văn bản thuần túy.
- */
 function extractTextFromParagraphNode(pNode: any): string {
     let paragraphText = '';
     const runs = pNode['w:r'] || [];
@@ -21,12 +15,6 @@ function extractTextFromParagraphNode(pNode: any): string {
     return paragraphText;
 }
 
-/**
- * Phân tích file .docx để trích xuất toàn bộ nội dung văn bản,
- * bao gồm cả văn bản trong các bảng biểu.
- * @param filePath - Đường dẫn đến file .docx.
- * @returns - Một object chứa mảng các đoạn văn bản.
- */
 export async function parseWordFile(filePath: string): Promise<ParsedWordContentData> {
   try {
     const zip = new AdmZip(filePath);
@@ -37,18 +25,15 @@ export async function parseWordFile(filePath: string): Promise<ParsedWordContent
     }
 
     const xmlContent = docXmlEntry.getData().toString('utf-8');
-    // Thêm tùy chọn để giữ đúng thứ tự của paragraph và table
-    const parsedXml = await parseStringPromise(xmlContent, { 
-        explicitChildren: true, 
-        preserveChildrenOrder: true 
-    });
+    // SỬA LỖI: Gọi hàm helper thay vì gọi trực tiếp
+    const parsedXml = await parseXmlString(xmlContent);
 
     const bodyNode = parsedXml['w:document']?.[0]?.['w:body']?.[0];
     if (!bodyNode) {
-        return { paragraphs: [] }; // Trả về rỗng nếu không có body
+        return { paragraphs: [] };
     }
 
-    const bodyChildren = bodyNode.$$ || []; // $$ chứa tất cả các node con (p, tbl,...)
+    const bodyChildren = bodyNode.$$ || [];// $$ chứa tất cả các node con (p, tbl,...)
     const extractedParagraphs: string[] = [];
 
     for (const element of bodyChildren) {
