@@ -7,7 +7,7 @@ import os from 'os';
 import { gradeSubmissionWithAI } from '../services/aiChecker';
 import { parseWordWithFormat } from '../services/word/format/wordFormatParser';
 import { parsePowerPointFormat } from '../services/power_point/format/powerpointFormatParser';
-import { parseWordFile as parseWordContentOnly } from '../services/word/parsers/docxParser';
+// import { parseWordFile as parseWordContentOnly } from '../services/word/parsers/docxParser';
 import { createSubmissionSummary } from '../services/submissionSummarizer';
 import { exportGradingResultToExcel, generateExcelBuffer } from '../shared/services/excelExporter';
 
