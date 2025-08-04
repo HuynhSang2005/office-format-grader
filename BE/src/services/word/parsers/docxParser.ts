@@ -1,8 +1,8 @@
 import AdmZip from 'adm-zip';
 import { parseXmlString } from '../../shared/xmlHelpers';
-import type { ParsedWordData } from '../../../types/word/word.types';
+import type { ParsedWordContentData } from '../../../types/word/word.types';
 
-export async function parseWordFile(filePath: string): Promise<ParsedWordData> {
+export async function parseWordFile(filePath: string): Promise<ParsedWordContentData> {
   try {
     const zip = new AdmZip(filePath);
     // Nội dung chính của file Word nằm trong word/document.xml

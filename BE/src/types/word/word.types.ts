@@ -1,3 +1,3 @@
-export interface ParsedWordData {
+export interface ParsedWordContentData  {
   paragraphs: string[];
 }

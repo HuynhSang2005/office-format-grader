@@ -1,70 +1,80 @@
-import type { ParsedWordData } from '../types/word/wordFormat.types';
+import type { ParsedWordData, Paragraph, Table, TextRun } from '../types/word/wordFormat.types';
 import type { ParsedPowerPointFormatData } from '../types/power_point/powerpointFormat.types';
 import { DateTime } from 'luxon';
+import { isParagraph, isTable, isTextRun } from '../types/word/guards/wordGuards';
 
-function getTextFromParagraphs(paragraphs: any[]): string[] {
-    return paragraphs.map(p => p.runs.map((r: any) => r.text).join('')).filter(Boolean);
+function getTextFromParagraphs(paragraphs: Paragraph[]): string[] {
+    return paragraphs.map(
+        p => p.runs.filter(isTextRun).map(r => r.text).join('')
+    ).filter(Boolean);
 }
 
 /**
  * Tóm tắt dữ liệu chi tiết từ trình phân tích Word.
  */
 function summarizeDocx(rawDocx: ParsedWordData) {
-
     const headings = rawDocx.content
-        .filter((block: any) => block.styleName?.startsWith('Heading'))
-        .map((block: any) => ({
-            level: parseInt(block.styleName.replace('Heading', '')),
-            text: block.runs.map((r: any) => r.text).join(''),
+        .filter(isParagraph)
+        .filter(block => !!block.styleName?.startsWith('Heading'))
+        .map((block) => ({
+            level: parseInt(block.styleName!.replace('Heading', ''), 10),
+            text: block.runs.filter(isTextRun).map(r => r.text).join(''),
         }));
 
     const plainParagraphs = rawDocx.content
-        .filter((block: any) => !block.styleName) // Chỉ lấy các đoạn văn thường
-        .map((block: any) => ({
-            text: block.runs.map((r: any) => r.text).join(''),
-            // Lấy style của run đầu tiên làm đại diện
-            style: {
-                font: block.runs[0]?.font,
-                size: block.runs[0]?.size,
-                bold: block.runs[0]?.isBold,
-                italic: block.runs[0]?.isItalic,
-                color: block.runs[0]?.color,
-                alignment: block.alignment,
-            }
-        }));
+        .filter(isParagraph)
+        .filter(block => !block.styleName)
+        .map((block) => {
+            const firstTextRun = block.runs.find(isTextRun);
+            return {
+                text: block.runs.filter(isTextRun).map(r => r.text).join(''),
+                style: {
+                    font: firstTextRun?.font,
+                    size: firstTextRun?.size,
+                    bold: firstTextRun?.isBold,
+                    italic: firstTextRun?.isItalic,
+                    color: firstTextRun?.color,
+                    alignment: block.alignment,
+                }
+            };
+        });
 
     const tables = rawDocx.content
-        .filter((block: any) => block.type === 'table')
-        .map((table: any) => ({
+        .filter(isTable)
+        .map((table) => ({
             rows: table.rows.length,
             columns: table.rows[0]?.length || 0,
-            hasHeader: true, // Giả định
-            sampleData: table.rows.slice(0, 2).map((row: any) => 
-                row.map((cell: any) => 
-                    cell.content.map((p: any) => p.runs.map((r: any) => r.text).join('')).join(' ')
+            hasHeader: true,
+            sampleData: table.rows.slice(0, 2).map((row) =>
+                row.map((cell) =>
+                    cell.content
+                        .filter(isParagraph)
+                        .map((p) => p.runs.filter(isTextRun).map((r) => r.text).join(''))
+                        .join(' ')
                 )
             ),
         }));
 
     const images = rawDocx.content
-        .flatMap((block: any) => block.runs || [])
-        .filter((run: any) => run.type === 'image')
+        .filter(isParagraph)
+        .flatMap(block => block.runs)
+        .filter((run: any) => run.type === 'drawing' && run.drawingType === 'image')
         .map((image: any) => ({
-            caption: `Image: ${image.imageName}`, 
+            caption: image.caption || `Image: ${image.imageName}`,
             size: (image.width * image.height > 1000000) ? 'medium' : 'small',
         }));
 
     return {
         headings,
-        tocDetected: false, 
+        tocDetected: !!rawDocx.toc,
         paragraphs: plainParagraphs,
         tables,
         images,
-        headers: rawDocx.headers ? rawDocx.headers.flatMap(h => getTextFromParagraphs(h.content)) : [],
-        footers: rawDocx.footers ? rawDocx.footers.flatMap(f => getTextFromParagraphs(f.content)) : [],
-        hyperlinks: [], 
-        wordCount: null,
-        pageCount: null, 
+        headers: rawDocx.headers ? rawDocx.headers.flatMap(h => getTextFromParagraphs(h.content.filter(isParagraph))) : [],
+        footers: rawDocx.footers ? rawDocx.footers.flatMap(f => getTextFromParagraphs(f.content.filter(isParagraph))) : [],
+        hyperlinks: [],
+        wordCount: rawDocx.metadata?.wordCount || null,
+        pageCount: rawDocx.metadata?.pageCount || null,
     };
 }
 
@@ -81,10 +91,10 @@ function summarizePptx(rawPptx: ParsedPowerPointFormatData) {
             layout: slide.layout,
             title: titleShape ? titleShape.textRuns.map(r => r.text).join('') : '',
             content: contentShapes.flatMap(s => s.textRuns.map(r => r.text)).filter(Boolean),
-            footer: slide.displayInfo.showsFooter ? '...' : '', // Cần logic lấy text từ footer shape
+            footer: slide.displayInfo.showsFooter ? '...' : '',
             hasTransition: !!slide.transition,
             hasSound: !!slide.transition?.sound,
-            animations: slide.animations ? ['unknown_effect'] : [], // Cần nâng cấp parser
+            animations: slide.animations ? ['unknown_effect'] : [],
             objects: Array.from(new Set(slide.shapes.map(s => {
                 if (s.chartData) return 'Chart';
                 if (s.tableData) return 'Table';
@@ -106,25 +116,23 @@ function summarizePptx(rawPptx: ParsedPowerPointFormatData) {
 }
 
 function extractStudentInfo(filename: string) {
-    // Ví dụ: 2112345-NguyenVanA-BaiThietKePowerPoint.pptx
-    //        2112345-NguyenVanA-BaiTapWord.docx
-    // Tách theo dấu gạch ngang
-    const base = filename ? filename.split('.')[0] : '';
-    const parts = base ? base.split('-') : [];
-    return {
-        id: parts[0] || 'Unknown',
-        name: parts[1] ? parts[1].replace(/_/g, ' ') : 'Unknown'
-    };
+    const base = filename.split('.')[0] || '';
+    const parts = base.split('-');
+    if (parts.length < 2) {
+        return { id: 'Unknown', name: 'Unknown' };
+    }
+    const id = parts.shift()!;
+    const name = parts.join(' ');
+    return { id, name };
 }
 
 /**
- * Hàm chính để tạo đối tượng submission cuối cùng.
+ * Main function to create the final submission summary object.
  */
 export function createSubmissionSummary(
     submissionFiles: { filename: string, type: 'docx' | 'pptx', rawData: any }[],
     rubricFile: { filename: string, rawData: any }
 ) {
-    // Lấy thông tin sinh viên từ tên file đầu tiên
     const studentInfo = extractStudentInfo(submissionFiles[0]?.filename || '');
 
     const summarizedFiles = submissionFiles.map(file => {
@@ -143,8 +151,8 @@ export function createSubmissionSummary(
         };
     });
 
-    // format ngày giờ Việt Nam (Asia/Ho_Chi_Minh)
-    const submittedAt = DateTime.now().setZone('Asia/Ho_Chi_Minh').toFormat('dd/MM/yyyy HH:mm:ss');
+    // Format date/time for Vietnam (Asia/Ho_Chi_Minh)
+    const submittedAt = DateTime.now().setZone('Asia/Ho_Chi_Minh').toISO();
 
     return {
         submission: {
