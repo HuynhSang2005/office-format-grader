@@ -37,7 +37,7 @@ aiRoutes.post('/ai-checker', async (c) => {
         // 2. Dùng các parser để lấy dữ liệu thô, chi tiết
         let rubricTextData;
         try {
-            rubricTextData = await parseWordContentOnly(rubricPath);
+            rubricTextData = await parseWordWithFormat(rubricPath);
         } catch (err: any) {
             return errorResponse(c, "Không thể phân tích file Word: " + (err.message || err), 400);
         }
@@ -61,9 +61,15 @@ aiRoutes.post('/ai-checker', async (c) => {
             throw new Error("Định dạng file bài nộp không được hỗ trợ.");
         }
 
+        const rubricText =
+            rubricTextData.content
+                .filter((block: any) => 'runs' in block)
+                .map((block: any) => block.runs.filter((r: any) => r.type === 'text').map((r: any) => r.text).join(''))
+                .join('\n');
+
         const submissionSummary = createSubmissionSummary(
             [{ filename: submissionFile.filename, type: submissionType, rawData: submissionRawData }],
-            { filename: rubricFile.filename, rawData: { paragraphs: rubricTextData?.paragraphs?.join('\n') ?? '' } }
+            { filename: rubricFile.filename, rawData: { paragraphs: rubricText } }
         );
 
         // 4. Chuẩn bị dữ liệu cho AI và Client
