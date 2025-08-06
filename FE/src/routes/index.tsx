@@ -142,7 +142,7 @@ function HomePage() {
       {/* Hiển thị kết quả khi thành công */}
       {mutation.isSuccess && (
         output === 'json' ? (
-          <JsonInput
+          <JsonInput size="xl" radius="md" w="62%"
             label={
               <span>
                 <CheckCircle size={18} color="green" style={{ marginRight: 6, verticalAlign: 'middle' }} />
