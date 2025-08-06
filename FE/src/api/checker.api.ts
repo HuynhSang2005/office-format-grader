@@ -1,29 +1,32 @@
-import type { UploadedFile, GradingResult } from "../types/api.types";
+import type { GradePayload, GradeResponse } from "../types/api.types";
+import { downloadFile } from "../lib/fileUtils";
 
-interface GradePayload {
-  rubricFile: UploadedFile;
-  submissionFile: UploadedFile;
-}
 
-export interface GradeResponse {
-  gradingResult: GradingResult;
-  submissionDetails: any;
-}
+export async function processGrading({
+  rubricFile,
+  submissionFile,
+  output,
+}: GradePayload & { output: "json" | "excel" }): Promise<GradeResponse | { message: string }> {
+  const url = `http://localhost:3000/api/ai-checker?output=${output}`;
+  const formData = new FormData();
+  formData.append("rubricFile", rubricFile);
+  formData.append("submissionFile", submissionFile);
 
-export async function gradeSubmission(payload: GradePayload): Promise<GradeResponse> {
-  const response = await fetch('http://localhost:3000/api/ai-checker', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
   });
 
-  const data = await response.json();
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.error?.message || data.message || 'Có lỗi xảy ra từ server.');
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || "Có lỗi xảy ra từ server.");
   }
 
-  return data.data;
+  if (output === "excel") {
+    await downloadFile(response, `grading-report-${submissionFile.name}.xlsx`);
+    return { message: "Tải file thành công" };
+  } else {
+    const data = await response.json();
+    return data.data;
+  }
 }
