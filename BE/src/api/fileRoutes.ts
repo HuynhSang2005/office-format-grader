@@ -35,30 +35,27 @@ fileRoutes.get("/files", async (c) => {
   }
 });
 
-/**
- * Route này nhận một file được upload (mã hóa base64),
- * phân tích nó ở chế độ 'full' hoặc 'content',
- * và trả về kết quả dưới dạng JSON hoặc file Excel.
- */
 fileRoutes.post("/files/details", async (c) => {
   const { mode = "full", output } = c.req.query();
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "office-analyzer-"));
 
   try {
     // 1. Nhận payload chứa file từ client
-    const { file } = await c.req.json();
-    if (!file || !file.filename || !file.content) {
-      return errorResponse(c, "Dữ liệu file tải lên không hợp lệ.", 400);
-    }
+    const formData = await c.req.formData();
+    const file = formData.get('file') as File | null;
+    
+    if (!file) {
+            return errorResponse(c, "Không tìm thấy file nào trong request.", 400);
+        }
 
     // 2. Giải mã Base64 và lưu vào file tạm
-    const fileBuffer = Buffer.from(file.content, "base64");
-    const tempFilePath = path.join(tempDir, file.filename);
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const tempFilePath = path.join(tempDir, file.name);
     await fs.writeFile(tempFilePath, fileBuffer);
 
     // 3. Gọi parser phù hợp dựa trên đuôi file
     let parsedData;
-    const extension = path.extname(file.filename).toLowerCase();
+        const extension = path.extname(file.name).toLowerCase();
 
     if (mode === "full") {
       if (extension === ".docx") {
@@ -90,7 +87,7 @@ fileRoutes.post("/files/details", async (c) => {
     if (output === "excel") {
       if (extension === ".docx") {
         // parsedData chắc chắn là ParsedWordData
-        const workbook = exportDetailsToExcel(parsedData as any, file.filename);
+        const workbook = exportDetailsToExcel(parsedData as any, file.name);
         const buffer = await generateExcelBuffer(workbook);
 
         c.header(
@@ -99,14 +96,14 @@ fileRoutes.post("/files/details", async (c) => {
         );
         c.header(
           "Content-Disposition",
-          `attachment; filename="${sanitizeFilename(`analysis-${file.filename}.xlsx`)}"`
+          `attachment; filename="${sanitizeFilename(`analysis-${file.name}.xlsx`)}"`
         );
 
         
         return c.body(buffer);
       } else if (extension === ".pptx") {
         // parsedData chắc chắn là ParsedPowerPointFormatData
-        const workbook = exportDetailsToExcel(parsedData as any, file.filename);
+        const workbook = exportDetailsToExcel(parsedData as any, file.name);
         const buffer = await generateExcelBuffer(workbook);
 
         c.header(
@@ -115,7 +112,7 @@ fileRoutes.post("/files/details", async (c) => {
         );
         c.header(
           "Content-Disposition",
-          `attachment; filename="${sanitizeFilename(`analysis-${file.filename}.xlsx`)}"`
+          `attachment; filename="${sanitizeFilename(`analysis-${file.name}.xlsx`)}"`
         );
         return c.body(buffer);
       } else if (extension === ".xlsx") {
@@ -125,7 +122,7 @@ fileRoutes.post("/files/details", async (c) => {
     } else {
       // Mặc định trả về JSON
       return successResponse(c, {
-        filename: file.filename,
+        filename: file.name,
         mode,
         details: parsedData,
       });

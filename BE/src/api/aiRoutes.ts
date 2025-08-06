@@ -15,22 +15,26 @@ import { exportGradingResultToExcel, generateExcelBuffer } from '../shared/servi
 const aiRoutes = new Hono();
 
 aiRoutes.post('/ai-checker', async (c) => {
-    const { output } = c.req.query(); // Lấy query param 'output'
+    const { output } = c.req.query();
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'office-checker-'));
 
     try {
-        const { rubricFile, submissionFile } = await c.req.json();
+        // --- THAY ĐỔI CHÍNH BẮT ĐẦU TỪ ĐÂY ---
+        // 1. Lấy dữ liệu form-data
+        const formData = await c.req.formData();
+        const rubricFile = formData.get('rubricFile') as File | null;
+        const submissionFile = formData.get('submissionFile') as File | null;
 
         if (!rubricFile || !submissionFile) {
             return errorResponse(c, "Cần cung cấp đủ rubricFile và submissionFile.", 400);
         }
 
-        // 1. Giải mã Base64 và lưu file tạm
-        const rubricBuffer = Buffer.from(rubricFile.content, 'base64');
-        const submissionBuffer = Buffer.from(submissionFile.content, 'base64');
+        // 2. Lấy buffer và lưu file tạm
+        const rubricBuffer = Buffer.from(await rubricFile.arrayBuffer());
+        const submissionBuffer = Buffer.from(await submissionFile.arrayBuffer());
 
-        const rubricPath = path.join(tempDir, rubricFile.filename);
-        const submissionPath = path.join(tempDir, submissionFile.filename);
+        const rubricPath = path.join(tempDir, rubricFile.name);
+        const submissionPath = path.join(tempDir, submissionFile.name);
 
         await fs.writeFile(rubricPath, rubricBuffer);
         await fs.writeFile(submissionPath, submissionBuffer);
@@ -44,7 +48,7 @@ aiRoutes.post('/ai-checker', async (c) => {
         }
 
         let submissionRawData;
-        const submissionExt = path.extname(submissionFile.filename).toLowerCase();
+        const submissionExt = path.extname(submissionFile.name).toLowerCase();
 
         if (submissionExt === '.docx') {
             submissionRawData = await parseWordWithFormat(submissionPath);
@@ -69,8 +73,8 @@ aiRoutes.post('/ai-checker', async (c) => {
                 .join('\n');
 
         const submissionSummary = createSubmissionSummary(
-            [{ filename: submissionFile.filename, type: submissionType, rawData: submissionRawData }],
-            { filename: rubricFile.filename, rawData: { paragraphs: rubricText } }
+            [{ filename: submissionFile.name, type: submissionType, rawData: submissionRawData }],
+            { filename: rubricFile.name, rawData: { paragraphs: rubricText } }
         );
 
         // 4. Chuẩn bị dữ liệu cho AI và Client
@@ -85,7 +89,7 @@ aiRoutes.post('/ai-checker', async (c) => {
             console.log("Đang tạo file báo cáo Excel...");
             // Lấy thông tin sinh viên từ summary nếu có
             const submissionInfo = {
-                filename: submissionFile.filename,
+                filename: submissionFile.name,
                 student: {
                     id: submissionSummary?.submission?.student?.id || 'Unknown',
                     name: submissionSummary?.submission?.student?.name || 'Unknown',
@@ -98,7 +102,7 @@ aiRoutes.post('/ai-checker', async (c) => {
             c.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             c.header(
                 'Content-Disposition',
-                `attachment; filename="${sanitizeFilename(`grading-report-${submissionFile.filename}.xlsx`)}"`
+                `attachment; filename="${sanitizeFilename(`grading-report-${submissionFile.name}.xlsx`)}"`
             );
             return c.body(buffer);
         }

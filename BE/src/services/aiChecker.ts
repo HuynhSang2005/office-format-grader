@@ -42,17 +42,12 @@ QUAN TRỌNG: Vui lòng trả về kết quả dưới dạng một đối tư�
 {submission_json_placeholder}
 `;
 
-/**
- * Gửi yêu cầu chấm điểm đến Google AI.
- * @param rubricText - Nội dung text của các tiêu chí chấm điểm.
- * @param submissionJsonString - Chuỗi JSON chứa dữ liệu phân tích của file bài nộp.
- * @returns - Một object chứa kết quả chấm điểm từ AI.
- */
 export async function gradeSubmissionWithAI(rubricText: string, submissionJsonString: string): Promise<any> {
   // 3. Xây dựng prompt hoàn chỉnh bằng cách thay thế các placeholder
   const prompt = promptTemplate
     .replace('{rubric_text_placeholder}', rubricText)
     .replace('{submission_json_placeholder}', submissionJsonString);
+
 
   try {
     // 4. Gọi API của Google AI để tạo nội dung
