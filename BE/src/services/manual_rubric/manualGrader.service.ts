@@ -98,19 +98,75 @@ function checkObjects(data: ParsedPowerPointFormatData): GradingDetail {
     return { criterion: rule.criterion, maxScore: rule.maxScore, achievedScore: 0, reason: "Không tìm thấy đối tượng nào được chèn." };
 }
 
+function checkSlideMaster(data: ParsedPowerPointFormatData): GradingDetail {
+    const rule = powerpointRubric.find(r => r.id === 'slideMaster')!;
+    let errors: string[] = [];
+
+    // 1. Kiểm tra layout "Title Slide"
+    const titleSlides = data.slides.filter(s => s.layout === 'Title Slide');
+    if (titleSlides.length > 0) {
+        const titleShape = titleSlides[0].shapes.find(sh => sh.name.toLowerCase().includes('title'));
+        const subtitleShape = titleSlides[0].shapes.find(sh => sh.name.toLowerCase().includes('sub title'));
+
+        if (titleShape?.textRuns[0]?.font !== 'Times New Roman' || titleShape?.textRuns[0]?.size !== 32) {
+            errors.push("Tiêu đề trên Title Slide không đúng font/size (yêu cầu TNR, 32pt).");
+        }
+        if (subtitleShape?.textRuns[0]?.font !== 'Arial' || subtitleShape?.textRuns[0]?.size !== 28) {
+            errors.push("Tiêu đề phụ trên Title Slide không đúng font/size (yêu cầu Arial, 28pt).");
+        }
+    } else {
+        errors.push("Không tìm thấy slide nào sử dụng layout 'Title Slide'.");
+    }
+
+    // 2. Kiểm tra layout "Title and Content"
+    const contentSlides = data.slides.filter(s => s.layout === 'Title and Content');
+    if (contentSlides.length > 0) {
+        for (const slide of contentSlides) {
+            const titleShape = slide.shapes.find(sh => sh.name.toLowerCase().includes('title'));
+            const contentShape = slide.shapes.find(sh => sh.name.toLowerCase().includes('content'));
+
+            if (titleShape?.textRuns[0]?.font !== 'Times New Roman' || titleShape?.textRuns[0]?.size !== 28) {
+                errors.push(`Tiêu đề trên slide ${slide.slideNumber} không đúng font/size (yêu cầu TNR, 28pt).`);
+            }
+            if (contentShape?.textRuns[0]?.font !== 'Arial' || contentShape?.textRuns[0]?.size !== 24) {
+                errors.push(`Nội dung trên slide ${slide.slideNumber} không đúng font/size (yêu cầu Arial, 24pt).`);
+            }
+        }
+    } else {
+        errors.push("Không tìm thấy slide nào sử dụng layout 'Title and Content'.");
+    }
+
+    // 3. Chấm điểm dựa trên số lỗi
+    if (errors.length === 0) {
+        return { criterion: rule.criterion, maxScore: rule.maxScore, achievedScore: 1.5, reason: "Sử dụng Slide Master hoàn toàn chính xác và hiệu quả." };
+    }
+    if (errors.length <= 2) {
+        return { criterion: rule.criterion, maxScore: rule.maxScore, achievedScore: 1.0, reason: `Sử dụng khá chính xác, còn vài lỗi nhỏ: ${errors.join(' ')}` };
+    }
+    if (errors.length <= 4) {
+        return { criterion: rule.criterion, maxScore: rule.maxScore, achievedScore: 0.5, reason: `Sử dụng hạn chế, nhiều phần còn sai: ${errors.join(' ')}` };
+    }
+
+    return { criterion: rule.criterion, maxScore: rule.maxScore, achievedScore: 0, reason: `Sử dụng sai hoặc không dùng Slide Master. Lỗi: ${errors.join(' ')}` };
+}
+
+
 export function gradePptxManually(parsedData: ParsedPowerPointFormatData): GradingResult {
     const details: GradingDetail[] = [];
 
+    // Cập nhật mapping để thêm hàm check mới
     const ruleMappings: { [key: string]: (data: ParsedPowerPointFormatData) => GradingDetail } = {
         filename: checkFilename,
         headerFooter: checkHeaderFooter,
         transitions: checkTransitions,
         objects: checkObjects,
+        slideMaster: checkSlideMaster, // <-- THÊM HÀM MỚI
     };
 
     let totalAchievedScore = 0;
     let totalMaxScore = 0;
 
+    // Lặp qua bộ tiêu chí đã mã hóa
     for (const rule of powerpointRubric) {
         totalMaxScore += rule.maxScore;
         const checkFunction = ruleMappings[rule.id];

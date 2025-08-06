@@ -42,4 +42,14 @@ export const powerpointRubric: RubricCriterion[] = [
         { score: 0, description: 'Không biết chèn đối tượng hoặc chèn sai loại.' },
     ]
   },
+  {
+  id: 'slideMaster',
+  criterion: 'Thiết kế Slide Master',
+  maxScore: 1.5,
+  levels: [
+      { score: 1.5, description: 'Thiết kế Slide Master hoàn chỉnh, đúng quy định.' },
+      { score: 0.75, description: 'Thiết kế Slide Master cơ bản, còn thiếu sót.' },
+      { score: 0, description: 'Không sử dụng Slide Master.' },
+  ]
+},
 ];
