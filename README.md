@@ -5,6 +5,9 @@
   &nbsp;
   <img src="https://vitejs.dev/logo-with-shadow.png" width="70" />
   &nbsp;
+  <img src="./FE/public/assets/react.png" width="70"/>
+  &nbsp;
+  <img src="./FE/public/assets/tanstack.png" width="70" />
 </p>
 
 <h1 align="center">
