@@ -10,7 +10,6 @@ import { routeTree } from './routeTree.gen'
 // Import CSS của Mantine
 import '@mantine/core/styles.css'
 import '@mantine/dropzone/styles.css'
-import './index.css'
 
 // Import các route đã tạo
 const router = createRouter({ routeTree })

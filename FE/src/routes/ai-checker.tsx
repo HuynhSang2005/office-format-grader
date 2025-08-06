@@ -4,55 +4,68 @@ import { useMutation } from '@tanstack/react-query';
 import { Title, Text, Stack, SimpleGrid, Button, Alert, Group } from '@mantine/core';
 import { FileDropzone } from '../components/FileDropzone';
 import { ResultsTable } from '../components/ResultsTable';
-import { encodeFileToBase64 } from '../lib/fileUtils';
-import type { UploadedFile, GradingResult } from '../types/api.types';
-import { gradeSubmission } from '../api/checker.api';
-import type { GradeResponse } from '../api/checker.api'; 
-import { AlertCircle, X } from 'lucide-react';
+import type { GradeResponse } from '../types/api.types';
+import { processGrading } from '../api/checker.api';
+import { AlertCircle, X, Download } from 'lucide-react';
 
 export const Route = createFileRoute('/ai-checker')({
   component: AICheckerPage,
 });
 
 function AICheckerPage() {
-  const [rubricFile, setRubricFile] = useState<UploadedFile | null>(null);
-  const [submissionFile, setSubmissionFile] = useState<UploadedFile | null>(null);
+  const [rubricFile, setRubricFile] = useState<File | null>(null);
+  const [submissionFile, setSubmissionFile] = useState<File | null>(null); 
   const [validationError, setValidationError] = useState<string>('');
 
-  const handleFileDrop = useCallback(async (
-    files: File[],
-    fileSetter: React.Dispatch<React.SetStateAction<UploadedFile | null>>
-  ) => {
-    setValidationError('');
-    if (!files || files.length === 0) return;
-    const file = files[0];
-    try {
-      const base64Content = await encodeFileToBase64(file);
-      fileSetter({
-        filename: file.name,
-        content: base64Content,
-      });
-    } catch (error) {
-        setValidationError(`Lỗi mã hóa file: ${(error as Error).message}`);
+  const gradeMutation = useMutation<GradeResponse, Error, { rubricFile: File; submissionFile: File }>({
+  mutationFn: async (payload) => {
+    // Chỉ gọi với output 'json'
+    const result = await processGrading({ ...payload, output: 'json' });
+    // Nếu trả về không phải GradeResponse, ném lỗi
+    if (!result || !('gradingResult' in result)) {
+      throw new Error('Kết quả trả về không hợp lệ!');
     }
-  }, []);
+    return result as GradeResponse;
+  },
+});
+  const downloadMutation = useMutation<{ message: string }, Error, { rubricFile: File; submissionFile: File }>({
+  mutationFn: async (payload) => {
+    // Chỉ gọi với output 'excel'
+    const result = await processGrading({ ...payload, output: 'excel' });
+    // Nếu trả về không phải message, ném lỗi
+    if (!result || !('message' in result)) {
+      throw new Error('Không thể tải file Excel!');
+    }
+    return result as { message: string };
+  },
+});
 
-  // Cung cấp kiểu dữ liệu cho useMutation để tăng cường type-safety
-  const mutation = useMutation<GradeResponse, Error, { rubricFile: UploadedFile; submissionFile: UploadedFile }>({
-    mutationFn: gradeSubmission,
-  });
+  const handleFileDrop = useCallback(
+    (files: File[], fileSetter: React.Dispatch<React.SetStateAction<File | null>>) => {
+      setValidationError('');
+      if (!files || files.length === 0) return;
+      fileSetter(files[0]);
+    },
+    []
+  );
+
+  const handleDownload = () => {
+    if (rubricFile && submissionFile) {
+      downloadMutation.mutate({ rubricFile, submissionFile });
+    }
+  };
 
   const handleSubmit = useCallback(() => {
     if (!rubricFile || !submissionFile) {
-        setValidationError("Vui lòng tải lên cả hai file!");
-        return;
+      setValidationError("Vui lòng tải lên cả hai file!");
+      return;
     }
-    mutation.mutate({ rubricFile, submissionFile });
-  }, [rubricFile, submissionFile, mutation]);
+    downloadMutation.reset();
+    gradeMutation.mutate({ rubricFile, submissionFile });
+  }, [rubricFile, submissionFile, gradeMutation, downloadMutation]);
 
-  // Reset mutation state khi rubricFile hoặc submissionFile thay đổi
   useEffect(() => {
-    mutation.reset();
+    gradeMutation.reset();
   }, [rubricFile, submissionFile]);
 
   return (
@@ -74,7 +87,7 @@ function AICheckerPage() {
           {rubricFile && (
             <Group justify="center" gap="xs">
               <Text c="green" fw={500} ta="center">
-                Đã chọn: {rubricFile.filename}
+                Đã chọn: {rubricFile.name}
               </Text>
               <Button
                 size="xs"
@@ -100,7 +113,7 @@ function AICheckerPage() {
           {submissionFile && (
             <Group justify="center" gap="xs">
               <Text c="green" fw={500} ta="center">
-                Đã chọn: {submissionFile.filename}
+                Đã chọn: {submissionFile.name}
               </Text>
               <Button
                 size="xs"
@@ -123,21 +136,38 @@ function AICheckerPage() {
         </Alert>
       )}
 
-      <Button size="lg" w="100%" onClick={handleSubmit} loading={mutation.isPending} disabled={!rubricFile || !submissionFile || mutation.isPending}>
-        {mutation.isPending ? 'Đang chấm điểm...' : 'Bắt đầu chấm điểm'}
+      <Button size="lg" w="100%" onClick={handleSubmit} loading={gradeMutation.isPending} disabled={!rubricFile || !submissionFile || gradeMutation.isPending}>
+        {gradeMutation.isPending ? 'Đang chấm điểm...' : 'Bắt đầu chấm điểm'}
       </Button>
 
       {/* Hiển thị lỗi từ API */}
-      {mutation.isError && (
-        <Alert icon={<AlertCircle size={16} />} title="Có lỗi xảy ra!" color="red" w="100%" withCloseButton onClose={() => mutation.reset()}>
-          {mutation.error.message}
+      {gradeMutation.isError && (
+        <Alert icon={<AlertCircle size={16} />} title="Có lỗi xảy ra!" color="red" w="100%" withCloseButton onClose={() => gradeMutation.reset()}>
+          {gradeMutation.error.message}
         </Alert>
       )}
 
       {/* Hiển thị kết quả khi thành công */}
-      {mutation.isSuccess && (
-        <ResultsTable result={mutation.data.gradingResult} />
+      {gradeMutation.isSuccess && (
+        <>
+          <ResultsTable result={gradeMutation.data.gradingResult} />
+          <Button
+            mt="md"
+            onClick={handleDownload}
+            leftSection={<Download size={18} />}
+            loading={downloadMutation.isPending}
+          >
+            Tải Báo Cáo Excel
+          </Button>
+          {downloadMutation.isError && (
+            <Text c="red" size="sm" mt="xs">
+              {downloadMutation.error.message}
+            </Text>
+          )}
+        </>
       )}
     </Stack>
   );
 }
+
+export default AICheckerPage;
