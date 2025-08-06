@@ -1,4 +1,6 @@
 <p align="center">
+  <img src="./public/assets/react.png" width="70" />
+  &nbsp;
   <img src="https://vitejs.dev/logo-with-shadow.png" width="70" />
   &nbsp;
   <img src="https://bun.sh/logo.svg" width="70" />
