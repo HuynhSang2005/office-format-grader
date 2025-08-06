@@ -27,29 +27,31 @@ Cho phép người dùng tải lên `.docx`, `.pptx` và nhận đánh giá tự
 
 Một số ảnh chụp màn hình UI của **Office Format Grader AI**:
 
-<p align="center">
-  <img src="./public/screenshots/ai-checker.png" alt="Trang chấm điểm AI" width="400" />
-  <br>
-  <i>Giao diện chính: upload file và rubric, nhận kết quả chấm điểm từ AI.</i>
-</p>
+<table>
+  <tr>
+    <td align="center">
+      <img src="./public/screenshots/ai-checker.png" alt="Trang chấm điểm AI" width="600" /><br>
+      <i>Upload file và rubric và nhận kết quả chấm điểm từ AI.</i>
+    </td>
+    <td align="center">
+      <img src="./public/screenshots/analysis_file.png" alt="Phân tích file Word" width="600" /><br>
+      <i>Kết quả phân tích định dạng file Word (.docx) trực quan.</i>
+    </td>
+  </tr>
+</table>
 
-<p align="center">
-  <img src="./public/screenshots/analysis_file.png" alt="Phân tích file Word" width="400" />
-  <br>
-  <i>Kết quả phân tích định dạng file Word (.docx) trực quan.</i>
-</p>
-
-<p align="center">
-  <img src="./public/screenshots/analysis_file_pptx.png" alt="Phân tích file PowerPoint" width="400" />
-  <br>
-  <i>Phân tích chi tiết cấu trúc file PowerPoint (.pptx).</i>
-</p>
-
-<p align="center">
-  <img src="./public/screenshots/ai_checked_pptx.png" alt="Chấm điểm AI cho PowerPoint" width="400" />
-  <br>
-  <i>Kết quả chấm điểm AI cho bài thuyết trình PowerPoint.</i>
-</p>
+<table>
+  <tr>
+    <td align="center">
+      <img src="./public/screenshots/analysis_file_pptx.png" alt="Phân tích file PowerPoint" width="600" /><br>
+      <i>Phân tích chi tiết cấu trúc file PowerPoint (.pptx).</i>
+    </td>
+    <td align="center">
+      <img src="./public/screenshots/ai_checked_pptx.png" alt="Chấm điểm AI cho PowerPoint" width="600" /><br>
+      <i>Kết quả chấm điểm AI cho bài thuyết trình PowerPoint.</i>
+    </td>
+  </tr>
+</table>
 
 ---
 
