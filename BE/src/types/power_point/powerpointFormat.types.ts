@@ -98,6 +98,7 @@ export interface ParsedPowerPointFormatData {
   mediaFiles: string[];
   theme?: ThemeData;
   slides: FormattedSlide[];
+  fileName: string; 
 }
 
 // Cấu trúc theme cho PowerPoint
