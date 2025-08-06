@@ -3,10 +3,9 @@
   &nbsp;
   <img src="https://bun.sh/logo.svg" width="70" />
   &nbsp;
-  <img src="FE/public/assets/tanstack.png" width="70" />
+  <img src="./public/assets/tanstack.png" width="70" />
   &nbsp;
-  <img src="FE/public/assets/mantineUI.png" width="70" />
-  >
+  <img src="./public/assets/mantineUI.png" width="70" />
 </p>
 
 <h1 align="center">
@@ -29,25 +28,25 @@ Cho phép người dùng tải lên `.docx`, `.pptx` và nhận đánh giá tự
 Một số ảnh chụp màn hình UI của **Office Format Grader AI**:
 
 <p align="center">
-  <img src="FE/public/screenshots/ai-checker.png" alt="Trang chấm điểm AI" width="400" />
+  <img src="./public/screenshots/ai-checker.png" alt="Trang chấm điểm AI" width="400" />
   <br>
   <i>Giao diện chính: upload file và rubric, nhận kết quả chấm điểm từ AI.</i>
 </p>
 
 <p align="center">
-  <img src="FE/public/screenshots/analysis_file.png" alt="Phân tích file Word" width="400" />
+  <img src="./public/screenshots/analysis_file.png" alt="Phân tích file Word" width="400" />
   <br>
   <i>Kết quả phân tích định dạng file Word (.docx) trực quan.</i>
 </p>
 
 <p align="center">
-  <img src="FE/public/screenshots/analysis_file_pptx.png" alt="Phân tích file PowerPoint" width="400" />
+  <img src="./public/screenshots/analysis_file_pptx.png" alt="Phân tích file PowerPoint" width="400" />
   <br>
   <i>Phân tích chi tiết cấu trúc file PowerPoint (.pptx).</i>
 </p>
 
 <p align="center">
-  <img src="FE/public/screenshots/ai_checked_pptx.png" alt="Chấm điểm AI cho PowerPoint" width="400" />
+  <img src="./public/screenshots/ai_checked_pptx.png" alt="Chấm điểm AI cho PowerPoint" width="400" />
   <br>
   <i>Kết quả chấm điểm AI cho bài thuyết trình PowerPoint.</i>
 </p>
