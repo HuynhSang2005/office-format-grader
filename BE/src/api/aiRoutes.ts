@@ -3,11 +3,11 @@ import { successResponse, errorResponse } from '../utils/apiResponse';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
+import mammoth from "mammoth";
 
 import { gradeSubmissionWithAI } from '../services/aiChecker';
 import { parseWordWithFormat } from '../services/word/format/wordFormatParser';
 import { parsePowerPointFormat } from '../services/power_point/format/powerpointFormatParser';
-// import { parseWordFile as parseWordContentOnly } from '../services/word/parsers/docxParser';
 import { createSubmissionSummary } from '../services/submissionSummarizer';
 import { sanitizeFilename } from '../services/shared/sanitizeFilename';
 import { exportGradingResultToExcel, generateExcelBuffer } from '../shared/services/excelExporter';
@@ -19,7 +19,6 @@ aiRoutes.post('/ai-checker', async (c) => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'office-checker-'));
 
     try {
-        // --- THAY ĐỔI CHÍNH BẮT ĐẦU TỪ ĐÂY ---
         // 1. Lấy dữ liệu form-data
         const formData = await c.req.formData();
         const rubricFile = formData.get('rubricFile') as File | null;
@@ -66,11 +65,14 @@ aiRoutes.post('/ai-checker', async (c) => {
             throw new Error("Định dạng file bài nộp không được hỗ trợ.");
         }
 
-        const rubricText =
-            rubricTextData.content
-                .filter((block: any) => 'runs' in block)
-                .map((block: any) => block.runs.filter((r: any) => r.type === 'text').map((r: any) => r.text).join(''))
-                .join('\n');
+        // Đọc nội dung file rubric thành plain text
+        let rubricText = '';
+        try {
+            const { value } = await mammoth.extractRawText({ path: rubricPath });
+            rubricText = value;
+        } catch (err: any) {
+            return errorResponse(c, "Không thể đọc nội dung file Word: " + (err.message || err), 400);
+        }
 
         const submissionSummary = createSubmissionSummary(
             [{ filename: submissionFile.name, type: submissionType, rawData: submissionRawData }],
@@ -79,7 +81,7 @@ aiRoutes.post('/ai-checker', async (c) => {
 
         // 4. Chuẩn bị dữ liệu cho AI và Client
         const summarizedJsonForAI = JSON.stringify(submissionSummary?.submission?.files?.[0]?.format ?? {}, null, 2);
-        const rubricTextForAI = submissionSummary?.submission?.rubric?.content ?? '';
+        const rubricTextForAI = rubricText;
 
         // 5. Gọi AI với dữ liệu đã tóm tắt
         const aiResult = await gradeSubmissionWithAI(rubricTextForAI, summarizedJsonForAI);
