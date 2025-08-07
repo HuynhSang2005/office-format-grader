@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
-import fileRoutes from './api/fileRoutes';
+import documentAnalyzerRoutes from './api/documentAnalyzerRoutes';
 import aiRoutes from './api/aiRoutes';
 import { cors } from 'hono/cors';
+import manualGraderRoutes from './api/manualGraderRoutes';
+import powerPointRoutes from './api/powerPointRoutes';
+import submissionRoutes from './api/submissionRoutes';
 
 const app = new Hono();
 
@@ -14,8 +17,11 @@ app.get('/', (c) => {
 
 app.use('/*', cors());
 
-app.route('/api', fileRoutes);
+app.route('/api', documentAnalyzerRoutes);
 app.route('/api', aiRoutes);
+app.route('/api', manualGraderRoutes);
+app.route('/api', powerPointRoutes);
+app.route('/api', submissionRoutes);
 
 export default {
   port: 3000,
