@@ -8,12 +8,14 @@ import type {
   TransitionEffect,
   AnimationNode,
   ThemeData,
-  ColorScheme
-} from '../../../types/power_point/powerpointFormat.types';
-import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
+  ColorScheme,
+  DocumentProperties
+} from '../../../types/power_point'; 
+import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles.types';
 import { parseMasterOrLayout } from '../parsers/styleParser';
 import { extractShapesFromSlide } from '../parsers/shapeParser';
 import { parseAnimationTree } from '../parsers/animationParser';
+
 async function parseNotesForSlide(zip: AdmZip, slidePath: string): Promise<string | undefined> {
   try {
     const slideRelsPath = `ppt/slides/_rels/${path.basename(slidePath)}.rels`;
@@ -54,11 +56,86 @@ async function parseNotesForSlide(zip: AdmZip, slidePath: string): Promise<strin
     return undefined;
   }
 }
+
+/**
+ * Hàm phân tích thông tin cơ bản của document
+ * @param zip AdmZip object chứa file PowerPoint
+ * @returns DocumentProperties object hoặc undefined nếu không đọc được
+ */
+async function parseDocumentProperties(zip: AdmZip): Promise<DocumentProperties | undefined> {
+  try {
+    const corePropsEntry = zip.getEntry('docProps/core.xml');
+    if (!corePropsEntry) return undefined;
+
+    const corePropsXml = await parseStringPromise(corePropsEntry.getData().toString('utf-8'));
+    const cp = corePropsXml['cp:coreProperties'];
+    if (!cp) return undefined;
+
+    return {
+      title: cp['dc:title']?.[0] || undefined,
+      creator: cp['dc:creator']?.[0] || undefined,
+      lastModifiedBy: cp['cp:lastModifiedBy']?.[0] || undefined,
+      revision: cp['cp:revision']?.[0] ? parseInt(cp['cp:revision'][0], 10) : undefined,
+      created: cp['dcterms:created']?.[0]?._ || cp['dcterms:created']?.[0] || undefined,
+      modified: cp['dcterms:modified']?.[0]?._ || cp['dcterms:modified']?.[0] || undefined,
+      
+      // Thông tin từ app.xml nếu cần
+      company: undefined,
+      category: undefined,
+      subject: undefined,
+      description: undefined
+    };
+  } catch (error) {
+    console.warn('Error parsing document properties:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Hàm phân tích thông tin bổ sung của document từ app.xml
+ * @param zip AdmZip object chứa file PowerPoint
+ * @param docProps DocumentProperties hiện có để cập nhật
+ * @returns DocumentProperties đã được cập nhật
+ */
+async function enhanceDocumentProperties(
+  zip: AdmZip, 
+  docProps: DocumentProperties | undefined
+): Promise<DocumentProperties | undefined> {
+  if (!docProps) docProps = {};
+  
+  try {
+    const appPropsEntry = zip.getEntry('docProps/app.xml');
+    if (!appPropsEntry) return docProps;
+
+    const appPropsXml = await parseStringPromise(appPropsEntry.getData().toString('utf-8'));
+    const props = appPropsXml['Properties'];
+    if (!props) return docProps;
+
+    // Cập nhật thông tin bổ sung
+    if (props['Company']) docProps.company = props['Company'][0];
+    if (props['Category']) docProps.category = props['Category'][0];
+    if (props['Subject']) docProps.subject = props['Subject'][0];
+    if (props['Description']) docProps.description = props['Description'][0];
+
+    return docProps;
+  } catch (error) {
+    console.warn('Error enhancing document properties:', error);
+    return docProps;
+  }
+}
+
+/**
+ * Phân tích file PowerPoint để trích xuất thông tin định dạng chi tiết
+ * @param filePath Đường dẫn đến file PowerPoint cần phân tích
+ * @returns Đối tượng ParsedPowerPointFormatData chứa thông tin chi tiết
+ */
 export async function parsePowerPointFormat(
-  zip: AdmZip,
   filePath: string
 ): Promise<ParsedPowerPointFormatData> {
   try {
+    // Khởi tạo đối tượng AdmZip để đọc file
+    const zip = new AdmZip(filePath);
+    
     // Khai báo các biến phạm vi hàm
     const masterPaths: string[] = [];
     const layoutPaths: string[] = [];
@@ -66,6 +143,10 @@ export async function parsePowerPointFormat(
     const presentationEntry = zip.getEntry('ppt/presentation.xml');
     if (!presentationEntry) throw new Error('Không tìm thấy file ppt/presentation.xml');
     const presentationXml = await parseStringPromise(presentationEntry.getData().toString('utf-8'));
+
+    // Phân tích thông tin document
+    let documentProperties = await parseDocumentProperties(zip);
+    documentProperties = await enhanceDocumentProperties(zip, documentProperties);
 
     // Lấy masterIdList
     const masterIdList = presentationXml['p:presentation']?.['p:sldMasterIdLst']?.[0]?.['p:sldMasterId'] || [];
@@ -299,6 +380,8 @@ export async function parsePowerPointFormat(
       mediaFiles,
       theme: themeData,
       slides: formattedSlides,
+      fileName: path.basename(filePath),
+      documentProperties
     };
   } catch (error) {
     console.error(`Lỗi khi phân tích định dạng file PowerPoint tại ${filePath}:`, error);
