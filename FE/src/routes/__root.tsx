@@ -1,7 +1,7 @@
 import { createRootRoute, Outlet, Link } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { AppShell, Group, NavLink } from '@mantine/core';
-import { Home, Bot, Presentation, CheckCircle, FileText } from 'lucide-react';
+import { File, Bot, Presentation, CheckCircle, FileText } from 'lucide-react';
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -16,47 +16,45 @@ function RootComponent() {
         padding="md"
       >
         <AppShell.Header>
-          <Group h="100%" px="md">
-            <span style={{ fontWeight: 700 }}>Office AI Checker</span>
+          <Group h="100%" px="lg">
+            <span style={{ fontWeight: 750 }}>Office AI Checker</span>
           </Group>
         </AppShell.Header>
 
-        <AppShell.Navbar p="md">
-          {/* Sử dụng Link của router với active props để tự động in đậm */}
-          <NavLink 
-            component={Link} 
-            to="/" 
-            label="Phân Tích File" 
-            leftSection={<Home size={16} />} 
-            // `&.active` là cú pháp của TanStack Router để style link đang active
-            className="[&.active]:font-bold"
-          />
+        <AppShell.Navbar p="lg">
           <NavLink 
             component={Link} 
             to="/ai-checker" 
             label="Chấm Điểm AI" 
-            leftSection={<Bot size={16} />} 
-            className="[&.active]:font-bold"
-          />
-          <NavLink 
-            component={Link} 
-            to="/powerpoint-analyzer" 
-            label="Phân Tích PowerPoint" 
-            leftSection={<Presentation size={16} />} 
+            leftSection={<Bot size={23} />} 
             className="[&.active]:font-bold"
           />
           <NavLink 
             component={Link} 
             to="/manual-checker" 
             label="Chấm Điểm Thủ Công" 
-            leftSection={<CheckCircle size={16} />} 
+            leftSection={<CheckCircle size={20} />} 
             className="[&.active]:font-bold"
           />
           <NavLink 
             component={Link} 
+            to="/" 
+            label="Phân Tích File" 
+            leftSection={<File size={20} />} 
+            className="[&.active]:font-bold"
+          />
+            <NavLink 
+              component={Link} 
+              to="/powerpoint-analyzer" 
+              label="Phân Tích PowerPoint" 
+              leftSection={<Presentation size={20} />} 
+              className="[&.active]:font-bold"
+            />
+          <NavLink 
+            component={Link} 
             to="/submission-analyzer" 
             label="Phân Tích Bài Nộp" 
-            leftSection={<FileText size={16} />} 
+            leftSection={<FileText size={20} />} 
             className="[&.active]:font-bold"
           />
         </AppShell.Navbar>
@@ -66,7 +64,7 @@ function RootComponent() {
         </AppShell.Main>
       </AppShell>
       
-      {/* Thêm công cụ Devtools của Router để dễ dàng debug */}
+      {/* Thêm công cụ Devtools của Tanstack-Router để dễ dàng debug */}
       <TanStackRouterDevtools />
     </>
   );
