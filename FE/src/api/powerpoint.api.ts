@@ -21,13 +21,50 @@ export async function analyzePowerPoint({
 
   const data = await response.json();
   
+  // Định nghĩa các interface để tránh lỗi "implicitly has an 'any' type"
+  interface BackendShape {
+    type: string;
+    [key: string]: any;
+  }
+
+  interface BackendSlide {
+    number: number;
+    title?: string;
+    shapes?: BackendShape[];
+    [key: string]: any;
+  }
+
+  interface BackendDocumentProperties {
+    title?: string;
+    creator?: string;
+    company?: string;
+    created?: string;
+    modified?: string;
+    [key: string]: any;
+  }
+
+  interface BackendDocument {
+    fileName: string;
+    slideCount: number;
+    properties?: BackendDocumentProperties;
+    [key: string]: any;
+  }
+
+  interface BackendData {
+    document: BackendDocument;
+    slides?: BackendSlide[];
+    [key: string]: any;
+  }
+
   // Chuyển đổi dữ liệu từ backend sang định dạng mà frontend mong đợi
-  const backendData = data.data;
+  const backendData: BackendData = data.data;
   return {
     fileName: backendData.document.fileName,
     slideCount: backendData.document.slideCount,
-    hasCharts: backendData.slides?.some(slide => slide.shapes?.some(shape => shape.type === 'chart')) || false,
-    hasTables: backendData.slides?.some(slide => slide.shapes?.some(shape => shape.type === 'table')) || false,
+    hasCharts: backendData.slides?.some((slide: BackendSlide) => 
+      slide.shapes?.some((shape: BackendShape) => shape.type === 'chart')) || false,
+    hasTables: backendData.slides?.some((slide: BackendSlide) => 
+      slide.shapes?.some((shape: BackendShape) => shape.type === 'table')) || false,
     metadata: {
       title: backendData.document.properties?.title || '',
       author: backendData.document.properties?.creator || '',
@@ -37,13 +74,14 @@ export async function analyzePowerPoint({
     },
     // Nếu mode là full, thêm thông tin slides
     ...(mode === 'full' ? {
-      slides: backendData.slides?.map(slide => ({
+      slides: backendData.slides?.map((slide: BackendSlide) => ({
         slideNumber: slide.number,
         title: slide.title || '',
         elementCount: (slide.shapes || []).length,
-        hasChart: slide.shapes?.some(shape => shape.type === 'chart') || false,
-        hasTable: slide.shapes?.some(shape => shape.type === 'table') || false,
-        hasImage: slide.shapes?.some(shape => shape.type === 'image' || shape.type === 'picture') || false
+        hasChart: slide.shapes?.some((shape: BackendShape) => shape.type === 'chart') || false,
+        hasTable: slide.shapes?.some((shape: BackendShape) => shape.type === 'table') || false,
+        hasImage: slide.shapes?.some((shape: BackendShape) => 
+          shape.type === 'image' || shape.type === 'picture') || false
       })) || []
     } : {})
   };
