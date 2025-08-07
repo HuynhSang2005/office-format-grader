@@ -40,7 +40,7 @@ manualGraderRoutes.post('/manual-checker', async (c) => {
         await fs.writeFile(submissionPath, submissionBuffer);
 
         // 2. Phân tích file để lấy dữ liệu JSON chi tiết
-        // Hiện tại chỉ hỗ trợ pptx, có thể mở rộng cho docx sau
+        // Hiện tại chỉ hỗ trợ pptx
         const extension = path.extname(submissionFile.name).toLowerCase();
         if (extension !== '.pptx') {
             throw new Error("Chức năng này hiện chỉ hỗ trợ file .pptx");
