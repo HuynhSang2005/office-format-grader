@@ -1,5 +1,5 @@
 import { parseStringPromise } from "xml2js";
-import type { PlaceholderStyle, SlideLayoutData, TextStyle } from "../../../types/power_point/powerpointStyles";
+import type { PlaceholderStyle, SlideLayoutData, TextStyle } from "../../../types/power_point/powerpointStyles.types";
 
 /**
  * Hàm helper để trích xuất các thuộc tính style từ một node <a:defRPr> hoặc tương tự.

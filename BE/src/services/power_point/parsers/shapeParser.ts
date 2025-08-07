@@ -1,5 +1,5 @@
 import type { Shape, ShapeTransform, FormattedTextRun, ThemeData, TableData, SmartArtData } from '../../../types/power_point/powerpointFormat.types';
-import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles';
+import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles.types';
 import { resolveTextStyle } from '../resolvers/styleResolver';
 import type { WordArtEffect } from '../../../types/power_point/powerpointFormat.types';
 import { parseSmartArt } from './smartArtParser';
@@ -82,7 +82,7 @@ export async function extractShapesFromSlide(
 
     // Phân loại đối tượng dựa trên URI
     if (graphicUri && graphicUri.includes('/diagram')) {
-      // ---- LOGIC MỚI: XỬ LÝ SMARTART ----
+      // Xử lý SmartArt
       const diagramRelId = graphicData['dgm:relIds']?.[0]?.$?.['r:id'];
       if (diagramRelId) {
         const dataPath = relationships.get(diagramRelId); // Tra cứu trong .rels của slide
@@ -92,9 +92,7 @@ export async function extractShapesFromSlide(
         }
       }
     } else if (graphicData['a:tbl']) {
-      // ... logic parse table cũ ...
     } else if (graphicData['a:chart']) {
-      // ... logic parse chart cũ ...
     }
 
     shapes.push({
