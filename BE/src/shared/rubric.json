@@ -1,0 +1,239 @@
+{
+  "rubric": [
+    {
+      "criteria": "Save",
+      "max_score": 0.5,
+      "levels": [
+        {
+          "score": 0,
+          "description": "Không biết đặt tên tập tin đúng quy ước"
+        },
+        {
+          "score": 0.125,
+          "description": "Tên tập tin thiếu nhiều thông tin và sai cấu trúc"
+        },
+        {
+          "score": 0.25,
+          "description": "Tên tập tin thiếu thông tin hoặc cấu trúc sai/thiếu; khó nhận biết"
+        },
+        {
+          "score": 0.375,
+          "description": "Tên tập tin rõ ràng, cấu trúc cơ bản đúng; chỉ thiếu ít thông tin"
+        },
+        {
+          "score": 0.5,
+          "description": "Tên tập tin rõ ràng, chính xác, đủ thông tin; đúng cấu trúc quy ước"
+        }
+      ]
+    },
+    {
+      "criteria": "Slides From Outline",
+      "max_score": 1,
+      "levels": [
+        {
+          "score": 0,
+          "description": "Không sử dụng tính năng Slides from Outline"
+        },
+        {
+          "score": 0.25,
+          "description": "Tạo slide từ Outline nhưng lỗi nghiêm trọng về nội dung hoặc bố cục"
+        },
+        {
+          "score": 0.5,
+          "description": "Tạo từ outline: nội dung đúng nhưng sai cấp độ, bố cục slide"
+        },
+        {
+          "score": 0.75,
+          "description": "Tạo từ outline khá chính xác; còn ít lỗi nhỏ về định dạng/cấu trúc"
+        },
+        {
+          "score": 1,
+          "description": "Tạo từ outline chính xác hoàn toàn; cấu trúc, định dạng slide chuẩn"
+        }
+      ]
+    },
+    {
+      "criteria": "Themes",
+      "max_score": 0.5,
+      "levels": [
+        { "score": 0, "description": "Không thiết kế theme" },
+        { "score": 0.125, "description": "Thiết kế theme sai bố cục" },
+        {
+          "score": 0.25,
+          "description": "Thiết kế theme thiếu màu sắc chủ đạo, bố cục chưa chính xác"
+        },
+        {
+          "score": 0.375,
+          "description": "Thiết kế theme tương đối hợp nội dung và bố cục"
+        },
+        {
+          "score": 0.5,
+          "description": "Thiết kế theme phù hợp cả nội dung và bố cục"
+        }
+      ]
+    },
+    {
+      "criteria": "Slide Master",
+      "max_score": 1.5,
+      "levels": [
+        { "score": 0, "description": "Không sử dụng Slide Master" },
+        {
+          "score": 0.5,
+          "description": "Dùng Slide Master nhưng sai bố cục/thiết kế trên Master"
+        },
+        {
+          "score": 0.75,
+          "description": "Dùng Slide Master hạn chế, nhiều phần còn sai hoặc thiếu sót"
+        },
+        {
+          "score": 1,
+          "description": "Dùng Slide Master khá chính xác, chỉ còn vài lỗi nhỏ"
+        },
+        {
+          "score": 1.5,
+          "description": "Dùng Slide Master hoàn toàn chính xác và hiệu quả"
+        }
+      ]
+    },
+    {
+      "criteria": "Header/ Footer",
+      "max_score": 0.5,
+      "levels": [
+        { "score": 0, "description": "Không sử dụng được Header/ Footer" },
+        { "score": 0.125, "description": "Chỉ đánh được số trang" },
+        {
+          "score": 0.25,
+          "description": "Chỉ tạo được Footer (không có Header)"
+        },
+        { "score": 0.375, "description": "Tạo được cả hai, còn vài lỗi nhỏ" },
+        { "score": 0.5, "description": "Tạo đầy đủ và hoàn toàn chính xác" }
+      ]
+    },
+    {
+      "criteria": "Hyperlink",
+      "max_score": 0.5,
+      "levels": [
+        { "score": 0, "description": "Không tạo/sử dụng liên kết" },
+        { "score": 0.125, "description": "Liên kết lỗi, không hoạt động" },
+        {
+          "score": 0.25,
+          "description": "Liên kết hoạt động nhưng sai đích đến (địa chỉ)"
+        },
+        {
+          "score": 0.375,
+          "description": "Liên kết đúng đích đến nhưng còn lỗi nhỏ (hiển thị, mô tả liên kết)"
+        },
+        {
+          "score": 0.5,
+          "description": "Liên kết hoàn toàn chính xác, hoạt động tốt và đúng mục đích"
+        }
+      ]
+    },
+    {
+      "criteria": "Transitions",
+      "max_score": 1,
+      "levels": [
+        { "score": 0, "description": "Không áp dụng hiệu ứng chuyển slide" },
+        {
+          "score": 0.25,
+          "description": "Dùng hiệu ứng hình/âm thanh chưa đúng, không phù hợp"
+        },
+        {
+          "score": 0.5,
+          "description": "Chỉ dùng được hiệu ứng hình ảnh hoặc chỉ có âm thanh"
+        },
+        {
+          "score": 0.75,
+          "description": "Dùng hiệu ứng hình và âm thanh khá tốt, còn lỗi nhỏ"
+        },
+        {
+          "score": 1,
+          "description": "Áp dụng hiệu ứng hình và âm thanh phù hợp với nội dung và hiệu quả"
+        }
+      ]
+    },
+    {
+      "criteria": "Animations",
+      "max_score": 1,
+      "levels": [
+        { "score": 0, "description": "Không sử dụng animation" },
+        { "score": 0.25, "description": "Có dùng hiệu ứng nhưng sai cách" },
+        {
+          "score": 0.5,
+          "description": "Áp dụng cơ bản nhưng tùy chỉnh còn nhiều hạn chế"
+        },
+        {
+          "score": 0.75,
+          "description": "Áp dụng khá tốt, tùy chỉnh ở mức khá"
+        },
+        { "score": 1, "description": "Thành thạo, hiệu quả và chuyên nghiệp" }
+      ]
+    },
+    {
+      "criteria": "Objects",
+      "max_score": 1,
+      "levels": [
+        { "score": 0, "description": "Không biết chèn đối tượng" },
+        {
+          "score": 0.25,
+          "description": "Chèn đối tượng sai loại hoặc định dạng cơ bản"
+        },
+        {
+          "score": 0.5,
+          "description": "Chèn chưa đủ các đối tượng theo yêu cầu"
+        },
+        { "score": 0.75, "description": "Chèn đủ đối tượng nhưng còn lỗi nhỏ" },
+        {
+          "score": 1,
+          "description": "Chèn đầy đủ, chính xác các đối tượng theo yêu cầu"
+        }
+      ]
+    },
+    {
+      "criteria": "Tính nghệ thuật, sáng tạo, phù hợp",
+      "max_score": 2,
+      "levels": [
+        {
+          "score": 0,
+          "description": "Thiết kế, bố cục rất sơ sài, cẩu thả hoặc không có sự đầu tư"
+        },
+        {
+          "score": 0.5,
+          "description": "Bố cục còn nhiều lỗi, thiếu tính logic hoặc thiếu nhất quán giữa các slide"
+        },
+        {
+          "score": 1,
+          "description": "Bố cục các slide hợp lý, tương đối rõ ràng và dễ theo dõi"
+        },
+        {
+          "score": 1.5,
+          "description": "Thiết kế có thẩm mỹ tốt, thu hút; bố cục khoa học và hợp lý"
+        },
+        {
+          "score": 2,
+          "description": "Thiết kế sáng tạo, thẩm mỹ vượt trội; bố cục khoa học, hợp lý và tối ưu hiệu quả trình bày"
+        }
+      ]
+    },
+    {
+      "criteria": "Export PDF",
+      "max_score": 0.5,
+      "levels": [
+        { "score": 0, "description": "Không xuất được file PDF" },
+        {
+          "score": 0.125,
+          "description": "Xuất ra file sai định dạng Handouts"
+        },
+        {
+          "score": 0.25,
+          "description": "PDF có nhiều lỗi nặng (về nội dung, bố cục, hoặc chất lượng hiển thị)"
+        },
+        {
+          "score": 0.375,
+          "description": "PDF gần chuẩn, chỉ có vài lỗi nhỏ (sai sót không ảnh hưởng lớn)"
+        },
+        { "score": 0.5, "description": "PDF xuất chính xác, chất lượng tốt" }
+      ]
+    }
+  ]
+}
