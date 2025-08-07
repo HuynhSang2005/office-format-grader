@@ -12,18 +12,34 @@ export interface RubricCriterion {
   levels: RubricLevel[];
 }
 
-// các type này có thể tái sử dụng từ api.types.ts
+// thông tin chi tiết về kết quả đánh giá một tiêu chí cụ thể
 export interface GradingDetail {
-  criterion: string;
-  maxScore: number;
-  achievedScore: number;
-  reason: string;
+  criterion: string; // Tên tiêu chí
+  maxScore: number;  // Điểm tối đa có thể đạt được
+  achievedScore: number; // Điểm đạt được
+  reason: string;  // Giải thích lý do đạt được điểm này
 }
 
-// define kết quả chấm điểm tổng thể
+
+// define kết quả đánh giá tổng thể của một file
 // bao gồm tổng điểm đạt được, tổng điểm tối đa và chi tiết từng tiêu chí
 export interface GradingResult {
-  totalAchievedScore: number;
-  totalMaxScore: number;
-  details: GradingDetail[];
+  totalAchievedScore: number; // Tổng điểm đạt được
+  totalMaxScore: number;     // Tổng điểm tối đa
+  details: GradingDetail[];  // Chi tiết đánh giá từng tiêu chí
+}
+
+// Định nghĩa interface cho kết quả đánh giá PowerPoint
+export interface PowerPointGradingResult {
+  totalScore?: number;
+  maxScore?: number;
+  percentageScore?: number;
+  criteria?: {
+    [criterionId: string]: {
+      name: string;
+      score: number;
+      maxScore: number;
+      reason: string;
+    }
+  };
 }
