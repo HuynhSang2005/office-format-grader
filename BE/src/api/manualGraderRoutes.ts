@@ -18,7 +18,7 @@ const manualGraderRoutes = new Hono();
 /**
  * API chấm điểm thủ công file PowerPoint
  * Yêu cầu: File .pptx để chấm điểm
- * Tham số query:
+ * Query params:
  *  - output: Định dạng đầu ra (mặc định json, hoặc 'excel' để xuất file Excel)
  *  - format: Định dạng kết quả (mặc định 'standard', hoặc 'detailed' để trả về kết quả chi tiết hơn)
  */
