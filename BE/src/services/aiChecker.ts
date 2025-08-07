@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { GenerateContentResult } from "@google/generative-ai";
 import { logger } from "../utils/logger";
-import type { GradingResult, RubricCriterion } from "../types/grading.types";
+import type { GradingResult, GradingDetail } from "../types/grading.types"; // Sửa RubricCriterion thành GradingDetail
 
 
 
@@ -131,6 +131,39 @@ function validateGradingResult(result: any): result is GradingResult {
 }
 
 /**
+ * Xác thực và điều chỉnh kết quả JSON để đảm bảo tính nhất quán của điểm
+ */
+function validateAndCorrectGradingResult(result: any): GradingResult {
+  if (!validateGradingResult(result)) {
+    logger.error("Invalid grading result structure", { result });
+    throw new Error("AI returned invalid grading result structure");
+  }
+  
+  // Tính lại tổng điểm từ các tiêu chí
+  const recalculatedTotalScore = result.details.reduce(
+    (sum: number, detail: GradingDetail) => sum + detail.achievedScore, // Sửa GradingCriterion thành GradingDetail
+    0
+  );
+  
+  // Làm tròn đến 2 chữ số thập phân để tránh lỗi số thực
+  const roundedRecalculated = Math.round(recalculatedTotalScore * 100) / 100;
+  const roundedOriginal = Math.round(result.totalAchievedScore * 100) / 100;
+  
+  // Nếu tổng điểm không khớp, ghi log và cập nhật
+  if (roundedRecalculated !== roundedOriginal) {
+    logger.warn("Inconsistent total score detected", { 
+      original: result.totalAchievedScore, 
+      recalculated: recalculatedTotalScore 
+    });
+    
+    // Cập nhật lại điểm tổng
+    result.totalAchievedScore = recalculatedTotalScore;
+  }
+  
+  return result;
+}
+
+/**
  * Chấm điểm bài nộp sử dụng AI
  * @param rubricText Văn bản mô tả tiêu chí chấm điểm
  * @param submissionJsonString Dữ liệu bài nộp dưới dạng chuỗi JSON
@@ -173,13 +206,10 @@ export async function gradeSubmissionWithAI(
       // Parse JSON
       const parsedResult = JSON.parse(jsonString);
       
-      // Kiểm tra cấu trúc
-      if (!validateGradingResult(parsedResult)) {
-        logger.error("Invalid grading result structure", { result: parsedResult });
-        throw new Error("AI returned invalid grading result structure");
-      }
+      // Kiểm tra cấu trúc và điều chỉnh điểm nếu cần
+      const validatedResult = validateAndCorrectGradingResult(parsedResult);
       
-      return parsedResult;
+      return validatedResult;
     } catch (parseError) {
       logger.error("Failed to parse AI response as JSON", { 
         error: parseError instanceof Error ? parseError.message : String(parseError),
