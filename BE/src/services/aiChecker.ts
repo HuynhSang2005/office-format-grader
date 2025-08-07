@@ -1,10 +1,32 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { GenerateContentResult } from "@google/generative-ai";
+import { logger } from "../utils/logger";
+import type { GradingResult, RubricCriterion } from "../types/grading.types";
 
-// 1. Khởi tạo model với API key từ file .env
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite", generationConfig: { temperature: 0 } });
 
-// 2. prompt chi tiết
+
+// Cấu hình từ biến môi trường
+const AI_CONFIG = {
+  apiKey: process.env.GOOGLE_API_KEY,
+  model: process.env.GOOGLE_AI_MODEL || "models/gemini-2.5-flash-lite",
+  temperature: Number(process.env.GOOGLE_AI_TEMPERATURE) || 0,
+  maxRetries: Number(process.env.GOOGLE_AI_MAX_RETRIES) || 3,
+  retryDelayMs: Number(process.env.GOOGLE_AI_RETRY_DELAY_MS) || 1000,
+};
+
+// Kiểm tra API key
+if (!AI_CONFIG.apiKey) {
+  throw new Error("GOOGLE_API_KEY is not set in environment variables");
+}
+
+// Khởi tạo model
+const genAI = new GoogleGenerativeAI(AI_CONFIG.apiKey);
+const model = genAI.getGenerativeModel({ 
+  model: AI_CONFIG.model, 
+  generationConfig: { temperature: AI_CONFIG.temperature } 
+});
+
+// Prompt template
 const promptTemplate = `
 Bạn là một trợ lý ảo chuyên nghiệp chuyên chấm điểm các bài làm Word và PowerPoint dựa trên một bộ tiêu chí và dữ liệu cấu trúc file đã được phân tích.
 
@@ -42,31 +64,133 @@ QUAN TRỌNG: Vui lòng trả về kết quả dưới dạng một đối tư�
 {submission_json_placeholder}
 `;
 
-export async function gradeSubmissionWithAI(rubricText: string, submissionJsonString: string): Promise<any> {
-  // 3. Xây dựng prompt hoàn chỉnh bằng cách thay thế các placeholder
+/**
+ * Thực hiện retry cho một async function
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>, 
+  maxRetries: number, 
+  delayMs: number
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      logger.warn(`Attempt ${attempt + 1}/${maxRetries} failed: ${lastError.message}`);
+      
+      if (attempt < maxRetries - 1) {
+        // Exponential backoff
+        const delay = delayMs * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error("All retry attempts failed");
+}
+
+/**
+ * Trích xuất JSON từ phản hồi AI
+ */
+function extractJsonFromAiResponse(text: string): string {
+  const jsonMatch = text.match(/```(?:json)?\n([\s\S]*?)\n```/);
+  if (jsonMatch && typeof jsonMatch[1] === 'string') {
+    return jsonMatch[1].trim();
+  }
+  
+  // Fallback: Thử tìm dấu hiệu của cặp ngoặc nhọn để định vị JSON
+  const jsonStartIndex = text.indexOf('{');
+  const jsonEndIndex = text.lastIndexOf('}');
+  
+  if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonEndIndex > jsonStartIndex) {
+    return text.substring(jsonStartIndex, jsonEndIndex + 1).trim();
+  }
+  
+  return text.trim();
+}
+
+/**
+ * Xác thực kết quả JSON có đúng cấu trúc không
+ */
+function validateGradingResult(result: any): result is GradingResult {
+  return (
+    result &&
+    typeof result.totalAchievedScore === 'number' &&
+    typeof result.totalMaxScore === 'number' &&
+    Array.isArray(result.details) &&
+    result.details.every((detail: any) => 
+      typeof detail.criterion === 'string' &&
+      typeof detail.maxScore === 'number' &&
+      typeof detail.achievedScore === 'number' &&
+      typeof detail.reason === 'string'
+    )
+  );
+}
+
+/**
+ * Chấm điểm bài nộp sử dụng AI
+ * @param rubricText Văn bản mô tả tiêu chí chấm điểm
+ * @param submissionJsonString Dữ liệu bài nộp dưới dạng chuỗi JSON
+ * @returns Kết quả chấm điểm
+ */
+export async function gradeSubmissionWithAI(
+  rubricText: string, 
+  submissionJsonString: string
+): Promise<GradingResult> {
+  // Xây dựng prompt
   const prompt = promptTemplate
     .replace('{rubric_text_placeholder}', rubricText)
     .replace('{submission_json_placeholder}', submissionJsonString);
 
+  // Log prompt ở debug level để có thể kiểm tra khi cần
+  logger.debug("AI Prompt", { 
+    promptLength: prompt.length,
+    rubricLength: rubricText.length,
+    submissionLength: submissionJsonString.length
+  });
 
   try {
-    // 4. Gọi API của Google AI để tạo nội dung
-    console.log("Đang gửi yêu cầu đến AI...");
-    const result = await model.generateContent(prompt);
+    // Gọi API với retry
+    const generateContentWithRetry = () => model.generateContent(prompt);
+    const result = await withRetry<GenerateContentResult>(
+      generateContentWithRetry,
+      AI_CONFIG.maxRetries,
+      AI_CONFIG.retryDelayMs
+    );
+    
     const response = await result.response;
-    const text = await response.text(); 
-    console.log("Đã nhận phản hồi từ AI.");
-
-    // 5. Trích xuất chuỗi JSON từ phản hồi của AI
-    // AI thường trả về JSON trong một khối mã markdown, ví dụ: ```json ... ```
-    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
-    const jsonString = jsonMatch && typeof jsonMatch[1] === 'string' ? jsonMatch[1] : text;
-
-    // 6. Parse và trả về kết quả
-    return JSON.parse(jsonString);
-
+    const text = await response.text();
+    
+    logger.info("Received AI response", { responseLength: text.length });
+    
+    // Trích xuất JSON
+    const jsonString = extractJsonFromAiResponse(text);
+    
+    try {
+      // Parse JSON
+      const parsedResult = JSON.parse(jsonString);
+      
+      // Kiểm tra cấu trúc
+      if (!validateGradingResult(parsedResult)) {
+        logger.error("Invalid grading result structure", { result: parsedResult });
+        throw new Error("AI returned invalid grading result structure");
+      }
+      
+      return parsedResult;
+    } catch (parseError) {
+      logger.error("Failed to parse AI response as JSON", { 
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+        jsonString
+      });
+      throw new Error("AI response is not valid JSON");
+    }
   } catch (error) {
-    console.error("Lỗi khi gọi Google AI API:", error);
-    throw new Error("Không thể nhận được phản hồi hợp lệ từ AI.");
+    logger.error("AI grading failed", { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    throw new Error(`Không thể nhận được phản hồi hợp lệ từ AI: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
