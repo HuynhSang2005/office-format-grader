@@ -1,5 +1,5 @@
 import type { ThemeData, FormattedTextRun } from "../../../types/power_point/powerpointFormat.types";
-import type { SlideLayoutData, TextStyle } from "../../../types/power_point/powerpointStyles";
+import type { SlideLayoutData, TextStyle } from "../../../types/power_point/powerpointStyles.types";
 
 
 export function resolveTextStyle(
