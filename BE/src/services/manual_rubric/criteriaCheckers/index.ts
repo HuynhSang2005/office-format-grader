@@ -1,0 +1,10 @@
+export { checkFilename } from './filenameChecker';
+export { checkHeaderFooter } from './headerFooterChecker';
+export { checkTransitions } from './transitionsChecker';
+export { checkObjects } from './objectsChecker';
+export { checkSlideMaster } from './slideMasterChecker';
+export { checkThemes } from './themesChecker';
+export { checkHyperlink } from './hyperlinkChecker';
+export { checkAnimations } from './animationsChecker';
+export { checkSlidesFromOutline } from './slidesFromOutlineChecker';
+export { checkCreativity } from './creativityChecker';
