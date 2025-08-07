@@ -9,9 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SubmissionAnalyzerRouteImport } from './routes/submission-analyzer'
+import { Route as PowerpointAnalyzerRouteImport } from './routes/powerpoint-analyzer'
+import { Route as ManualCheckerRouteImport } from './routes/manual-checker'
 import { Route as AiCheckerRouteImport } from './routes/ai-checker'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SubmissionAnalyzerRoute = SubmissionAnalyzerRouteImport.update({
+  id: '/submission-analyzer',
+  path: '/submission-analyzer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PowerpointAnalyzerRoute = PowerpointAnalyzerRouteImport.update({
+  id: '/powerpoint-analyzer',
+  path: '/powerpoint-analyzer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManualCheckerRoute = ManualCheckerRouteImport.update({
+  id: '/manual-checker',
+  path: '/manual-checker',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AiCheckerRoute = AiCheckerRouteImport.update({
   id: '/ai-checker',
   path: '/ai-checker',
@@ -26,31 +44,80 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai-checker': typeof AiCheckerRoute
+  '/manual-checker': typeof ManualCheckerRoute
+  '/powerpoint-analyzer': typeof PowerpointAnalyzerRoute
+  '/submission-analyzer': typeof SubmissionAnalyzerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai-checker': typeof AiCheckerRoute
+  '/manual-checker': typeof ManualCheckerRoute
+  '/powerpoint-analyzer': typeof PowerpointAnalyzerRoute
+  '/submission-analyzer': typeof SubmissionAnalyzerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ai-checker': typeof AiCheckerRoute
+  '/manual-checker': typeof ManualCheckerRoute
+  '/powerpoint-analyzer': typeof PowerpointAnalyzerRoute
+  '/submission-analyzer': typeof SubmissionAnalyzerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ai-checker'
+  fullPaths:
+    | '/'
+    | '/ai-checker'
+    | '/manual-checker'
+    | '/powerpoint-analyzer'
+    | '/submission-analyzer'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ai-checker'
-  id: '__root__' | '/' | '/ai-checker'
+  to:
+    | '/'
+    | '/ai-checker'
+    | '/manual-checker'
+    | '/powerpoint-analyzer'
+    | '/submission-analyzer'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai-checker'
+    | '/manual-checker'
+    | '/powerpoint-analyzer'
+    | '/submission-analyzer'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AiCheckerRoute: typeof AiCheckerRoute
+  ManualCheckerRoute: typeof ManualCheckerRoute
+  PowerpointAnalyzerRoute: typeof PowerpointAnalyzerRoute
+  SubmissionAnalyzerRoute: typeof SubmissionAnalyzerRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/submission-analyzer': {
+      id: '/submission-analyzer'
+      path: '/submission-analyzer'
+      fullPath: '/submission-analyzer'
+      preLoaderRoute: typeof SubmissionAnalyzerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/powerpoint-analyzer': {
+      id: '/powerpoint-analyzer'
+      path: '/powerpoint-analyzer'
+      fullPath: '/powerpoint-analyzer'
+      preLoaderRoute: typeof PowerpointAnalyzerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manual-checker': {
+      id: '/manual-checker'
+      path: '/manual-checker'
+      fullPath: '/manual-checker'
+      preLoaderRoute: typeof ManualCheckerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-checker': {
       id: '/ai-checker'
       path: '/ai-checker'
@@ -71,6 +138,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiCheckerRoute: AiCheckerRoute,
+  ManualCheckerRoute: ManualCheckerRoute,
+  PowerpointAnalyzerRoute: PowerpointAnalyzerRoute,
+  SubmissionAnalyzerRoute: SubmissionAnalyzerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
