@@ -1,11 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { GenerateContentResult } from "@google/generative-ai";
 import { logger } from "../utils/logger";
-import type { GradingResult, GradingDetail } from "../types/grading.types"; // Sửa RubricCriterion thành GradingDetail
+import type { GradingResult, GradingDetail } from "../types/grading.types";
 
 
 
-// Cấu hình từ biến môi trường
 const AI_CONFIG = {
   apiKey: process.env.GOOGLE_API_KEY,
   model: process.env.GOOGLE_AI_MODEL || "models/gemini-2.5-flash-lite",
@@ -14,17 +13,30 @@ const AI_CONFIG = {
   retryDelayMs: Number(process.env.GOOGLE_AI_RETRY_DELAY_MS) || 1000,
 };
 
-// Kiểm tra API key
-if (!AI_CONFIG.apiKey) {
-  throw new Error("GOOGLE_API_KEY is not set in environment variables");
-}
-
+// Top-level throw removed. Use lazy init instead.
 // Khởi tạo model
-const genAI = new GoogleGenerativeAI(AI_CONFIG.apiKey);
-const model = genAI.getGenerativeModel({ 
-  model: AI_CONFIG.model, 
-  generationConfig: { temperature: AI_CONFIG.temperature } 
-});
+// const genAI = new GoogleGenerativeAI(AI_CONFIG.apiKey);
+// const model = genAI.getGenerativeModel({ 
+//   model: AI_CONFIG.model, 
+//   generationConfig: { temperature: AI_CONFIG.temperature } 
+// });
+
+// Lazy init Gemini model to avoid crashing at startup if envs are missing
+let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null;
+function getModel() {
+  if (!AI_CONFIG.apiKey) {
+    throw new Error("GOOGLE_API_KEY is not set in environment variables");
+  }
+  if (!model) {
+    const genAI = new GoogleGenerativeAI(AI_CONFIG.apiKey);
+    model = genAI.getGenerativeModel({
+      model: AI_CONFIG.model,
+      generationConfig: { temperature: AI_CONFIG.temperature },
+    });
+    logger.info("AI model initialized", { model: AI_CONFIG.model, temperature: AI_CONFIG.temperature });
+  }
+  return model;
+}
 
 // Prompt template
 const promptTemplate = `
@@ -96,19 +108,16 @@ async function withRetry<T>(
  * Trích xuất JSON từ phản hồi AI
  */
 function extractJsonFromAiResponse(text: string): string {
-  const jsonMatch = text.match(/```(?:json)?\n([\s\S]*?)\n```/);
+  // More robust fence matching (handles \r\n and optional spaces)
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (jsonMatch && typeof jsonMatch[1] === 'string') {
     return jsonMatch[1].trim();
   }
-  
-  // Fallback: Thử tìm dấu hiệu của cặp ngoặc nhọn để định vị JSON
   const jsonStartIndex = text.indexOf('{');
   const jsonEndIndex = text.lastIndexOf('}');
-  
   if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonEndIndex > jsonStartIndex) {
     return text.substring(jsonStartIndex, jsonEndIndex + 1).trim();
   }
-  
   return text.trim();
 }
 
@@ -138,28 +147,49 @@ function validateAndCorrectGradingResult(result: any): GradingResult {
     logger.error("Invalid grading result structure", { result });
     throw new Error("AI returned invalid grading result structure");
   }
-  
-  // Tính lại tổng điểm từ các tiêu chí
+
+  // Clamp/normalize each detail
+  result.details = result.details.map((d: GradingDetail) => {
+    const max = Number.isFinite(d.maxScore) ? d.maxScore : 0;
+    let achieved = Number.isFinite(d.achievedScore) ? d.achievedScore : 0;
+    // clamp achieved to [0, max]
+    achieved = Math.max(0, Math.min(max, achieved));
+    // round to 2 decimals
+    achieved = Math.round(achieved * 100) / 100;
+    return { ...d, maxScore: max, achievedScore: achieved };
+  });
+
+  // Recalculate totals
   const recalculatedTotalScore = result.details.reduce(
-    (sum: number, detail: GradingDetail) => sum + detail.achievedScore, // Sửa GradingCriterion thành GradingDetail
+    (sum: number, detail: GradingDetail) => sum + detail.achievedScore,
     0
   );
-  
-  // Làm tròn đến 2 chữ số thập phân để tránh lỗi số thực
+  const sumMaxScore = result.details.reduce(
+    (sum: number, detail: GradingDetail) => sum + detail.maxScore,
+    0
+  );
+
+  // Round totals
   const roundedRecalculated = Math.round(recalculatedTotalScore * 100) / 100;
   const roundedOriginal = Math.round(result.totalAchievedScore * 100) / 100;
-  
-  // Nếu tổng điểm không khớp, ghi log và cập nhật
+
   if (roundedRecalculated !== roundedOriginal) {
-    logger.warn("Inconsistent total score detected", { 
-      original: result.totalAchievedScore, 
-      recalculated: recalculatedTotalScore 
+    logger.warn("Inconsistent total score detected", {
+      original: result.totalAchievedScore,
+      recalculated: recalculatedTotalScore,
     });
-    
-    // Cập nhật lại điểm tổng
-    result.totalAchievedScore = recalculatedTotalScore;
+    result.totalAchievedScore = roundedRecalculated;
   }
-  
+
+  // Ensure totalMaxScore reflects declared design (AI is instructed to use 10)
+  if (typeof result.totalMaxScore !== 'number' || result.totalMaxScore !== 10) {
+    logger.warn("totalMaxScore adjusted to 10", {
+      original: result.totalMaxScore,
+      sumMaxScore,
+    });
+    result.totalMaxScore = 10;
+  }
+
   return result;
 }
 
@@ -170,57 +200,53 @@ function validateAndCorrectGradingResult(result: any): GradingResult {
  * @returns Kết quả chấm điểm
  */
 export async function gradeSubmissionWithAI(
-  rubricText: string, 
+  rubricText: string,
   submissionJsonString: string
 ): Promise<GradingResult> {
-  // Xây dựng prompt
   const prompt = promptTemplate
     .replace('{rubric_text_placeholder}', rubricText)
     .replace('{submission_json_placeholder}', submissionJsonString);
 
-  // Log prompt ở debug level để có thể kiểm tra khi cần
-  logger.debug("AI Prompt", { 
+  logger.debug("AI Prompt", {
     promptLength: prompt.length,
     rubricLength: rubricText.length,
-    submissionLength: submissionJsonString.length
+    submissionLength: submissionJsonString.length,
   });
 
   try {
-    // Gọi API với retry
-    const generateContentWithRetry = () => model.generateContent(prompt);
+    // Use lazy model init
     const result = await withRetry<GenerateContentResult>(
-      generateContentWithRetry,
+      () => getModel().generateContent(prompt),
       AI_CONFIG.maxRetries,
       AI_CONFIG.retryDelayMs
     );
-    
+
     const response = await result.response;
     const text = await response.text();
-    
+
     logger.info("Received AI response", { responseLength: text.length });
-    
-    // Trích xuất JSON
+
     const jsonString = extractJsonFromAiResponse(text);
-    
+
     try {
-      // Parse JSON
       const parsedResult = JSON.parse(jsonString);
-      
-      // Kiểm tra cấu trúc và điều chỉnh điểm nếu cần
       const validatedResult = validateAndCorrectGradingResult(parsedResult);
-      
       return validatedResult;
     } catch (parseError) {
-      logger.error("Failed to parse AI response as JSON", { 
+      logger.error("Failed to parse AI response as JSON", {
         error: parseError instanceof Error ? parseError.message : String(parseError),
-        jsonString
+        jsonPreview: jsonString.slice(0, 300),
       });
       throw new Error("AI response is not valid JSON");
     }
   } catch (error) {
-    logger.error("AI grading failed", { 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("AI grading failed", {
+      error: error instanceof Error ? error.message : String(error),
     });
-    throw new Error(`Không thể nhận được phản hồi hợp lệ từ AI: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Không thể nhận được phản hồi hợp lệ từ AI: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
