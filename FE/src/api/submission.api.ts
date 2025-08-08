@@ -1,3 +1,5 @@
+import { apiUrl } from "../configs/apiUrl";
+
 export async function analyzeSubmission({
   submissionFile,
   rubricFile
@@ -5,7 +7,7 @@ export async function analyzeSubmission({
   submissionFile: File,
   rubricFile?: File
 }) {
-  const url = `http://localhost:3000/api/submission/analyze`;
+  const url = apiUrl(`/submission/analyze`);
   const formData = new FormData();
   formData.append('submissionFile', submissionFile);
   if (rubricFile) {
