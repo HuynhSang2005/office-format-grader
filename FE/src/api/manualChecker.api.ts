@@ -1,3 +1,4 @@
+import { apiUrl } from "../configs/apiUrl";
 import { downloadFile } from "../lib/fileUtils";
 
 export async function checkManually({
@@ -9,7 +10,7 @@ export async function checkManually({
   output: 'json' | 'excel',
   format?: 'standard' | 'detailed'
 }) {
-  const url = `http://localhost:3000/api/manual-checker?output=${output}&format=${format}`;
+  const url = apiUrl(`/manual-checker?output=${output}&format=${format}`);
   const formData = new FormData();
   formData.append('submissionFile', file);
 

@@ -1,5 +1,6 @@
 import type { GradePayload, GradeResponse } from "../types/api.types";
 import { downloadFile } from "../lib/fileUtils";
+import { apiUrl } from "../configs/apiUrl";
 
 
 export async function processGrading({
@@ -7,7 +8,7 @@ export async function processGrading({
   submissionFile,
   output,
 }: GradePayload & { output: "json" | "excel" }): Promise<GradeResponse | { message: string }> {
-  const url = `http://localhost:3000/api/ai-checker?output=${output}`;
+  const url = apiUrl(`/ai-checker?output=${output}`);
   const formData = new FormData();
   formData.append("rubricFile", rubricFile);
   formData.append("submissionFile", submissionFile);

@@ -1,8 +1,9 @@
+import { apiUrl } from "../configs/apiUrl";
 import { downloadFile } from "../lib/fileUtils";
 
 // Chỉ cần một hàm duy nhất
 export async function analyzeFile({ file, mode, output }: { file: File, mode: string, output: string }) {
-    const url = `http://localhost:3000/api/files/details?mode=${mode}&output=${output}`;
+    const url = apiUrl(`/files/details?mode=${mode}&output=${output}`);
     const formData = new FormData();
     formData.append('file', file);
 

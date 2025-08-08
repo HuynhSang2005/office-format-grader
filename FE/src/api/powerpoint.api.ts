@@ -1,3 +1,5 @@
+import { apiUrl } from "../configs/apiUrl";
+
 export async function analyzePowerPoint({ 
   file, 
   mode = 'full' 
@@ -5,7 +7,7 @@ export async function analyzePowerPoint({
   file: File, 
   mode: 'full' | 'overview' 
 }) {
-  const url = `http://localhost:3000/api/powerpoint/analyze?mode=${mode}`;
+  const url = apiUrl(`/powerpoint/analyze?mode=${mode}`);
   const formData = new FormData();
   formData.append('file', file);
 
@@ -21,7 +23,7 @@ export async function analyzePowerPoint({
 
   const data = await response.json();
   
-  // Định nghĩa các interface để tránh lỗi "implicitly has an 'any' type"
+  // define các interface để tránh lỗi "implicitly has an 'any' type"
   interface BackendShape {
     type: string;
     [key: string]: any;
