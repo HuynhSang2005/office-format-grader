@@ -1,4 +1,5 @@
 import { apiUrl } from "../configs/apiUrl";
+import { assertOk } from "../lib/http";
 
 export async function analyzeSubmission({
   submissionFile,
@@ -19,10 +20,7 @@ export async function analyzeSubmission({
     body: formData,
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'Lỗi khi phân tích bài nộp.');
-  }
+  await assertOk(response, 'Lỗi khi phân tích bài nộp.');
 
   const data = await response.json();
   return data.data;

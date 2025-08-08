@@ -1,6 +1,7 @@
 import type { GradePayload, GradeResponse } from "../types/api.types";
 import { downloadFile } from "../lib/fileUtils";
 import { apiUrl } from "../configs/apiUrl";
+import { assertOk } from "../lib/http";
 
 
 export async function processGrading({
@@ -18,10 +19,7 @@ export async function processGrading({
     body: formData,
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || "Có lỗi xảy ra từ server.");
-  }
+  await assertOk(response, "Có lỗi xảy ra từ server.");
 
   if (output === "excel") {
     await downloadFile(response, `grading-report-${submissionFile.name}.xlsx`);

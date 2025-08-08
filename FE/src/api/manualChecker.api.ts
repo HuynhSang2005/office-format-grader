@@ -1,5 +1,6 @@
 import { apiUrl } from "../configs/apiUrl";
 import { downloadFile } from "../lib/fileUtils";
+import { assertOk } from "../lib/http";
 
 export async function checkManually({
   file,
@@ -19,10 +20,7 @@ export async function checkManually({
     body: formData,
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'Lỗi khi chấm điểm thủ công.');
-  }
+  await assertOk(response, 'Lỗi khi chấm điểm thủ công.');
 
   if (output === 'excel') {
     await downloadFile(response, `manual-report-${file.name}.xlsx`);

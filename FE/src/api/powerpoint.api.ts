@@ -1,4 +1,5 @@
 import { apiUrl } from "../configs/apiUrl";
+import { assertOk } from "../lib/http";
 
 export async function analyzePowerPoint({ 
   file, 
@@ -16,10 +17,7 @@ export async function analyzePowerPoint({
     body: formData,
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'Lỗi khi phân tích file PowerPoint.');
-  }
+  await assertOk(response, 'Lỗi khi phân tích file PowerPoint.');
 
   const data = await response.json();
   
