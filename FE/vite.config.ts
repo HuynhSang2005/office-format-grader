@@ -11,7 +11,7 @@ export default defineConfig({
     }),
     react(),
   ],
-  // dev-only: proxy /api → BE localhost
+  // dev-only: proxy /api đến BE localhost
   server: {
     proxy: {
       '/api': 'http://localhost:3000',
