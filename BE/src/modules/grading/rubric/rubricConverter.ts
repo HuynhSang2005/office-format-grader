@@ -39,7 +39,11 @@ const criteriaToIdMapping: Record<string, string> = {
  */
 export async function convertJsonRubricToTypescript(): Promise<RubricCriterion[]> {
   try {
-    const filePath = path.resolve(__dirname, '../shared/rubric.json');
+    // The shared rubric file lives two directories up from this module
+    // (src/modules/grading/rubric -> src/shared/rubric.json). Use a
+    // relative path that correctly points to that location so the
+    // converter can load the latest scoring criteria.
+    const filePath = path.resolve(__dirname, '../../shared/rubric.json');
     const fileContent = await fs.readFile(filePath, 'utf8');
     const jsonRubric: JsonRubric = JSON.parse(fileContent);
     

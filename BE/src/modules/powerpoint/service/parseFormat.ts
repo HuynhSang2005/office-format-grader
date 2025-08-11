@@ -257,9 +257,8 @@ export async function parsePowerPointFormat(
         const slideRelsXml = await parseStringPromise(slideRelsEntry.getData().toString('utf-8'));
         if (slideRelsXml.Relationships.Relationship) {
           for (const rel of slideRelsXml.Relationships.Relationship) {
-            if (rel.$.TargetMode === 'External') {
-              slideRelationships.set(rel.$.Id, rel.$.Target);
-            }
+            // Lưu mọi mối quan hệ để có thể tra cứu cả liên kết ngoài và các tài nguyên nội bộ
+            slideRelationships.set(rel.$.Id, rel.$.Target);
             // Tìm layout cho slide
             if (rel.$.Type && rel.$.Type.endsWith('/slideLayout')) {
               layoutPathForSlide = `ppt/${rel.$.Target.replace(/^\//, '')}`;
