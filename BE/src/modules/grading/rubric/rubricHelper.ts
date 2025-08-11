@@ -1,6 +1,6 @@
 import type { RubricCriterion, GradingDetail, RubricLevel } from "../types/grading.types";
 // Import the latest PowerPoint rubric definition from the local rubric module
-import { powerpointRubric } from "./powerpointRubric.ts";
+import { powerpointRubric } from "./powerpointRubric";
 
 /**
  * Tìm tiêu chí từ rubric dựa vào ID
