@@ -33,7 +33,10 @@ export async function updateRubricFromJson(): Promise<void> {
  */
 export function watchRubricFile(): void {
   try {
-    const rubricPath = path.resolve(__dirname, '../shared/rubric.json');
+    // Locate the shared rubric stored in src/shared. The rubric directory
+    // sits two levels below that folder, so resolve ../../shared/rubric.json
+    // instead of the previously incorrect relative path.
+    const rubricPath = path.resolve(__dirname, '../../shared/rubric.json');
     
     // Kiểm tra xem file tồn tại không
     if (!fs.existsSync(rubricPath)) {

@@ -1,10 +1,20 @@
-import type { Shape, ShapeTransform, FormattedTextRun, ThemeData, TableData, SmartArtData } from '../../../types/power_point/powerpointFormat.types';
+import type {
+  Shape,
+  ShapeTransform,
+  FormattedTextRun,
+  ThemeData,
+  TableData,
+  SmartArtData,
+} from '../../../types/power_point/powerpointFormat.types';
 import type { SlideLayoutData } from '../../../types/power_point/powerpointStyles.types';
 import { resolveTextStyle } from '../resolvers/styleResolver';
 import type { WordArtEffect } from '../../../types/power_point/powerpointFormat.types';
 import { parseSmartArt } from './smartArtParser';
+import { parseTableXml } from './tableParser';
+import { parseChart } from './chartParser';
 import path from 'node:path';
 import type { ChartData } from '../../../types/power_point/chart.types';
+import AdmZip from 'adm-zip';
 
 export async function extractShapesFromSlide(
   slideXmlObject: any,
@@ -13,7 +23,7 @@ export async function extractShapesFromSlide(
   masterData: SlideLayoutData,
   themeData: ThemeData,
   slidePath: string,
-  zip: any
+  zip: AdmZip
 ): Promise<Shape[]> {
   const shapes: Shape[] = [];
   const spTree = slideXmlObject?.['p:sld']?.['p:cSld']?.[0]?.['p:spTree']?.[0];
@@ -24,7 +34,8 @@ export async function extractShapesFromSlide(
     if (!nvPr) continue;
     const id = nvPr.$.id;
     const name = nvPr.$.name;
-    const xfrm = shapeElement['p:spPr']?.[0]?.['a:xfrm']?.[0];
+    const spPr = shapeElement['p:spPr']?.[0];
+    const xfrm = spPr?.['a:xfrm']?.[0];
     if (!xfrm) continue;
     const transform: ShapeTransform = {
       x: parseInt(xfrm['a:off'][0].$.x, 10),
@@ -54,7 +65,8 @@ export async function extractShapesFromSlide(
         });
       }
     }
-    shapes.push({ id, name, transform, textRuns });
+    const wordArt = parseWordArtEffects(spPr);
+    shapes.push({ id, name, transform, textRuns, wordArt });
   }
 
   // --- Xử lý <p:graphicFrame> để nhận diện SmartArt, Table, Chart ---
@@ -92,7 +104,16 @@ export async function extractShapesFromSlide(
         }
       }
     } else if (graphicData['a:tbl']) {
+      tableData = parseTableXml(graphicData['a:tbl'][0]);
     } else if (graphicData['a:chart']) {
+      const chartRelId = graphicData['a:chart'][0]?.$?.['r:id'];
+      if (chartRelId) {
+        const relPath = relationships.get(chartRelId);
+        if (relPath) {
+          const chartPath = `ppt/charts/${path.basename(relPath)}`;
+          chartData = await parseChart(zip, chartPath);
+        }
+      }
     }
 
     shapes.push({
