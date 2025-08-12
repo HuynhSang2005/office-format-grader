@@ -1,3 +1,6 @@
-export * from './rubricHelper.ts';
-export * from './gradingResultHelper.ts';
-export * from './rubricConverter.ts';
+import { defaultRules, type RubricRule } from './rules.ts';
+
+/** Trả về rubric mặc định. */
+export function getRubric(): RubricRule[] {
+  return defaultRules;
+}

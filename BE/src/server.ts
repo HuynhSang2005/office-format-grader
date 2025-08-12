@@ -1,7 +1,4 @@
-import app from './core/http/app.ts';
-import { env } from './core/config/env.ts';
+import { app } from './core/app.ts';
+import { env } from './core/env.ts';
 
-export default {
-  port: env.PORT,
-  fetch: app.fetch,
-};
+export default { fetch: app.fetch, port: env.PORT };

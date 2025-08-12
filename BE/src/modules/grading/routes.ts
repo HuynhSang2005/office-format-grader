@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
 import * as ctrl from './controller.ts';
 
-export const gradingRoutes = new Hono();
+const app = new Hono();
+app.post('/ai', ctrl.aiCheck);
+app.post('/manual', ctrl.manualCheck);
 
-gradingRoutes.post('/ai-checker', ctrl.aiCheck);
-gradingRoutes.post('/manual-checker', ctrl.manualCheck);
-gradingRoutes.post('/check-criterion/:id', ctrl.checkCriterion);
-
-export default gradingRoutes;
+export default app;

@@ -1,9 +1,8 @@
 import { Hono } from 'hono';
 import * as ctrl from './controller.ts';
 
-export const filesRoutes = new Hono();
+const app = new Hono();
+app.get('/', ctrl.list);
+app.post('/details', ctrl.details);
 
-filesRoutes.get('/', ctrl.list);
-filesRoutes.post('/details', ctrl.details);
-
-export default filesRoutes;
+export default app;
