@@ -1,13 +1,41 @@
-import { createRootRoute, Outlet, Link } from '@tanstack/react-router';
+  import { createRootRoute, Outlet, Link } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
-import { AppShell, Group, NavLink } from '@mantine/core';
-import { File, Bot, Presentation, CheckCircle, FileText } from 'lucide-react';
+import { AppShell, NavLink, ActionIcon, Tooltip } from '@mantine/core';
+import { File, Bot, Presentation, CheckCircle, FileText, Sun, Moon } from 'lucide-react';
+import { useState, useEffect } from 'react'
 
 export const Route = createRootRoute({
   component: RootComponent,
 });
 
 function RootComponent() {
+  const [colorScheme, setColorScheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('mantine-color-scheme')
+      return (saved === 'dark' ? 'dark' : 'light')
+    } catch (e) {
+      return 'light'
+    }
+  })
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-mantine-color-scheme', colorScheme)
+    } catch (e) {
+      // ignore
+    }
+  }, [colorScheme])
+
+  const toggleColorScheme = (value?: 'light' | 'dark') => {
+    const next = value || (colorScheme === 'dark' ? 'light' : 'dark')
+    setColorScheme(next)
+    try {
+      localStorage.setItem('mantine-color-scheme', next)
+    } catch (e) {
+      // ignore
+    }
+  }
+
   return (
     <>
       <AppShell 
@@ -16,9 +44,18 @@ function RootComponent() {
         padding="md"
       >
         <AppShell.Header>
-          <Group h="100%" px="lg">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%', paddingLeft: 16, paddingRight: 16 }}>
             <span style={{ fontWeight: 750 }}>Office AI Checker</span>
-          </Group>
+            <Tooltip label={colorScheme === 'dark' ? 'Chuyển sáng' : 'Chuyển tối'}>
+              <ActionIcon
+                variant="light"
+                onClick={() => toggleColorScheme()}
+                title="Toggle color scheme"
+              >
+                {colorScheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </ActionIcon>
+            </Tooltip>
+          </div>
         </AppShell.Header>
 
         <AppShell.Navbar p="lg">

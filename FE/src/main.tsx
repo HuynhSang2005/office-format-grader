@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -22,17 +22,39 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// Render app
+// Render app with color scheme provider and persistent preference
+function App() {
+  const [colorScheme, _setColorScheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('mantine-color-scheme')
+      return (saved === 'dark' ? 'dark' : 'light')
+    } catch (e) {
+      return 'light'
+    }
+  })
+
+  // Ensure HTML attribute matches initial value
+  try {
+    document.documentElement.setAttribute('data-mantine-color-scheme', colorScheme)
+  } catch (e) {
+    // ignore
+  }
+
+  return (
+      <MantineProvider theme={{ colorScheme: colorScheme } as any}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+        </MantineProvider>
+  )
+}
+
 const rootElement = document.getElementById('root')!
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <MantineProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </MantineProvider>
+      <App />
     </StrictMode>,
   )
 }

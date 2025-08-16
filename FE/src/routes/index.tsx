@@ -22,7 +22,7 @@ export const Route = createFileRoute('/')({
 });
 
 function HomePage() {
-  const [analysisFile, setAnalysisFile] = useState<File | null>(null); // Sửa lại kiểu
+  const [analysisFile, setAnalysisFile] = useState<File | null>(null);
   const [mode, setMode] = useState('full');
   const [output, setOutput] = useState('json');
 
