@@ -3,7 +3,7 @@
   &nbsp;
   <img src="https://raw.githubusercontent.com/honojs/hono/main/docs/images/hono-title.png" height="60" />
   &nbsp;
-  <img src="https://vitejs.dev/logo-with-shadow.png" width="70" />
+  <img src="https://vite.dev/logo.svg" width="70" />
   &nbsp;
   <img src="./FE/public/assets/react.png" width="70"/>
   &nbsp;
