@@ -1,0 +1,284 @@
+{
+  "title": "Default Word Rubric",
+  "version": "1.0",
+  "locale": "vi-VN",
+  "description": "Rubric mặc định cho việc chấm điểm file Word",
+  "fileType": "DOCX",
+  "totalPoints": 10,
+  "scoring": {
+    "method": "sum",
+    "rounding": "half_up_0.25"
+  },
+  "criteria": [
+    {
+      "id": "docx_toc",
+      "name": "Mục lục tự động",
+      "description": "Tạo mục lục (Table of Contents) tự động",
+      "detectorKey": "docx.toc",
+      "maxPoints": 1,
+      "levels": [
+        {
+          "code": "toc_0",
+          "name": "Không có",
+          "points": 0,
+          "description": "Không có mục lục hoặc tạo thủ công"
+        },
+        {
+          "code": "toc_1",
+          "name": "Cơ bản",
+          "points": 0.5,
+          "description": "Có mục lục tự động nhưng chưa đầy đủ"
+        },
+        {
+          "code": "toc_2",
+          "name": "Hoàn chỉnh",
+          "points": 1,
+          "description": "TOC tự động đầy đủ, phân cấp, số trang chính xác"
+        }
+      ]
+    },
+    {
+      "id": "docx_header_footer",
+      "name": "Header và Footer",
+      "description": "Thiết lập header/footer đúng chuẩn",
+      "detectorKey": "docx.headerFooter",
+      "maxPoints": 1,
+      "levels": [
+        {
+          "code": "hf_0",
+          "name": "Không có",
+          "points": 0,
+          "description": "Không có header/footer"
+        },
+        {
+          "code": "hf_1",
+          "name": "Cơ bản",
+          "points": 0.5,
+          "description": "Có header/footer nhưng thiếu thông tin"
+        },
+        {
+          "code": "hf_2",
+          "name": "Đầy đủ",
+          "points": 1,
+          "description": "Header/Footer đầy đủ thông tin, đúng vị trí"
+        }
+      ]
+    },
+    {
+      "id": "docx_layout_art",
+      "name": "Columns, Drop Cap, Picture, WordArt",
+      "description": "Sử dụng đầy đủ 4 yếu tố: Columns, Drop Cap, Picture, WordArt",
+      "detectorKey": "docx.layoutArt",
+      "maxPoints": 1.5,
+      "levels": [
+        {
+          "code": "layout_0",
+          "name": "Thiếu nhiều",
+          "points": 0,
+          "description": "Thiếu hơn 2 yếu tố hoặc không có"
+        },
+        {
+          "code": "layout_1",
+          "name": "Thiếu ít",
+          "points": 0.5,
+          "description": "Có 2-3 yếu tố nhưng chưa chuẩn"
+        },
+        {
+          "code": "layout_2",
+          "name": "Cơ bản",
+          "points": 1,
+          "description": "Có đủ 4 yếu tố nhưng chất lượng chưa cao"
+        },
+        {
+          "code": "layout_3",
+          "name": "Tốt",
+          "points": 1.25,
+          "description": "Đủ 4 yếu tố, chất lượng khá, spacing ổn"
+        },
+        {
+          "code": "layout_4",
+          "name": "Xuất sắc",
+          "points": 1.5,
+          "description": "Đủ 4 yếu tố chất lượng cao, spacing hoàn hảo"
+        }
+      ]
+    },
+    {
+      "id": "docx_table",
+      "name": "Bảng (Table)",
+      "description": "Tạo bảng đúng format với màu nền, border",
+      "detectorKey": "docx.table",
+      "maxPoints": 1,
+      "levels": [
+        {
+          "code": "table_0",
+          "name": "Không có",
+          "points": 0,
+          "description": "Không có bảng nào"
+        },
+        {
+          "code": "table_1",
+          "name": "Cơ bản",
+          "points": 0.5,
+          "description": "Có bảng nhưng format đơn giản"
+        },
+        {
+          "code": "table_2",
+          "name": "Hoàn chỉnh",
+          "points": 1,
+          "description": "Bảng đúng mẫu, có màu nền, border, spacing"
+        }
+      ]
+    },
+    {
+      "id": "docx_equation",
+      "name": "Phương trình (Equation)",
+      "description": "Sử dụng Equation Editor để tạo công thức",
+      "detectorKey": "docx.equation",
+      "maxPoints": 1,
+      "levels": [
+        {
+          "code": "eq_0",
+          "name": "Không có",
+          "points": 0,
+          "description": "Không có phương trình hoặc viết tay"
+        },
+        {
+          "code": "eq_1",
+          "name": "Cơ bản",
+          "points": 0.5,
+          "description": "Có dùng Equation nhưng đơn giản"
+        },
+        {
+          "code": "eq_2",
+          "name": "Chính xác",
+          "points": 1,
+          "description": "Dùng Equation Editor, công thức chính xác"
+        }
+      ]
+    },
+    {
+      "id": "docx_tabs",
+      "name": "Tab stops",
+      "description": "Sử dụng tab stops để căn chỉnh văn bản",
+      "detectorKey": "docx.tabs",
+      "maxPoints": 1,
+      "levels": [
+        {
+          "code": "tabs_0",
+          "name": "Không có",
+          "points": 0,
+          "description": "Không sử dụng tab stops"
+        },
+        {
+          "code": "tabs_1",
+          "name": "Cơ bản",
+          "points": 0.5,
+          "description": "Có dùng tabs nhưng chưa chính xác"
+        },
+        {
+          "code": "tabs_2",
+          "name": "Chính xác",
+          "points": 1,
+          "description": "Tab stops chính xác, văn bản thẳng hàng"
+        }
+      ]
+    },
+    {
+      "id": "docx_smart_art",
+      "name": "SmartArt",
+      "description": "Sử dụng SmartArt để tạo sơ đồ",
+      "detectorKey": "docx.smartArt",
+      "maxPoints": 1,
+      "levels": [
+        {
+          "code": "smart_0",
+          "name": "Không có",
+          "points": 0,
+          "description": "Không có SmartArt nào"
+        },
+        {
+          "code": "smart_1",
+          "name": "Cơ bản",
+          "points": 0.5,
+          "description": "Có SmartArt đơn giản"
+        },
+        {
+          "code": "smart_2",
+          "name": "Chuyên nghiệp",
+          "points": 1,
+          "description": "SmartArt phù hợp nội dung, rõ ràng"
+        }
+      ]
+    },
+    {
+      "id": "docx_hyperlinks",
+      "name": "Hyperlinks",
+      "description": "Sử dụng hyperlinks trong tài liệu",
+      "detectorKey": "docx.hyperlinks",
+      "maxPoints": 1,
+      "levels": [
+        {
+          "code": "link_0",
+          "name": "Không có",
+          "points": 0,
+          "description": "Không có hyperlink nào"
+        },
+        {
+          "code": "link_1",
+          "name": "Có hyperlink",
+          "points": 1,
+          "description": "Có ít nhất 1 hyperlink hoạt động"
+        }
+      ]
+    },
+    {
+      "id": "docx_equation_advanced",
+      "name": "Phương trình nâng cao",
+      "description": "Sử dụng Equation Editor để tạo công thức phức tạp",
+      "detectorKey": "docx.equation",
+      "maxPoints": 0.5,
+      "levels": [
+        {
+          "code": "eq_adv_0",
+          "name": "Không có",
+          "points": 0,
+          "description": "Không có phương trình phức tạp"
+        },
+        {
+          "code": "eq_adv_1",
+          "name": "Có phương trình",
+          "points": 0.5,
+          "description": "Có sử dụng phương trình phức tạp"
+        }
+      ]
+    },
+    {
+      "id": "docx_layout_professional",
+      "name": "Bố cục chuyên nghiệp",
+      "description": "Sử dụng các yếu tố trình bày chuyên nghiệp",
+      "detectorKey": "docx.layoutArt",
+      "maxPoints": 1,
+      "levels": [
+        {
+          "code": "layout_pro_0",
+          "name": "Cơ bản",
+          "points": 0,
+          "description": "Bố cục cơ bản"
+        },
+        {
+          "code": "layout_pro_1",
+          "name": "Tốt",
+          "points": 0.5,
+          "description": "Có yếu tố trình bày tốt"
+        },
+        {
+          "code": "layout_pro_2",
+          "name": "Chuyên nghiệp",
+          "points": 1,
+          "description": "Bố cục chuyên nghiệp, cân đối"
+        }
+      ]
+    }
+  ]
+}

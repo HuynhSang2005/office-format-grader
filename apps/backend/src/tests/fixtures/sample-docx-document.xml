@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1"/>
+      </w:pPr>
+      <w:r>
+        <w:t>Chapter 1: Introduction</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>This is a sample document with some content to test the extraction.</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tr>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Header 1</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Header 2</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Data 1</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Data 2</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:fldSimple w:instr="TOC \o &quot;1-3&quot; \h \z \u">
+        <w:r>
+          <w:t>Table of Contents will be here</w:t>
+        </w:r>
+      </w:fldSimple>
+    </w:p>
+    <w:sectPr>
+      <w:headerReference w:type="default" r:id="rId1"/>
+      <w:footerReference w:type="default" r:id="rId2"/>
+    </w:sectPr>
+  </w:body>
+</w:document>
