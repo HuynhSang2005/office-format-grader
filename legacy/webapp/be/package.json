@@ -21,7 +21,8 @@
     "luxon": "^3.7.1",
     "mammoth": "^1.10.0",
     "xlsx": "^0.18.5",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "zod": "^4.0.17"
   },
   "scripts": {
     "start": "bun run src/server.ts"
