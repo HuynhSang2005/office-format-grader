@@ -1,4 +1,4 @@
-# Office Vibe - Monorepo
+# Office Format Grader - Monorepo
 
 This is a monorepo for the Office Vibe project, containing both the backend and frontend applications.
 
