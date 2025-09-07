@@ -1,47 +1,34 @@
-import { createRootRoute, useLocation } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/router-devtools';
-import { MantineProvider, createTheme } from '@mantine/core';
-import { ModalsProvider } from '@mantine/modals';
-import { Notifications } from '@mantine/notifications';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { AuthLayout } from '@/components/layout/AuthLayout';
+/**
+ * @file __root.tsx
+ * @description Root route component with error boundary and suspense fallback
+ * @author Your Name
+ */
 
-// Import Mantine's default CSS
-import '@mantine/core/styles.css';
-import '@mantine/notifications/styles.css';
-
-const queryClient = new QueryClient();
-
-const theme = createTheme({});
+import { createRootRoute, Outlet } from '@tanstack/react-router'
 
 function RootComponent() {
-  const location = useLocation();
-  
-  // Routes that should use AuthLayout (login page)
-  const authRoutes = ['/login'];
-  
-  // Check if current route should use AuthLayout
-  const shouldUseAuthLayout = authRoutes.includes(location.pathname);
-  
-  if (shouldUseAuthLayout) {
-    return <AuthLayout />;
-  }
-  
-  // Use MainLayout for all other routes
-  return <MainLayout />;
+  return <Outlet />
+}
+
+function SuspenseFallback() {
+  return (
+    <div className="flex items-center justify-center w-full h-screen">
+      <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  )
+}
+
+function ErrorComponent() {
+  return (
+    <div className="flex flex-col items-center justify-center w-full h-screen">
+      <h1 className="text-2xl font-bold text-red-500">Something went wrong</h1>
+      <p className="mt-2 text-gray-600">An error occurred while loading the page</p>
+    </div>
+  )
 }
 
 export const Route = createRootRoute({
-  component: () => (
-    <MantineProvider theme={theme} defaultColorScheme="light">
-      <ModalsProvider>
-        <QueryClientProvider client={queryClient}>
-          <Notifications />
-          <RootComponent />
-          <TanStackRouterDevtools />
-        </QueryClientProvider>
-      </ModalsProvider>
-    </MantineProvider>
-  ),
-});
+  component: RootComponent,
+  errorComponent: ErrorComponent,
+  pendingComponent: SuspenseFallback,
+})

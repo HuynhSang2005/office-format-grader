@@ -49,9 +49,12 @@ export const authController = {
       });
     } catch (error) {
       logger.error('[AUTH] Lỗi khi đăng nhập:', error);
+      // Log chi tiết lỗi để debug
+      console.error('Chi tiết lỗi đăng nhập:', error);
       return c.json({ 
         error: 'Internal Server Error', 
-        message: 'Có lỗi xảy ra khi đăng nhập' 
+        message: 'Có lỗi xảy ra khi đăng nhập',
+        debug: error instanceof Error ? error.message : 'Unknown error'
       }, 500);
     }
   },
@@ -69,6 +72,7 @@ export const authController = {
 
   getCurrentUser: async (c: any) => {
     const user = c.get('user');
+    console.log('User from context:', user);
     return c.json(user);
   }
 };

@@ -14,7 +14,7 @@ describe('Dashboard Pagination E2E Tests', () => {
     // and returns the proper structure when accessed (even if it's 401)
     const response = await fetch(`${API_BASE_URL}/dashboard`);
     
-    // The endpoint should exist (not 404)
+    // The endpoint should exist (not 404) - should return either 200 or 401
     expect([200, 401]).toContain(response.status);
     
     // If we get a response, check the structure
@@ -48,7 +48,7 @@ describe('Dashboard Pagination E2E Tests', () => {
     // Test with custom page and limit
     const response = await fetch(`${API_BASE_URL}/dashboard?page=2&limit=5`);
     
-    // The endpoint should exist (not 404)
+    // The endpoint should exist (not 404) - should return either 200 or 401
     expect([200, 401]).toContain(response.status);
     
     if (response.status === 200) {

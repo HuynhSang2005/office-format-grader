@@ -4,27 +4,20 @@
  * @author Nguyễn Huỳnh Sang
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { cleanupOldMetadata } from '@services/storage.service';
 import { logger } from '@core/logger';
 import fs from 'fs/promises';
 import path from 'path';
-
-// Mock logger
-vi.mock('@core/logger', () => ({
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  }
-}));
 
 describe('Metadata Cleanup Service', () => {
   const metadataDir = path.join(process.cwd(), 'metadata');
   const testMetadataFiles: string[] = [];
   
   beforeEach(async () => {
+    // Clear mock calls
+    vi.clearAllMocks();
+    
     // Create test metadata directory if it doesn't exist
     try {
       await fs.mkdir(metadataDir, { recursive: true });
@@ -98,17 +91,25 @@ describe('Metadata Cleanup Service', () => {
   });
   
   it('should handle errors gracefully', async () => {
-    // Mock fs.readdir to throw an error
-    const originalReaddir = fs.readdir;
-    fs.readdir = vi.fn().mockRejectedValue(new Error('Test error'));
+    // Use vi.spyOn instead of directly replacing the function
+    const readdirSpy = vi.spyOn(fs, 'readdir').mockImplementationOnce(() => {
+      return Promise.reject(new Error('Test error'));
+    });
+    
+    // Spy on logger.error to verify it's called
+    const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
     
     try {
+      // This should not throw an error, but log it instead
       await cleanupOldMetadata();
-      // Should not throw, but log the error
-      expect(logger.error).toHaveBeenCalled();
+      
+      // Check that the spies were called
+      expect(readdirSpy).toHaveBeenCalled();
+      expect(loggerSpy).toHaveBeenCalled();
     } finally {
-      // Restore original function
-      fs.readdir = originalReaddir;
+      // Restore the original functions
+      readdirSpy.mockRestore();
+      loggerSpy.mockRestore();
     }
   });
 });

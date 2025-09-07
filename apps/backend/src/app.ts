@@ -19,6 +19,7 @@ import criteriaRoutes from './routes/criteria.routes';
 import customRubricRoutes from './routes/customRubric.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import exportRoutes from './routes/export.routes';
+import ungradedRoutes from './routes/ungraded.routes';
 
 const app = new Hono();
 
@@ -51,7 +52,8 @@ app.get('/', (c) => {
       criteria: '/api/criteria',
       customRubrics: '/api/custom-rubrics',
       dashboard: '/api/dashboard',
-      export: '/api/export'
+      export: '/api/export',
+      ungraded: '/api/ungraded'
     }
   });
 });
@@ -66,21 +68,26 @@ app.get('/health', (c) => {
 });
 
 // Mount API routes - Public routes first
-app.route('/api/auth', authRoutes);
+// Note: Upload route is now protected as it needs user context for automatic grading
+app.use('/api/upload', authGuard);
 app.route('/api/upload', uploadRoutes);
 app.route('/api/debug', analyzeRoutes);
 
 // Protected routes (require authentication)
+app.use('/api/auth/me', authGuard);
 app.use('/api/grade/*', authGuard);
 app.use('/api/criteria/*', authGuard);
 app.use('/api/custom-rubrics/*', authGuard);
 app.use('/api/dashboard/*', authGuard);
 app.use('/api/export/*', authGuard);
+app.use('/api/ungraded/*', authGuard);
 
+app.route('/api/auth', authRoutes);
 app.route('/api/grade', gradeRoutes);
 app.route('/api/criteria', criteriaRoutes);
 app.route('/api/custom-rubrics', customRubricRoutes);
 app.route('/api/dashboard', dashboardRoutes);
 app.route('/api/export', exportRoutes);
+app.route('/api/ungraded', ungradedRoutes);
 
 export default app;

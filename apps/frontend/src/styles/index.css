@@ -1,0 +1,14 @@
+/**
+ * @file index.css
+ * @description Global styles import
+ * @author Your Name
+ */
+
+/* Import Mantine core CSS */
+@import '@mantine/core/styles.css';
+
+/* Import Mantine notifications CSS */
+@import '@mantine/notifications/styles.css';
+
+/* Import Mantine dropzone CSS */
+@import '@mantine/dropzone/styles.css';

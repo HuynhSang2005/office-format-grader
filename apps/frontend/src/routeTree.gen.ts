@@ -8,232 +8,519 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as UploadRouteImport } from './routes/upload'
-import { Route as RubricsRouteImport } from './routes/rubrics'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as HistoryRouteImport } from './routes/history'
-import { Route as GradingRouteImport } from './routes/grading'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as RubricsNewRouteImport } from './routes/rubrics/new'
-import { Route as RubricsRubricIdEditRouteImport } from './routes/rubrics/$rubricId.edit'
+import { createFileRoute } from '@tanstack/react-router'
 
-const UploadRoute = UploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as IndexRouteRouteImport } from './routes/index.route'
+import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
+
+const LogoutLazyRouteImport = createFileRoute('/logout')()
+const LoginLazyRouteImport = createFileRoute('/login')()
+const AnalyticsLazyRouteImport = createFileRoute('/analytics')()
+const AuthUngradedLazyRouteImport = createFileRoute('/_auth/ungraded')()
+const AuthSettingsLazyRouteImport = createFileRoute('/_auth/settings')()
+const AuthProfileLazyRouteImport = createFileRoute('/_auth/profile')()
+const AuthHistoryLazyRouteImport = createFileRoute('/_auth/history')()
+const AuthExportLazyRouteImport = createFileRoute('/_auth/export')()
+const AuthUploadIndexLazyRouteImport = createFileRoute('/_auth/upload/')()
+const AuthGradeIndexLazyRouteImport = createFileRoute('/_auth/grade/')()
+const AuthCriteriaIndexLazyRouteImport = createFileRoute('/_auth/criteria/')()
+const AuthUploadBatchLazyRouteImport = createFileRoute('/_auth/upload/batch')()
+const AuthRubricBuilderLazyRouteImport = createFileRoute(
+  '/_auth/rubric/builder',
+)()
+const AuthGradeResultIdLazyRouteImport = createFileRoute(
+  '/_auth/grade/$resultId',
+)()
+const AuthCriteriaValidateLazyRouteImport = createFileRoute(
+  '/_auth/criteria/validate',
+)()
+const AuthCriteriaPreviewLazyRouteImport = createFileRoute(
+  '/_auth/criteria/preview',
+)()
+const AuthCriteriaListLazyRouteImport = createFileRoute(
+  '/_auth/criteria/list',
+)()
+const AuthCriteriaCriterionIdLazyRouteImport = createFileRoute(
+  '/_auth/criteria/$criterionId',
+)()
+
+const LogoutLazyRoute = LogoutLazyRouteImport.update({
+  id: '/logout',
+  path: '/logout',
   getParentRoute: () => rootRouteImport,
-} as any)
-const RubricsRoute = RubricsRouteImport.update({
-  id: '/rubrics',
-  path: '/rubrics',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
+} as any).lazy(() => import('./routes/logout.lazy').then((d) => d.Route))
+const LoginLazyRoute = LoginLazyRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any)
-const HistoryRoute = HistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
+} as any).lazy(() => import('./routes/login.lazy').then((d) => d.Route))
+const AnalyticsLazyRoute = AnalyticsLazyRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/analytics.lazy').then((d) => d.Route))
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GradingRoute = GradingRouteImport.update({
-  id: '/grading',
-  path: '/grading',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
+const IndexRouteRoute = IndexRouteRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RubricsNewRoute = RubricsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => RubricsRoute,
+const AuthUngradedLazyRoute = AuthUngradedLazyRouteImport.update({
+  id: '/ungraded',
+  path: '/ungraded',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/ungraded.lazy').then((d) => d.Route),
+)
+const AuthSettingsLazyRoute = AuthSettingsLazyRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/settings.lazy').then((d) => d.Route),
+)
+const AuthProfileLazyRoute = AuthProfileLazyRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() => import('./routes/_auth/profile.lazy').then((d) => d.Route))
+const AuthHistoryLazyRoute = AuthHistoryLazyRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() => import('./routes/_auth/history.lazy').then((d) => d.Route))
+const AuthExportLazyRoute = AuthExportLazyRouteImport.update({
+  id: '/export',
+  path: '/export',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() => import('./routes/_auth/export.lazy').then((d) => d.Route))
+const AuthDashboardRoute = AuthDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthRoute,
 } as any)
-const RubricsRubricIdEditRoute = RubricsRubricIdEditRouteImport.update({
-  id: '/$rubricId/edit',
-  path: '/$rubricId/edit',
-  getParentRoute: () => RubricsRoute,
-} as any)
+const AuthUploadIndexLazyRoute = AuthUploadIndexLazyRouteImport.update({
+  id: '/upload/',
+  path: '/upload/',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/upload/index.lazy').then((d) => d.Route),
+)
+const AuthGradeIndexLazyRoute = AuthGradeIndexLazyRouteImport.update({
+  id: '/grade/',
+  path: '/grade/',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/grade/index.lazy').then((d) => d.Route),
+)
+const AuthCriteriaIndexLazyRoute = AuthCriteriaIndexLazyRouteImport.update({
+  id: '/criteria/',
+  path: '/criteria/',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/criteria/index.lazy').then((d) => d.Route),
+)
+const AuthUploadBatchLazyRoute = AuthUploadBatchLazyRouteImport.update({
+  id: '/upload/batch',
+  path: '/upload/batch',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/upload/batch.lazy').then((d) => d.Route),
+)
+const AuthRubricBuilderLazyRoute = AuthRubricBuilderLazyRouteImport.update({
+  id: '/rubric/builder',
+  path: '/rubric/builder',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/rubric/builder.lazy').then((d) => d.Route),
+)
+const AuthGradeResultIdLazyRoute = AuthGradeResultIdLazyRouteImport.update({
+  id: '/grade/$resultId',
+  path: '/grade/$resultId',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/grade/$resultId.lazy').then((d) => d.Route),
+)
+const AuthCriteriaValidateLazyRoute =
+  AuthCriteriaValidateLazyRouteImport.update({
+    id: '/criteria/validate',
+    path: '/criteria/validate',
+    getParentRoute: () => AuthRoute,
+  } as any).lazy(() =>
+    import('./routes/_auth/criteria/validate.lazy').then((d) => d.Route),
+  )
+const AuthCriteriaPreviewLazyRoute = AuthCriteriaPreviewLazyRouteImport.update({
+  id: '/criteria/preview',
+  path: '/criteria/preview',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/criteria/preview.lazy').then((d) => d.Route),
+)
+const AuthCriteriaListLazyRoute = AuthCriteriaListLazyRouteImport.update({
+  id: '/criteria/list',
+  path: '/criteria/list',
+  getParentRoute: () => AuthRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/criteria/list.lazy').then((d) => d.Route),
+)
+const AuthCriteriaCriterionIdLazyRoute =
+  AuthCriteriaCriterionIdLazyRouteImport.update({
+    id: '/criteria/$criterionId',
+    path: '/criteria/$criterionId',
+    getParentRoute: () => AuthRoute,
+  } as any).lazy(() =>
+    import('./routes/_auth/criteria/$criterionId.lazy').then((d) => d.Route),
+  )
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/grading': typeof GradingRoute
-  '/history': typeof HistoryRoute
-  '/login': typeof LoginRoute
-  '/rubrics': typeof RubricsRouteWithChildren
-  '/upload': typeof UploadRoute
-  '/rubrics/new': typeof RubricsNewRoute
-  '/rubrics/$rubricId/edit': typeof RubricsRubricIdEditRoute
+  '/': typeof IndexRouteRoute
+  '/analytics': typeof AnalyticsLazyRoute
+  '/login': typeof LoginLazyRoute
+  '/logout': typeof LogoutLazyRoute
+  '/dashboard': typeof AuthDashboardRoute
+  '/export': typeof AuthExportLazyRoute
+  '/history': typeof AuthHistoryLazyRoute
+  '/profile': typeof AuthProfileLazyRoute
+  '/settings': typeof AuthSettingsLazyRoute
+  '/ungraded': typeof AuthUngradedLazyRoute
+  '/criteria/$criterionId': typeof AuthCriteriaCriterionIdLazyRoute
+  '/criteria/list': typeof AuthCriteriaListLazyRoute
+  '/criteria/preview': typeof AuthCriteriaPreviewLazyRoute
+  '/criteria/validate': typeof AuthCriteriaValidateLazyRoute
+  '/grade/$resultId': typeof AuthGradeResultIdLazyRoute
+  '/rubric/builder': typeof AuthRubricBuilderLazyRoute
+  '/upload/batch': typeof AuthUploadBatchLazyRoute
+  '/criteria': typeof AuthCriteriaIndexLazyRoute
+  '/grade': typeof AuthGradeIndexLazyRoute
+  '/upload': typeof AuthUploadIndexLazyRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/grading': typeof GradingRoute
-  '/history': typeof HistoryRoute
-  '/login': typeof LoginRoute
-  '/rubrics': typeof RubricsRouteWithChildren
-  '/upload': typeof UploadRoute
-  '/rubrics/new': typeof RubricsNewRoute
-  '/rubrics/$rubricId/edit': typeof RubricsRubricIdEditRoute
+  '/': typeof IndexRouteRoute
+  '/analytics': typeof AnalyticsLazyRoute
+  '/login': typeof LoginLazyRoute
+  '/logout': typeof LogoutLazyRoute
+  '/dashboard': typeof AuthDashboardRoute
+  '/export': typeof AuthExportLazyRoute
+  '/history': typeof AuthHistoryLazyRoute
+  '/profile': typeof AuthProfileLazyRoute
+  '/settings': typeof AuthSettingsLazyRoute
+  '/ungraded': typeof AuthUngradedLazyRoute
+  '/criteria/$criterionId': typeof AuthCriteriaCriterionIdLazyRoute
+  '/criteria/list': typeof AuthCriteriaListLazyRoute
+  '/criteria/preview': typeof AuthCriteriaPreviewLazyRoute
+  '/criteria/validate': typeof AuthCriteriaValidateLazyRoute
+  '/grade/$resultId': typeof AuthGradeResultIdLazyRoute
+  '/rubric/builder': typeof AuthRubricBuilderLazyRoute
+  '/upload/batch': typeof AuthUploadBatchLazyRoute
+  '/criteria': typeof AuthCriteriaIndexLazyRoute
+  '/grade': typeof AuthGradeIndexLazyRoute
+  '/upload': typeof AuthUploadIndexLazyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/grading': typeof GradingRoute
-  '/history': typeof HistoryRoute
-  '/login': typeof LoginRoute
-  '/rubrics': typeof RubricsRouteWithChildren
-  '/upload': typeof UploadRoute
-  '/rubrics/new': typeof RubricsNewRoute
-  '/rubrics/$rubricId/edit': typeof RubricsRubricIdEditRoute
+  '/': typeof IndexRouteRoute
+  '/_auth': typeof AuthRouteWithChildren
+  '/analytics': typeof AnalyticsLazyRoute
+  '/login': typeof LoginLazyRoute
+  '/logout': typeof LogoutLazyRoute
+  '/_auth/dashboard': typeof AuthDashboardRoute
+  '/_auth/export': typeof AuthExportLazyRoute
+  '/_auth/history': typeof AuthHistoryLazyRoute
+  '/_auth/profile': typeof AuthProfileLazyRoute
+  '/_auth/settings': typeof AuthSettingsLazyRoute
+  '/_auth/ungraded': typeof AuthUngradedLazyRoute
+  '/_auth/criteria/$criterionId': typeof AuthCriteriaCriterionIdLazyRoute
+  '/_auth/criteria/list': typeof AuthCriteriaListLazyRoute
+  '/_auth/criteria/preview': typeof AuthCriteriaPreviewLazyRoute
+  '/_auth/criteria/validate': typeof AuthCriteriaValidateLazyRoute
+  '/_auth/grade/$resultId': typeof AuthGradeResultIdLazyRoute
+  '/_auth/rubric/builder': typeof AuthRubricBuilderLazyRoute
+  '/_auth/upload/batch': typeof AuthUploadBatchLazyRoute
+  '/_auth/criteria/': typeof AuthCriteriaIndexLazyRoute
+  '/_auth/grade/': typeof AuthGradeIndexLazyRoute
+  '/_auth/upload/': typeof AuthUploadIndexLazyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
-    | '/grading'
-    | '/history'
+    | '/analytics'
     | '/login'
-    | '/rubrics'
+    | '/logout'
+    | '/dashboard'
+    | '/export'
+    | '/history'
+    | '/profile'
+    | '/settings'
+    | '/ungraded'
+    | '/criteria/$criterionId'
+    | '/criteria/list'
+    | '/criteria/preview'
+    | '/criteria/validate'
+    | '/grade/$resultId'
+    | '/rubric/builder'
+    | '/upload/batch'
+    | '/criteria'
+    | '/grade'
     | '/upload'
-    | '/rubrics/new'
-    | '/rubrics/$rubricId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
-    | '/grading'
-    | '/history'
+    | '/analytics'
     | '/login'
-    | '/rubrics'
+    | '/logout'
+    | '/dashboard'
+    | '/export'
+    | '/history'
+    | '/profile'
+    | '/settings'
+    | '/ungraded'
+    | '/criteria/$criterionId'
+    | '/criteria/list'
+    | '/criteria/preview'
+    | '/criteria/validate'
+    | '/grade/$resultId'
+    | '/rubric/builder'
+    | '/upload/batch'
+    | '/criteria'
+    | '/grade'
     | '/upload'
-    | '/rubrics/new'
-    | '/rubrics/$rubricId/edit'
   id:
     | '__root__'
     | '/'
-    | '/dashboard'
-    | '/grading'
-    | '/history'
+    | '/_auth'
+    | '/analytics'
     | '/login'
-    | '/rubrics'
-    | '/upload'
-    | '/rubrics/new'
-    | '/rubrics/$rubricId/edit'
+    | '/logout'
+    | '/_auth/dashboard'
+    | '/_auth/export'
+    | '/_auth/history'
+    | '/_auth/profile'
+    | '/_auth/settings'
+    | '/_auth/ungraded'
+    | '/_auth/criteria/$criterionId'
+    | '/_auth/criteria/list'
+    | '/_auth/criteria/preview'
+    | '/_auth/criteria/validate'
+    | '/_auth/grade/$resultId'
+    | '/_auth/rubric/builder'
+    | '/_auth/upload/batch'
+    | '/_auth/criteria/'
+    | '/_auth/grade/'
+    | '/_auth/upload/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
-  GradingRoute: typeof GradingRoute
-  HistoryRoute: typeof HistoryRoute
-  LoginRoute: typeof LoginRoute
-  RubricsRoute: typeof RubricsRouteWithChildren
-  UploadRoute: typeof UploadRoute
+  IndexRouteRoute: typeof IndexRouteRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  AnalyticsLazyRoute: typeof AnalyticsLazyRoute
+  LoginLazyRoute: typeof LoginLazyRoute
+  LogoutLazyRoute: typeof LogoutLazyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/upload': {
-      id: '/upload'
-      path: '/upload'
-      fullPath: '/upload'
-      preLoaderRoute: typeof UploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/rubrics': {
-      id: '/rubrics'
-      path: '/rubrics'
-      fullPath: '/rubrics'
-      preLoaderRoute: typeof RubricsRouteImport
+    '/logout': {
+      id: '/logout'
+      path: '/logout'
+      fullPath: '/logout'
+      preLoaderRoute: typeof LogoutLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+      preLoaderRoute: typeof LoginLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/history': {
-      id: '/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof HistoryRouteImport
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/grading': {
-      id: '/grading'
-      path: '/grading'
-      fullPath: '/grading'
-      preLoaderRoute: typeof GradingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof IndexRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rubrics/new': {
-      id: '/rubrics/new'
-      path: '/new'
-      fullPath: '/rubrics/new'
-      preLoaderRoute: typeof RubricsNewRouteImport
-      parentRoute: typeof RubricsRoute
+    '/_auth/ungraded': {
+      id: '/_auth/ungraded'
+      path: '/ungraded'
+      fullPath: '/ungraded'
+      preLoaderRoute: typeof AuthUngradedLazyRouteImport
+      parentRoute: typeof AuthRoute
     }
-    '/rubrics/$rubricId/edit': {
-      id: '/rubrics/$rubricId/edit'
-      path: '/$rubricId/edit'
-      fullPath: '/rubrics/$rubricId/edit'
-      preLoaderRoute: typeof RubricsRubricIdEditRouteImport
-      parentRoute: typeof RubricsRoute
+    '/_auth/settings': {
+      id: '/_auth/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthSettingsLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/profile': {
+      id: '/_auth/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthProfileLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/history': {
+      id: '/_auth/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthHistoryLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/export': {
+      id: '/_auth/export'
+      path: '/export'
+      fullPath: '/export'
+      preLoaderRoute: typeof AuthExportLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/dashboard': {
+      id: '/_auth/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthDashboardRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/upload/': {
+      id: '/_auth/upload/'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof AuthUploadIndexLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/grade/': {
+      id: '/_auth/grade/'
+      path: '/grade'
+      fullPath: '/grade'
+      preLoaderRoute: typeof AuthGradeIndexLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/criteria/': {
+      id: '/_auth/criteria/'
+      path: '/criteria'
+      fullPath: '/criteria'
+      preLoaderRoute: typeof AuthCriteriaIndexLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/upload/batch': {
+      id: '/_auth/upload/batch'
+      path: '/upload/batch'
+      fullPath: '/upload/batch'
+      preLoaderRoute: typeof AuthUploadBatchLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/rubric/builder': {
+      id: '/_auth/rubric/builder'
+      path: '/rubric/builder'
+      fullPath: '/rubric/builder'
+      preLoaderRoute: typeof AuthRubricBuilderLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/grade/$resultId': {
+      id: '/_auth/grade/$resultId'
+      path: '/grade/$resultId'
+      fullPath: '/grade/$resultId'
+      preLoaderRoute: typeof AuthGradeResultIdLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/criteria/validate': {
+      id: '/_auth/criteria/validate'
+      path: '/criteria/validate'
+      fullPath: '/criteria/validate'
+      preLoaderRoute: typeof AuthCriteriaValidateLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/criteria/preview': {
+      id: '/_auth/criteria/preview'
+      path: '/criteria/preview'
+      fullPath: '/criteria/preview'
+      preLoaderRoute: typeof AuthCriteriaPreviewLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/criteria/list': {
+      id: '/_auth/criteria/list'
+      path: '/criteria/list'
+      fullPath: '/criteria/list'
+      preLoaderRoute: typeof AuthCriteriaListLazyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/criteria/$criterionId': {
+      id: '/_auth/criteria/$criterionId'
+      path: '/criteria/$criterionId'
+      fullPath: '/criteria/$criterionId'
+      preLoaderRoute: typeof AuthCriteriaCriterionIdLazyRouteImport
+      parentRoute: typeof AuthRoute
     }
   }
 }
 
-interface RubricsRouteChildren {
-  RubricsNewRoute: typeof RubricsNewRoute
-  RubricsRubricIdEditRoute: typeof RubricsRubricIdEditRoute
+interface AuthRouteChildren {
+  AuthDashboardRoute: typeof AuthDashboardRoute
+  AuthExportLazyRoute: typeof AuthExportLazyRoute
+  AuthHistoryLazyRoute: typeof AuthHistoryLazyRoute
+  AuthProfileLazyRoute: typeof AuthProfileLazyRoute
+  AuthSettingsLazyRoute: typeof AuthSettingsLazyRoute
+  AuthUngradedLazyRoute: typeof AuthUngradedLazyRoute
+  AuthCriteriaCriterionIdLazyRoute: typeof AuthCriteriaCriterionIdLazyRoute
+  AuthCriteriaListLazyRoute: typeof AuthCriteriaListLazyRoute
+  AuthCriteriaPreviewLazyRoute: typeof AuthCriteriaPreviewLazyRoute
+  AuthCriteriaValidateLazyRoute: typeof AuthCriteriaValidateLazyRoute
+  AuthGradeResultIdLazyRoute: typeof AuthGradeResultIdLazyRoute
+  AuthRubricBuilderLazyRoute: typeof AuthRubricBuilderLazyRoute
+  AuthUploadBatchLazyRoute: typeof AuthUploadBatchLazyRoute
+  AuthCriteriaIndexLazyRoute: typeof AuthCriteriaIndexLazyRoute
+  AuthGradeIndexLazyRoute: typeof AuthGradeIndexLazyRoute
+  AuthUploadIndexLazyRoute: typeof AuthUploadIndexLazyRoute
 }
 
-const RubricsRouteChildren: RubricsRouteChildren = {
-  RubricsNewRoute: RubricsNewRoute,
-  RubricsRubricIdEditRoute: RubricsRubricIdEditRoute,
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthDashboardRoute: AuthDashboardRoute,
+  AuthExportLazyRoute: AuthExportLazyRoute,
+  AuthHistoryLazyRoute: AuthHistoryLazyRoute,
+  AuthProfileLazyRoute: AuthProfileLazyRoute,
+  AuthSettingsLazyRoute: AuthSettingsLazyRoute,
+  AuthUngradedLazyRoute: AuthUngradedLazyRoute,
+  AuthCriteriaCriterionIdLazyRoute: AuthCriteriaCriterionIdLazyRoute,
+  AuthCriteriaListLazyRoute: AuthCriteriaListLazyRoute,
+  AuthCriteriaPreviewLazyRoute: AuthCriteriaPreviewLazyRoute,
+  AuthCriteriaValidateLazyRoute: AuthCriteriaValidateLazyRoute,
+  AuthGradeResultIdLazyRoute: AuthGradeResultIdLazyRoute,
+  AuthRubricBuilderLazyRoute: AuthRubricBuilderLazyRoute,
+  AuthUploadBatchLazyRoute: AuthUploadBatchLazyRoute,
+  AuthCriteriaIndexLazyRoute: AuthCriteriaIndexLazyRoute,
+  AuthGradeIndexLazyRoute: AuthGradeIndexLazyRoute,
+  AuthUploadIndexLazyRoute: AuthUploadIndexLazyRoute,
 }
 
-const RubricsRouteWithChildren =
-  RubricsRoute._addFileChildren(RubricsRouteChildren)
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
-  GradingRoute: GradingRoute,
-  HistoryRoute: HistoryRoute,
-  LoginRoute: LoginRoute,
-  RubricsRoute: RubricsRouteWithChildren,
-  UploadRoute: UploadRoute,
+  IndexRouteRoute: IndexRouteRoute,
+  AuthRoute: AuthRouteWithChildren,
+  AnalyticsLazyRoute: AnalyticsLazyRoute,
+  LoginLazyRoute: LoginLazyRoute,
+  LogoutLazyRoute: LogoutLazyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

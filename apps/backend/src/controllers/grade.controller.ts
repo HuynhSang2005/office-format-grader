@@ -7,7 +7,7 @@
 import type { Context } from 'hono';
 import { logger } from '@core/logger';
 import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
-import { gradeFileService, batchGradeService, getGradeHistory, getGradeResult } from '@services/grade.service';
+import { gradeFileService, batchGradeService, getGradeHistory, getGradeResult, deleteGradeResult } from '@services/grade.service';
 import { findCustomRubricById } from '@services/customRubric.service';
 import { 
   GradeFileApiSchema, 
@@ -239,8 +239,54 @@ export async function getGradeHistoryController(c: Context) {
     const query = queryValidation.data;
     
     logger.info(`Getting grade history for user ${userId}`);
+    logger.debug(`Query parameters: ${JSON.stringify(query)}`);
     
-    const history = await getGradeHistory(userId, query.limit, query.offset);
+    // Extract filter parameters
+    const { limit, offset, fileType, search, dateFrom, dateTo, scoreMin, scoreMax } = query;
+    const filters = {
+      fileType,
+      search,
+      dateFrom,
+      dateTo,
+      scoreMin,
+      scoreMax
+    };
+    
+    // Validate date range
+    if (dateFrom && dateTo) {
+      const fromDate = new Date(dateFrom);
+      const toDate = new Date(dateTo);
+      
+      // Validate dates
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        return c.json({
+          success: false,
+          message: 'Ngày không hợp lệ'
+        }, HTTP_STATUS.BAD_REQUEST);
+      }
+      
+      // Check if from date is after to date
+      if (fromDate > toDate) {
+        return c.json({
+          success: false,
+          message: 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc'
+        }, HTTP_STATUS.BAD_REQUEST);
+      }
+    }
+    
+    const history = await getGradeHistory(userId, limit, offset, filters);
+    
+    // Check if there are results
+    if (history.total === 0) {
+      // Check if filters were applied
+      const hasFilters = fileType || search || dateFrom || dateTo || scoreMin !== undefined || scoreMax !== undefined;
+      if (hasFilters) {
+        return c.json({
+          success: false,
+          message: 'Không có kết quả nào phù hợp với bộ lọc đã chọn'
+        }, HTTP_STATUS.BAD_REQUEST);
+      }
+    }
     
     return c.json({
       success: true,
@@ -255,6 +301,8 @@ export async function getGradeHistoryController(c: Context) {
     
   } catch (error) {
     logger.error('Lỗi trong getGradeHistoryController:', error);
+    // Log the full error object for debugging
+    logger.error('Full error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return c.json({
       success: false,
       message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
@@ -297,6 +345,49 @@ export async function getGradeResultController(c: Context) {
     
   } catch (error) {
     logger.error('Lỗi trong getGradeResultController:', error);
+    return c.json({
+      success: false,
+      message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
+    }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+}
+
+// DELETE /grade/:id - Xóa kết quả chấm điểm
+export async function deleteGradeResultController(c: Context) {
+  try {
+    const resultId = c.req.param('id');
+    
+    if (!resultId) {
+      return c.json({
+        success: false,
+        message: 'Result ID là bắt buộc'
+      }, HTTP_STATUS.BAD_REQUEST);
+    }
+    
+    // Get user ID from JWT context
+    const user = c.get('user');
+    const userId = user.id;
+    
+    logger.info(`Deleting grade result: ${resultId} for user ${userId}`);
+    
+    // Delete grade result
+    const deletedResult = await deleteGradeResult(resultId, userId);
+    
+    if (!deletedResult) {
+      return c.json({
+        success: false,
+        message: 'Không tìm thấy kết quả chấm điểm'
+      }, HTTP_STATUS.NOT_FOUND);
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Xóa kết quả chấm điểm thành công',
+      data: deletedResult
+    });
+    
+  } catch (error) {
+    logger.error('Lỗi trong deleteGradeResultController:', error);
     return c.json({
       success: false,
       message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
@@ -436,5 +527,13 @@ export async function gradeCustomSelectiveController(c: Context) {
     }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 }
+
+
+
+
+
+
+
+
 
 

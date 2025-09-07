@@ -72,6 +72,20 @@ export async function gradeFileService(request: GradeFileRequest): Promise<Grade
     // 6. Xóa file tạm sau khi chấm điểm xong (luôn luôn xóa)
     logger.debug('Bước 6: Xóa file tạm');
     await deleteStoredFile(fileId);
+    
+    // 7. Xóa bản ghi trong bảng ungraded_files nếu tồn tại
+    try {
+      await prisma.ungradedFile.delete({
+        where: {
+          id: fileId
+        }
+      });
+      logger.info(`Đã xóa bản ghi ungraded file: ${fileId} sau khi chấm điểm hoàn thành`);
+    } catch (dbError) {
+      // File có thể không tồn tại trong ungraded_files (đã được xóa trước đó)
+      logger.debug(`File ${fileId} không tồn tại trong ungraded_files hoặc đã được xóa trước đó`);
+    }
+    
     logger.info(`Đã xóa file tạm: ${fileId} sau khi chấm điểm hoàn thành`);
     
     const totalTime = Date.now() - startTime;
@@ -307,7 +321,15 @@ async function getFileExtension(fileId: string): Promise<string> {
 export async function getGradeHistory(
   userId: number,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  filters: {
+    fileType?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    scoreMin?: number;
+    scoreMax?: number;
+  } = {}
 ): Promise<{
   results: any[];
   total: number;
@@ -316,9 +338,61 @@ export async function getGradeHistory(
   logger.debug(`Đang lấy grade history cho user: ${userId}`);
   
   try {
+    // Build where clause for filtering
+    const whereClause: any = { userId };
+    
+    // Apply fileType filter
+    if (filters.fileType) {
+      whereClause.fileType = filters.fileType;
+    }
+    
+    // Apply search filter (filename)
+    if (filters.search) {
+      whereClause.filename = {
+        contains: filters.search,
+        mode: 'insensitive'
+      };
+    }
+    
+    // Apply date range filter
+    if (filters.dateFrom || filters.dateTo) {
+      whereClause.gradedAt = {};
+      if (filters.dateFrom) {
+        const dateFrom = new Date(filters.dateFrom);
+        // Validate date
+        if (isNaN(dateFrom.getTime())) {
+          logger.warn(`Invalid dateFrom value: ${filters.dateFrom}`);
+        } else {
+          whereClause.gradedAt.gte = dateFrom;
+        }
+      }
+      if (filters.dateTo) {
+        const dateTo = new Date(filters.dateTo);
+        // Validate date
+        if (isNaN(dateTo.getTime())) {
+          logger.warn(`Invalid dateTo value: ${filters.dateTo}`);
+        } else {
+          whereClause.gradedAt.lte = dateTo;
+        }
+      }
+    }
+    
+    // Apply score range filter
+    if (filters.scoreMin !== undefined || filters.scoreMax !== undefined) {
+      whereClause.totalPoints = {};
+      if (filters.scoreMin !== undefined) {
+        whereClause.totalPoints.gte = filters.scoreMin;
+      }
+      if (filters.scoreMax !== undefined) {
+        whereClause.totalPoints.lte = filters.scoreMax;
+      }
+    }
+    
+    logger.debug(`Prisma where clause: ${JSON.stringify(whereClause)}`);
+    
     const [results, total] = await Promise.all([
       prisma.gradeResult.findMany({
-        where: { userId },
+        where: whereClause,
         orderBy: { gradedAt: 'desc' },
         take: limit,
         skip: offset,
@@ -331,7 +405,7 @@ export async function getGradeHistory(
         }
       }),
       prisma.gradeResult.count({
-        where: { userId }
+        where: whereClause
       })
     ]);
     
@@ -394,6 +468,14 @@ export async function getGradeResultsByIds(resultIds: string[]): Promise<GradeRe
   logger.debug(`Đang lấy ${resultIds.length} grade results`);
   
   try {
+    // Validate input
+    if (!resultIds || resultIds.length === 0) {
+      logger.warn('[WARN] Danh sách resultIds rỗng');
+      return [];
+    }
+    
+    logger.debug(`[DEBUG] Querying DB for resultIds: ${JSON.stringify(resultIds)}`);
+    
     const results = await prisma.gradeResult.findMany({
       where: {
         id: {
@@ -402,22 +484,65 @@ export async function getGradeResultsByIds(resultIds: string[]): Promise<GradeRe
       }
     });
     
+    logger.debug(`[DEBUG] Tìm thấy ${results.length} kết quả từ DB`);
+    logger.debug(`[DEBUG] Raw DB results: ${JSON.stringify(results, null, 2)}`);
+    
     // Parse byCriteria JSON for each result
-    return results.map(result => ({
-      fileId: result.id,
-      filename: result.filename,
-      fileType: result.fileType as FileType,
-      rubricName: 'Default Rubric', // TODO: Store rubric name
-      totalPoints: result.totalPoints,
-      maxPossiblePoints: 10, // TODO: Store this
-      percentage: (result.totalPoints / 10) * 100,
-      byCriteria: JSON.parse(result.byCriteria),
-      gradedAt: result.gradedAt,
-      processingTime: 0 // TODO: Store this
-    }));
+    const parsedResults = results.map(result => {
+      let byCriteria = {};
+      try {
+        byCriteria = JSON.parse(result.byCriteria);
+        logger.debug(`[DEBUG] Parsed byCriteria for ${result.id}: ${JSON.stringify(byCriteria)}`);
+      } catch (parseError) {
+        logger.warn(`[WARN] Không thể parse byCriteria cho result ${result.id}:`, parseError);
+        byCriteria = {};
+      }
+      
+      const parsedResult = {
+        fileId: result.id,
+        filename: result.filename,
+        fileType: result.fileType as FileType,
+        rubricName: 'Default Rubric', // TODO: Store rubric name
+        totalPoints: result.totalPoints,
+        maxPossiblePoints: 10, // TODO: Store this
+        percentage: (result.totalPoints / 10) * 100,
+        byCriteria,
+        gradedAt: result.gradedAt,
+        processingTime: 0 // TODO: Store this
+      };
+      
+      logger.debug(`[DEBUG] Parsed result for ${result.id}: ${JSON.stringify(parsedResult)}`);
+      return parsedResult;
+    });
+    
+    logger.debug(`[DEBUG] Final parsed results count: ${parsedResults.length}`);
+    return parsedResults;
     
   } catch (error) {
-    logger.error(`Lỗi khi lấy grade results:`, error);
+    logger.error(`[ERROR] Lỗi khi lấy grade results:`, error);
+    // Log the full error object for debugging
+    logger.error('[ERROR] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     throw new Error(`Không thể lấy kết quả chấm điểm: ${error instanceof Error ? error.message : 'Database error'}`);
+  }
+}
+
+// Delete grade result
+export async function deleteGradeResult(resultId: string, userId: number): Promise<any | null> {
+  logger.debug(`Đang xóa grade result: ${resultId} cho user: ${userId}`);
+  
+  try {
+    const deletedResult = await prisma.gradeResult.delete({
+      where: {
+        id: resultId,
+        userId: userId
+      }
+    });
+    
+    logger.info(`Xóa grade result thành công: ${resultId}`);
+    return deletedResult;
+    
+  } catch (error) {
+    logger.error(`Lỗi khi xóa grade result ${resultId}:`, error);
+    return null;
   }
 }

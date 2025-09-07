@@ -26,7 +26,31 @@ export const CustomGradeApiSchema = z.object({
 // Schema cho grade history query API endpoint
 export const GradeHistoryApiSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
-  offset: z.coerce.number().min(0).default(0)
+  offset: z.coerce.number().min(0).default(0),
+  fileType: z.string().optional(),
+  search: z.string().optional(),
+  dateFrom: z.string().datetime().optional(),
+  dateTo: z.string().datetime().optional(),
+  scoreMin: z.coerce.number().min(0).max(10).optional(),
+  scoreMax: z.coerce.number().min(0).max(10).optional()
+}).refine((data) => {
+  // Validate date range
+  if (data.dateFrom && data.dateTo) {
+    return new Date(data.dateFrom) <= new Date(data.dateTo);
+  }
+  return true;
+}, {
+  message: 'dateFrom phải <= dateTo',
+  path: ['dateFrom']
+}).refine((data) => {
+  // Validate score range
+  if (data.scoreMin !== undefined && data.scoreMax !== undefined) {
+    return data.scoreMin <= data.scoreMax;
+  }
+  return true;
+}, {
+  message: 'scoreMin phải <= scoreMax',
+  path: ['scoreMin']
 });
 
 // Schema cho grade result response
@@ -132,3 +156,7 @@ export type BatchGradeResponse = z.infer<typeof BatchGradeResponseSchema>;
 export type GradeHistoryResponse = z.infer<typeof GradeHistoryResponseSchema>;
 export type SingleGradeResultResponse = z.infer<typeof SingleGradeResultResponseSchema>;
 export type GradeErrorResponse = z.infer<typeof GradeErrorResponseSchema>;
+
+
+
+

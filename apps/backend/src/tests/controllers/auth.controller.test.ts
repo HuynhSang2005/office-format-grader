@@ -21,13 +21,6 @@ const createMockContext = (options: {
     });
   }
 
-  // Create a proper mock response object with json method
-  const mockResponse = {
-    json: vi.fn((data, status) => {
-      return new Response(JSON.stringify(data), { status });
-    })
-  };
-
   const context: any = {
     req: {
       json: vi.fn().mockResolvedValue(options.body || {}),
@@ -43,7 +36,13 @@ const createMockContext = (options: {
       }
       return null;
     }),
-    json: mockResponse.json // Add json method to context
+    // Mock the json method to return a Response object
+    json: vi.fn((data: any, status?: number) => {
+      return new Response(JSON.stringify(data), { 
+        status: status || 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    })
   };
 
   return context;
@@ -70,8 +69,10 @@ describe('Auth Controller', () => {
       expect(response).toBeDefined();
       expect(response.status).toBe(200);
       
-      const data = await response.json();
-      expect(data.user).toEqual(mockUser);
+      // Parse the response body properly
+      const responseBody = await response.text();
+      const data = JSON.parse(responseBody);
+      expect(data).toEqual(mockUser);
     });
   });
 
@@ -84,7 +85,9 @@ describe('Auth Controller', () => {
       expect(response).toBeDefined();
       expect(response.status).toBe(200);
       
-      const data = await response.json();
+      // Parse the response body properly
+      const responseBody = await response.text();
+      const data = JSON.parse(responseBody);
       expect(data.success).toBe(true);
       expect(data.message).toBe('Đăng xuất thành công');
       

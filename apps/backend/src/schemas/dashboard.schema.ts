@@ -15,13 +15,24 @@ export const DashboardQuerySchema = z.object({
   uploadDays: z.coerce.number().min(1).max(14).default(14),
   topDays: z.coerce.number().min(1).max(14).default(14),
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(50).default(10)
+  limit: z.coerce.number().min(1).max(50).default(10),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional()
 }).refine((data) => {
   // Ensure minScore <= maxScore
   return data.minScore <= data.maxScore;
 }, {
   message: 'minScore phải nhỏ hơn hoặc bằng maxScore',
   path: ['minScore']
+}).refine((data) => {
+  // Ensure startDate <= endDate if both are provided
+  if (data.startDate && data.endDate) {
+    return new Date(data.startDate) <= new Date(data.endDate);
+  }
+  return true;
+}, {
+  message: 'startDate phải nhỏ hơn hoặc bằng endDate',
+  path: ['startDate']
 });
 
 // Schema cho GradeResult trong dashboard

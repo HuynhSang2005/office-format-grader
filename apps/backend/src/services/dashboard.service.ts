@@ -13,21 +13,36 @@ const prisma = new PrismaClient();
 /**
  * Đếm tổng số bài đã chấm trong khoảng thời gian
  * @param days Số ngày tính từ hiện tại (mặc định: 14)
+ * @param startDate Ngày bắt đầu (tùy chọn)
+ * @param endDate Ngày kết thúc (tùy chọn)
  * @returns Số lượng bài đã chấm
  */
-export async function totalGraded(days: number = 14): Promise<number> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
+export async function totalGraded(days: number = 14, startDate?: Date, endDate?: Date): Promise<number> {
+  // Nếu có startDate và endDate thì sử dụng, ngược lại tính theo số ngày
+  let whereCondition: any = {};
+  
+  if (startDate && endDate) {
+    whereCondition = {
+      gradedAt: {
+        gte: startDate,
+        lte: endDate
+      }
+    };
+  } else {
+    const defaultStartDate = new Date();
+    defaultStartDate.setDate(defaultStartDate.getDate() - days);
+    whereCondition = {
+      gradedAt: {
+        gte: defaultStartDate
+      }
+    };
+  }
   
   const count = await prisma.gradeResult.count({
-    where: {
-      gradedAt: {
-        gte: startDate
-      }
-    }
+    where: whereCondition
   });
   
-  logger.debug(`[DASHBOARD] Tổng số bài đã chấm (${days} ngày): ${count}`);
+  logger.debug(`[DASHBOARD] Tổng số bài đã chấm: ${count}`);
   return count;
 }
 
@@ -250,22 +265,42 @@ export async function ratioByScore(min: number = 5, max: number = 10): Promise<{
 
 /**
  * Đếm số lượng theo loại file
+ * @param startDate Ngày bắt đầu (tùy chọn)
+ * @param endDate Ngày kết thúc (tùy chọn)
  * @returns Số lượng theo loại file
  */
-export async function countByFileType(): Promise<{
+export async function countByFileType(startDate?: Date, endDate?: Date): Promise<{
   PPTX: number;
   DOCX: number;
 }> {
+  // Nếu có startDate và endDate thì sử dụng, ngược lại không filter theo ngày
+  let whereConditionPPTX: any = { fileType: 'PPTX' };
+  let whereConditionDOCX: any = { fileType: 'DOCX' };
+  
+  if (startDate && endDate) {
+    whereConditionPPTX = {
+      fileType: 'PPTX',
+      gradedAt: {
+        gte: startDate,
+        lte: endDate
+      }
+    };
+    
+    whereConditionDOCX = {
+      fileType: 'DOCX',
+      gradedAt: {
+        gte: startDate,
+        lte: endDate
+      }
+    };
+  }
+  
   const pptxCount = await prisma.gradeResult.count({
-    where: {
-      fileType: 'PPTX'
-    }
+    where: whereConditionPPTX
   });
   
   const docxCount = await prisma.gradeResult.count({
-    where: {
-      fileType: 'DOCX'
-    }
+    where: whereConditionDOCX
   });
   
   logger.debug(`[DASHBOARD] Số lượng theo loại file: PPTX=${pptxCount}, DOCX=${docxCount}`);
@@ -275,22 +310,37 @@ export async function countByFileType(): Promise<{
 /**
  * Đếm số lượng theo ngày upload
  * @param days Số ngày tính từ hiện tại (mặc định: 14)
+ * @param startDate Ngày bắt đầu (tùy chọn)
+ * @param endDate Ngày kết thúc (tùy chọn)
  * @returns Số lượng theo ngày
  */
-export async function countByUploadDate(days: number = 14): Promise<{
+export async function countByUploadDate(days: number = 14, startDate?: Date, endDate?: Date): Promise<{
   date: string;
   count: number;
 }[]> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
+  // Nếu có startDate và endDate thì sử dụng, ngược lại tính theo số ngày
+  let whereCondition: any = {};
+  
+  if (startDate && endDate) {
+    whereCondition = {
+      gradedAt: {
+        gte: startDate,
+        lte: endDate
+      }
+    };
+  } else {
+    const defaultStartDate = new Date();
+    defaultStartDate.setDate(defaultStartDate.getDate() - days);
+    whereCondition = {
+      gradedAt: {
+        gte: defaultStartDate
+      }
+    };
+  }
   
   // Group by date and count (SQLite compatible)
   const allResults = await prisma.gradeResult.findMany({
-    where: {
-      gradedAt: {
-        gte: startDate
-      }
-    },
+    where: whereCondition,
     select: {
       gradedAt: true
     },
@@ -310,12 +360,11 @@ export async function countByUploadDate(days: number = 14): Promise<{
     grouped[dateStr]++;
   });
   
-  // Convert to array and sort by date descending
+  // Convert to array and sort by date
   const results = Object.entries(grouped)
     .map(([date, count]) => ({ date, count }))
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, days);
+    .sort((a, b) => a.date.localeCompare(b.date)); // Sort ascending by date
   
-  logger.debug(`[DASHBOARD] Số lượng theo ngày upload (${days} ngày): ${results.length} days`);
+  logger.debug(`[DASHBOARD] Số lượng theo ngày upload: ${results.length} days`);
   return results;
 }

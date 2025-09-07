@@ -40,7 +40,8 @@ export const corsConfig = cors({
     'Authorization',
     'X-Requested-With',
     'Accept',
-    'Origin'
+    'Origin',
+    'X-Request-Time'  // Add this line to allow the custom header from frontend
   ],
   allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
   exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],

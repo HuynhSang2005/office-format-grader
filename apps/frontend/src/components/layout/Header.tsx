@@ -1,95 +1,137 @@
-import { Group, Title, Button, Burger } from '@mantine/core';
-import { Link, useNavigate, useRouter } from '@tanstack/react-router';
-import { useAuthStore } from '@/store/authStore';
-import { IconLogout } from '@tabler/icons-react';
+/**
+ * @file header.tsx
+ * @description Header component with theme toggle and user menu
+ * @author Your Name
+ */
+
+import { 
+  AppShell,
+  Group,
+  ActionIcon,
+  Avatar,
+  Menu,
+  Text,
+  Burger
+} from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
+import { IconSun, IconMoon, IconLogout, IconUser, IconSettings } from '@tabler/icons-react'
+import { useAuth } from '../../hooks/use-auth'
+import { useMantineColorScheme } from '@mantine/core'
+import { useUIStore } from '../../stores/ui.store'
 
 interface HeaderProps {
-  opened?: boolean;
-  toggle?: () => void;
+  sidebarOpened: boolean
+  toggleSidebar: () => void
 }
 
-/**
- * The main application header.
- * Contains the app title, navigation links, and user actions (e.g., logout).
- * @returns {JSX.Element} The rendered header.
- */
-export function Header({ opened, toggle }: HeaderProps) {
-  const navigate = useNavigate();
-  const router = useRouter();
-  const { logout } = useAuthStore();
+export function Header({ sidebarOpened, toggleSidebar }: HeaderProps) {
+  const { theme, setTheme } = useUIStore()
+  const { user, logout } = useAuth()
+  const { setColorScheme } = useMantineColorScheme()
+  const [userMenuOpened, { toggle: toggleUserMenu }] = useDisclosure(false)
 
-  const handleLogout = () => {
-    logout();
-    navigate({ to: '/login' });
-  };
+  const toggleColorScheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    setColorScheme(newTheme)
+  }
 
-  const currentPath = router.state.location.pathname;
-
-  const isActiveRoute = (path: string): boolean => {
-    if (path === '/') return currentPath === '/';
-    return currentPath.startsWith(path);
-  };
+  const handleLogout = async () => {
+    try {
+      await logout()
+      window.location.href = '/login'
+    } catch (_error) {
+      // In a production app, we might want to show a notification or handle this more gracefully
+      // For now, we'll just redirect to login even if logout fails
+      window.location.href = '/login'
+    }
+  }
 
   return (
-    <Group justify="space-between" h="100%" px="md">
-      <Group>
-        <Burger
-          opened={opened}
-          onClick={toggle}
-          size="sm"
-          hiddenFrom="sm"
-        />
-        
-        <Link to="/dashboard">
-          <Title order={3} style={{ cursor: 'pointer' }}>
-            Office Format Grader
-          </Title>
-        </Link>
-        
-        <Group ml="xl" gap="xs" visibleFrom="sm">
-          <Link to="/dashboard">
-            <Button 
-              variant={isActiveRoute('/dashboard') ? 'filled' : 'subtle'}
+    <AppShell.Header px="md">
+      <Group h="100%" justify="space-between">
+        <Group>
+          <Burger opened={sidebarOpened} onClick={toggleSidebar} hiddenFrom="sm" size="sm" />
+          <Group ml="md">
+            <Avatar 
+              src={null} 
+              alt="Office Vibe Logo" 
+              color="blue" 
+              radius="xl"
               size="sm"
             >
-              Dashboard
-            </Button>
-          </Link>
-          <Link to="/grading">
-            <Button 
-              variant={isActiveRoute('/grading') ? 'filled' : 'subtle'}
-              size="sm"
-            >
-              Chấm điểm
-            </Button>
-          </Link>
-          <Link to="/history">
-            <Button 
-              variant={isActiveRoute('/history') ? 'filled' : 'subtle'}
-              size="sm"
-            >
-              Lịch sử
-            </Button>
-          </Link>
-          <Link to="/rubrics">
-            <Button 
-              variant={isActiveRoute('/rubrics') ? 'filled' : 'subtle'}
-              size="sm"
-            >
-              Rubrics
-            </Button>
-          </Link>
+              OV
+            </Avatar>
+            <Text size="xl" fw={700}>
+              Office Vibe
+            </Text>
+          </Group>
+        </Group>
+
+        <Group>
+          <ActionIcon
+            onClick={toggleColorScheme}
+            size="lg"
+            variant="default"
+            aria-label="Toggle color scheme"
+          >
+            {theme === 'dark' ? (
+              <IconSun style={{ width: '1.2rem', height: '1.2rem' }} stroke={1.5} />
+            ) : (
+              <IconMoon style={{ width: '1.2rem', height: '1.2rem' }} stroke={1.5} />
+            )}
+          </ActionIcon>
+          
+          <Menu 
+            opened={userMenuOpened} 
+            onChange={toggleUserMenu}
+            shadow="md" 
+            width={200}
+            withArrow
+          >
+            <Menu.Target>
+              <ActionIcon size="lg" variant="default" aria-label="User menu">
+                <Avatar 
+                  src={null} 
+                  alt={user?.email || 'User'} 
+                  radius="xl"
+                  size="sm"
+                >
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </Avatar>
+              </ActionIcon>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              <Menu.Label>{user?.email}</Menu.Label>
+              <Menu.Item 
+                leftSection={<IconUser style={{ width: '1rem', height: '1rem' }} />}
+                onClick={() => {
+                  window.location.href = '/profile'
+                }}
+              >
+                Hồ sơ
+              </Menu.Item>
+              <Menu.Item 
+                leftSection={<IconSettings style={{ width: '1rem', height: '1rem' }} />}
+                onClick={() => {
+                  window.location.href = '/settings'
+                }}
+              >
+                Cài đặt
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item 
+                color="red" 
+                leftSection={<IconLogout style={{ width: '1rem', height: '1rem' }} />}
+                onClick={handleLogout}
+              >
+                Đăng xuất
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </Group>
-      
-      <Button 
-        variant="outline" 
-        onClick={handleLogout}
-        leftSection={<IconLogout size={16} />}
-        size="sm"
-      >
-        Đăng xuất
-      </Button>
-    </Group>
-  );
+    </AppShell.Header>
+  )
 }

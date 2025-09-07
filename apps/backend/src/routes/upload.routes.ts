@@ -18,7 +18,7 @@ import {
 // Upload file route
 export const uploadRoute = createRoute({
   method: 'post',
-  path: '/upload',
+  path: '/',
   request: {
     body: {
       content: {

@@ -1,0 +1,36 @@
+{
+  "name": "office-format-grader",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\"",
+    "dev:backend": "cd apps/backend && bun run dev",
+    "build:backend": "cd apps/backend && bun run build",
+    "start:backend": "cd apps/backend && bun run start",
+    "test:backend": "cd apps/backend && bun run test",
+    "dev:frontend": "cd apps/frontend && bun run dev",
+    "build:frontend": "cd apps/frontend && bun run build",
+    "preview:frontend": "cd apps/frontend && bun run preview",
+    "test:frontend": "cd apps/frontend && bun run test",
+    "lint:frontend": "cd apps/frontend && bun run lint",
+    "type-check:frontend": "cd apps/frontend && bun run type-check",
+    "build": "bun run build:backend && bun run build:frontend",
+    "test": "bun run test:backend && bun run test:frontend",
+    "clean": "rimraf apps/backend/dist apps/frontend/dist apps/frontend/.vite"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "bun": "^1.2.0"
+  },
+  "dependencies": {
+    "axios": "^1.7.7"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0",
+    "rimraf": "^5.0.0"
+  },
+  "packageManager": "bun@1.2.0"
+}

@@ -6,6 +6,7 @@
 
 import { createRoute } from '@hono/zod-openapi';
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import { exportExcelController } from '../controllers/export.controller';
 import { 
   ExportRequestSchema,
@@ -16,7 +17,7 @@ import {
 // Route export kết quả chấm điểm ra Excel
 export const exportRoute = createRoute({
   method: 'post',
-  path: '/export',
+  path: '/',
   request: {
     body: {
       content: {
@@ -78,5 +79,5 @@ exportRoutes.openapi(exportRoute, createCompatibleHandler(exportExcelController)
 
 // Create a regular Hono app for the main app
 const regularExportRoutes = new Hono();
-regularExportRoutes.post('/', exportExcelController);
+regularExportRoutes.post('/', zValidator('json', ExportRequestSchema), exportExcelController);
 export default regularExportRoutes;

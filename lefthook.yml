@@ -1,0 +1,31 @@
+# EXAMPLE USAGE:
+#
+#   Refer for explanation to following link:
+#   https://lefthook.dev/configuration/
+#
+# pre-push:
+#   jobs:
+#     - name: packages audit
+#       tags:
+#         - frontend
+#         - security
+#       run: yarn audit
+#
+#     - name: gems audit
+#       tags:
+#         - backend
+#         - security
+#       run: bundle audit
+#
+# pre-commit:
+#   parallel: true
+#   commands:
+#     lint-frontend:
+#       glob: "apps/frontend/**/*.{js,ts,jsx,tsx}"
+#       run: cd apps/frontend && bun run lint
+#     type-check-frontend:
+#       glob: "apps/frontend/**/*.{js,ts,jsx,tsx}"
+#       run: cd apps/frontend && bun run type-check
+#     test-frontend:
+#       glob: "apps/frontend/**/*.{js,ts,jsx,tsx}"
+#       run: cd apps/frontend && bun run test --run

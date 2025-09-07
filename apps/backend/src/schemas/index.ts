@@ -172,3 +172,15 @@ export {
   type UploadErrorResponse,
   type UploadFileNotFoundResponse
 } from './upload.schema';
+
+// Export ungraded schemas
+export { 
+  UngradedFileSchema,
+  UngradedFilesResponseSchema,
+  UngradedFileDeleteResponseSchema,
+  UngradedFileErrorResponseSchema,
+  type UngradedFile,
+  type UngradedFilesResponse,
+  type UngradedFileDeleteResponse,
+  type UngradedFileErrorResponse
+} from './ungraded.schema';

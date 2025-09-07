@@ -29,8 +29,10 @@ import type { DashboardStats } from '@/types/dashboard.types';
  * - maxScore: 5-10 (mặc định: 10)
  * - uploadDays: 1-14 (mặc định: 14)
  * - topDays: 1-14 (mặc định: 14)
- * - page: 1+ (mặc định: 1) - cho phân trang
- * - limit: 1-50 (mặc định: 10) - cho phân trang
+ * - page: 1+ (mặc định: 1)
+ * - limit: 1-50 (mặc định: 10)
+ * - startDate: ISO date string (tùy chọn)
+ * - endDate: ISO date string (tùy chọn)
  */
 export async function getDashboardStatsController(c: Context) {
   try {
@@ -47,6 +49,43 @@ export async function getDashboardStatsController(c: Context) {
     const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '10'), 1), 50);
     const offset = (page - 1) * limit;
     
+    // Parse date range parameters
+    const startDateStr = c.req.query('startDate');
+    const endDateStr = c.req.query('endDate');
+    
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+    
+    if (startDateStr) {
+      startDate = new Date(startDateStr);
+      // Validate date
+      if (isNaN(startDate.getTime())) {
+        return c.json({
+          success: false,
+          message: 'startDate không hợp lệ'
+        }, 400);
+      }
+    }
+    
+    if (endDateStr) {
+      endDate = new Date(endDateStr);
+      // Validate date
+      if (isNaN(endDate.getTime())) {
+        return c.json({
+          success: false,
+          message: 'endDate không hợp lệ'
+        }, 400);
+      }
+    }
+    
+    // Validate date range
+    if (startDate && endDate && startDate > endDate) {
+      return c.json({
+        success: false,
+        message: 'startDate phải nhỏ hơn hoặc bằng endDate'
+      }, 400);
+    }
+    
     // Ensure minScore <= maxScore
     const min = Math.min(minScore, maxScore);
     const max = Math.max(minScore, maxScore);
@@ -59,8 +98,21 @@ export async function getDashboardStatsController(c: Context) {
       uploadDays,
       topDays,
       page,
-      limit
+      limit,
+      startDate: startDate?.toISOString(),
+      endDate: endDate?.toISOString()
     });
+    
+    // Check if there are any files in the date range
+    if (startDate && endDate) {
+      const fileCount = await totalGraded(0, startDate, endDate);
+      if (fileCount === 0) {
+        return c.json({
+          success: false,
+          message: 'Không có file nào trong khoảng thời gian đã chọn'
+        }, 400);
+      }
+    }
     
     // Fetch all dashboard statistics in parallel
     const [
@@ -75,14 +127,14 @@ export async function getDashboardStatsController(c: Context) {
       topHighestPaginated,
       topLowestPaginated
     ] = await Promise.all([
-      totalGraded(gradedDays),
+      totalGraded(gradedDays, startDate, endDate),
       totalUngraded(ungradedHours),
       totalCustomRubrics(),
       top5Highest(topDays),
       top5Lowest(topDays),
       ratioByScore(min, max),
-      countByFileType(),
-      countByUploadDate(uploadDays),
+      countByFileType(startDate, endDate),
+      countByUploadDate(uploadDays, startDate, endDate),
       topHighestWithPagination(topDays, limit, offset),
       topLowestWithPagination(topDays, limit, offset)
     ]);

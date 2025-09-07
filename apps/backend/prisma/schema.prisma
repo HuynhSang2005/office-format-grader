@@ -13,6 +13,7 @@ model User {
   password      String
   customRubrics CustomRubric[]
   gradeResults  GradeResult[]
+  ungradedFiles UngradedFile[]
 
   @@map("users")
 }
@@ -42,4 +43,16 @@ model CustomRubric {
   owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@map("custom_rubrics")
+}
+
+model UngradedFile {
+  id        String   @id
+  userId    Int
+  filename  String
+  fileType  String
+  fileSize  Int
+  uploadedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ungraded_files")
 }

@@ -1,6 +1,6 @@
 /**
  * @file upload.schema.ts
- * @description Zod schemas cho upload file
+ * @description Zod schemas cho upload file với hỗ trợ custom rubric
  * @author Nguyễn Huỳnh Sang
  */
 
@@ -18,9 +18,9 @@ export const UploadRequestSchema = z.object({
   ).refine(
     (file) => {
       const extension = file.name.split('.').pop()?.toLowerCase();
-      return extension === 'pptx' || extension === 'docx';
+      return extension === 'pptx' || extension === 'docx' || extension === 'zip' || extension === 'rar';
     },
-    'Loại file không được hỗ trợ. Chỉ chấp nhận .pptx và .docx'
+    'Loại file không được hỗ trợ. Chỉ chấp nhận .pptx, .docx, .zip và .rar'
   )
 });
 
@@ -51,8 +51,15 @@ export const UploadFileNotFoundResponseSchema = z.object({
   message: z.string()
 });
 
+// Schema cho upload với custom rubric
+export const UploadWithCustomRubricSchema = z.object({
+  file: z.instanceof(File),
+  customRubricId: z.string().optional()
+});
+
 // Export types từ schemas
 export type UploadRequest = z.infer<typeof UploadRequestSchema>;
 export type UploadSuccessResponse = z.infer<typeof UploadSuccessResponseSchema>;
 export type UploadErrorResponse = z.infer<typeof UploadErrorResponseSchema>;
 export type UploadFileNotFoundResponse = z.infer<typeof UploadFileNotFoundResponseSchema>;
+export type UploadWithCustomRubricRequest = z.infer<typeof UploadWithCustomRubricSchema>;

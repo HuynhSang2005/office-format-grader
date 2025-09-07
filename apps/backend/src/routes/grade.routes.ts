@@ -12,7 +12,8 @@ import {
   gradeCustomController,
   gradeCustomSelectiveController,
   getGradeHistoryController,
-  getGradeResultController
+  getGradeResultController,
+  deleteGradeResultController
 } from '../controllers/grade.controller';
 import { 
   GradeFileApiSchema,
@@ -230,6 +231,40 @@ export const gradeResultRoute = createRoute({
   }
 });
 
+// DELETE /grade/:id - Xóa kết quả chấm điểm
+// Params: id (string - result ID)
+// User ID được lấy từ JWT token
+export const deleteGradeResultRoute = createRoute({
+  method: 'delete',
+  path: '/grade/{id}',
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: SingleGradeResultResponseSchema
+        }
+      },
+      description: 'Xóa kết quả chấm điểm thành công'
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: GradeErrorResponseSchema
+        }
+      },
+      description: 'Không tìm thấy kết quả chấm điểm'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: GradeErrorResponseSchema
+        }
+      },
+      description: 'Lỗi server'
+    }
+  }
+});
+
 // Create a compatible wrapper function
 function createCompatibleHandler(handler: Function) {
   return (c: any) => {
@@ -247,6 +282,7 @@ gradeRoutes.openapi(gradeCustomRoute, createCompatibleHandler(gradeCustomControl
 gradeRoutes.openapi(gradeCustomSelectiveRoute, createCompatibleHandler(gradeCustomSelectiveController));
 gradeRoutes.openapi(gradeHistoryRoute, createCompatibleHandler(getGradeHistoryController));
 gradeRoutes.openapi(gradeResultRoute, createCompatibleHandler(getGradeResultController));
+gradeRoutes.openapi(deleteGradeResultRoute, createCompatibleHandler(deleteGradeResultController));
 
 // Create a regular Hono app for the main app
 const regularGradeRoutes = new Hono();
@@ -255,4 +291,5 @@ regularGradeRoutes.post('/custom', gradeCustomController);
 regularGradeRoutes.post('/custom-selective', gradeCustomSelectiveController);
 regularGradeRoutes.get('/history', getGradeHistoryController);
 regularGradeRoutes.get('/:id', getGradeResultController);
+regularGradeRoutes.delete('/:id', deleteGradeResultController);
 export default regularGradeRoutes;

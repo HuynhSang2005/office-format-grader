@@ -10,6 +10,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { nanoid } from 'nanoid';
 import type { UploadedFile, FileValidationResult } from '@/types/storage.types';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Đường dẫn thư mục temp (duy nhất cần thiết)
 const TEMP_DIR = path.join(process.cwd(), 'temp');
@@ -303,6 +306,7 @@ export async function cleanupTempFiles(olderThanHours: number = 3): Promise<void
     const files = await fs.readdir(TEMP_DIR);
     const cutoffTime = Date.now() - (olderThanHours * 60 * 60 * 1000);
     let deletedCount = 0;
+    let dbCleanupCount = 0;
     
     for (const file of files) {
       const filePath = path.join(TEMP_DIR, file);
@@ -314,6 +318,38 @@ export async function cleanupTempFiles(olderThanHours: number = 3): Promise<void
           // Xóa metadata tương ứng
           const fileId = file.split('.')[0];
           await deleteFileMetadata(fileId);
+          
+          // Xóa bản ghi trong database ungraded_files nếu tồn tại
+          try {
+            const deletedRecord = await prisma.ungradedFile.delete({
+              where: {
+                id: fileId
+              }
+            });
+            if (deletedRecord) {
+              dbCleanupCount++;
+              logger.debug(`Đã xóa bản ghi ungraded_files database cho file: ${fileId}`);
+            }
+          } catch (dbError) {
+            // File có thể không tồn tại trong ungraded_files, điều này là bình thường
+            logger.debug(`File ${fileId} không tồn tại trong ungraded_files hoặc đã được xóa trước đó`);
+          }
+          
+          // Xóa bản ghi trong database grade_results nếu tồn tại (trong trường hợp có lỗi)
+          try {
+            const deletedGradeRecord = await prisma.gradeResult.delete({
+              where: {
+                id: fileId
+              }
+            });
+            if (deletedGradeRecord) {
+              logger.debug(`Đã xóa bản ghi grade_results database cho file: ${fileId}`);
+            }
+          } catch (dbError) {
+            // File có thể không tồn tại trong grade_results, điều này là bình thường
+            logger.debug(`File ${fileId} không tồn tại trong grade_results hoặc đã được xóa trước đó`);
+          }
+          
           deletedCount++;
           logger.debug(`Đã xóa temp file cũ: ${file}`);
         }
@@ -322,7 +358,7 @@ export async function cleanupTempFiles(olderThanHours: number = 3): Promise<void
       }
     }
     
-    logger.info(`Dọn dẹp hoàn thành: ${deletedCount} temp files đã xóa`);
+    logger.info(`Dọn dẹp hoàn thành: ${deletedCount} temp files đã xóa, ${dbCleanupCount} bản ghi database đã xóa`);
     
   } catch (error) {
     logger.error('Lỗi khi dọn dẹp temp files:', error);

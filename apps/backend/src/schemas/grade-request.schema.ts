@@ -78,7 +78,7 @@ export const CompareResultsRequestSchema = z.object({
 export const ExportExcelRequestSchema = z.object({
   resultIds: z.array(z.string().min(1, 'Result ID không được rỗng'))
     .min(1, 'Phải có ít nhất 1 result')
-    .max(1000, 'Không được export quá 1000 results'),
+    .max(60, 'Không được export quá 60 results'),
   includeDetails: z.boolean().default(true),   // Có include chi tiết từng criterion không
   groupBy: z.enum(['user', 'fileType', 'rubric', 'date', 'none']).default('none'),
   format: z.enum(['xlsx']).default('xlsx')    // Chỉ hỗ trợ xlsx format
