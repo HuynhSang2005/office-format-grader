@@ -8,7 +8,8 @@
 
 import { Accordion, Text, List, ThemeIcon } from '@mantine/core'
 import { IconCheck, IconX } from '@tabler/icons-react'
-import type { Rubric, Criterion, Level } from '../../types'
+import type { Rubric, Level } from '../../types'
+import type { Criterion } from '../../schemas/criteria.schema'
 
 interface RubricPreviewProps {
   rubric: Rubric
@@ -40,7 +41,7 @@ export function RubricPreview({ rubric }: RubricPreviewProps) {
                 </Accordion.Control>
                 <Accordion.Panel>
                   <List spacing="xs" size="sm" center>
-                    {criterion.levels.map((level: Level) => (
+                    {criterion.levels?.map((level: Level) => (
                       <List.Item
                         key={level.code}
                         icon={

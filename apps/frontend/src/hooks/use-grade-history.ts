@@ -1,7 +1,7 @@
 /**
  * @file use-grade-history.ts
  * @description TanStack Query hook for fetching grade history
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useQuery } from '@tanstack/react-query'

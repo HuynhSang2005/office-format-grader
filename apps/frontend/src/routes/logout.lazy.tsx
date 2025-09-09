@@ -1,7 +1,7 @@
 /**
  * @file logout.lazy.tsx
  * @description Logout page component
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useEffect } from 'react'

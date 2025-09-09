@@ -1,7 +1,7 @@
 /**
  * @file api-client.ts
  * @description Axios instance configuration with interceptors
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import axios from 'axios'
@@ -9,7 +9,7 @@ import { env } from '../config/env'
 
 export const apiClient = axios.create({
   baseURL: env.VITE_API_URL,
-  timeout: 10000,
+  timeout: 30000, // Increase timeout to 30 seconds for better handling of slow requests
   withCredentials: true, // Required for cookie-based auth
 })
 
@@ -45,6 +45,13 @@ apiClient.interceptors.response.use(
     // Handle network errors
     if (!error.response) {
       console.error('Network error:', error.message)
+      throw new Error('NETWORK_ERROR')
+    }
+    
+    // Handle timeout errors
+    if (error.code === 'ECONNABORTED' || error.message === 'timeout') {
+      console.error('Request timeout:', error.message)
+      throw new Error('TIMEOUT_ERROR')
     }
     
     return Promise.reject(error)

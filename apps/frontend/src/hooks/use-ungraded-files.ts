@@ -1,7 +1,7 @@
 /**
  * @file use-ungraded-files.ts
  * @description TanStack Query hook for fetching ungraded files
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -14,16 +14,24 @@ import {
 
 /**
  * Fetch ungraded files
- * @returns Ungraded files data
+ * @param query - Query parameters for pagination
+ * @returns Ungraded files data with pagination info
  */
-const fetchUngradedFiles = async (): Promise<UngradedFile[]> => {
-  // Make API request
-  const response = await apiClient.get('/api/ungraded')
+const fetchUngradedFiles = async (query?: { limit?: number; offset?: number }): Promise<{
+  files: UngradedFile[];
+  total: number;
+  limit: number;
+  offset: number;
+}> => {
+  // Make API request with query parameters
+  const response = await apiClient.get('/api/ungraded', {
+    params: query
+  })
   
   // Validate response with Zod
   const validatedResponse = UngradedFilesResponseSchema.parse(response.data)
   
-  return validatedResponse.data.files
+  return validatedResponse.data
 }
 
 /**
@@ -37,12 +45,13 @@ const deleteUngradedFile = async (fileId: string): Promise<void> => {
 
 /**
  * TanStack Query hook for fetching ungraded files
+ * @param query - Query parameters for pagination
  * @returns Query result with ungraded files data
  */
-export const useUngradedFiles = () => {
+export const useUngradedFiles = (query?: { limit?: number; offset?: number }) => {
   return useQuery({
-    queryKey: ['ungraded-files'],
-    queryFn: fetchUngradedFiles
+    queryKey: ['ungraded-files', query],
+    queryFn: () => fetchUngradedFiles(query)
   })
 }
 

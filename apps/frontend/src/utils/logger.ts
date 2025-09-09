@@ -1,7 +1,7 @@
 /**
  * @file logger.ts
  * @description Simple logger utility for the application
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 /**

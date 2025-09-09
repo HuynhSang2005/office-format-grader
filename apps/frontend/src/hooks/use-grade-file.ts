@@ -1,7 +1,7 @@
 /**
  * @file use-grade-file.ts
  * @description Custom hook for grading files with default hard-coded rubric
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';

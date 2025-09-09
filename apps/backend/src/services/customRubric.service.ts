@@ -9,6 +9,7 @@ import { PrismaClient } from '@prisma/client';
 import type { Rubric } from '@/types/criteria';
 import type { CustomRubric, CreateCustomRubricRequest, UpdateCustomRubricRequest } from '@/types/custom-rubric.types';
 import { RubricSchema } from '@/schemas/rubric.schema';
+import { createCriterion as createCriterionService, updateCriterion as updateCriterionService, deleteCriterion as deleteCriterionService } from './criteria-crud.service';
 
 const prisma = new PrismaClient();
 
@@ -36,6 +37,22 @@ export async function createCustomRubric(request: CreateCustomRubricRequest): Pr
         isPublic: request.isPublic ?? false
       }
     });
+    
+    // Tạo các criterion riêng lẻ từ rubric content để có thể list được
+    for (const criterion of request.content.criteria) {
+      try {
+        await createCriterionService({
+          name: criterion.name,
+          description: criterion.description,
+          detectorKey: criterion.detectorKey,
+          maxPoints: criterion.maxPoints,
+          levels: criterion.levels
+        });
+      } catch (error) {
+        logger.warn(`Không thể tạo criterion riêng lẻ cho ${criterion.id}:`, error);
+        // Continue with other criteria even if one fails
+      }
+    }
     
     logger.info(`Tạo custom rubric thành công: ${customRubric.id}`);
     
@@ -86,6 +103,46 @@ export async function updateCustomRubric(id: string, request: UpdateCustomRubric
       }
     });
     
+    // Nếu có content mới, cập nhật các criterion riêng lẻ
+    if (request.content) {
+      try {
+        // Tạo lại các criterion mới từ rubric content
+        for (const criterion of request.content.criteria) {
+          try {
+            // Kiểm tra xem criterion đã tồn tại chưa
+            const existingCriterion = await prisma.criterion.findUnique({
+              where: { id: criterion.id }
+            });
+            
+            if (existingCriterion) {
+              // Nếu đã tồn tại, cập nhật nó
+              await updateCriterionService(criterion.id, {
+                name: criterion.name,
+                description: criterion.description,
+                detectorKey: criterion.detectorKey,
+                maxPoints: criterion.maxPoints,
+                levels: criterion.levels
+              });
+            } else {
+              // Nếu chưa tồn tại, tạo mới
+              await createCriterionService({
+                name: criterion.name,
+                description: criterion.description,
+                detectorKey: criterion.detectorKey,
+                maxPoints: criterion.maxPoints,
+                levels: criterion.levels
+              });
+            }
+          } catch (error) {
+            logger.warn(`Không thể cập nhật criterion riêng lẻ cho ${criterion.id}:`, error);
+            // Continue with other criteria even if one fails
+          }
+        }
+      } catch (error) {
+        logger.warn('Lỗi khi cập nhật các criterion riêng lẻ:', error);
+      }
+    }
+    
     logger.info(`Cập nhật custom rubric thành công: ${customRubric.id}`);
     
     return {
@@ -109,6 +166,31 @@ export async function deleteCustomRubric(id: string): Promise<void> {
   logger.info(`Đang xóa custom rubric: ${id}`);
   
   try {
+    // Lấy custom rubric trước khi xóa để có danh sách criteria
+    const customRubric = await prisma.customRubric.findUnique({
+      where: { id }
+    });
+    
+    if (customRubric) {
+      try {
+        // Parse content để lấy danh sách criteria
+        const content = JSON.parse(customRubric.content);
+        if (content.criteria && Array.isArray(content.criteria)) {
+          // Xóa các criterion riêng lẻ liên quan đến rubric này
+          for (const criterion of content.criteria) {
+            try {
+              await deleteCriterionService(criterion.id);
+            } catch (error) {
+              logger.warn(`Không thể xóa criterion ${criterion.id}:`, error);
+              // Continue with other criteria even if one fails
+            }
+          }
+        }
+      } catch (error) {
+        logger.warn('Lỗi khi xóa các criterion riêng lẻ:', error);
+      }
+    }
+    
     await prisma.customRubric.delete({
       where: { id }
     });

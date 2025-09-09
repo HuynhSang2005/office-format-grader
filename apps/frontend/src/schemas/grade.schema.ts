@@ -1,7 +1,7 @@
 /**
  * @file grade.schema.ts
  * @description Zod schemas for grade result data
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  * @reference https://github.com/colinhacks/zod
  */
 

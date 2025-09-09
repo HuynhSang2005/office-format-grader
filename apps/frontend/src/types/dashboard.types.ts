@@ -1,7 +1,7 @@
 /**
  * @file dashboard.types.ts
  * @description TypeScript types for dashboard components
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 export interface ChartDataPoint {

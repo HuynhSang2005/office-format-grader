@@ -1,7 +1,7 @@
 /**
  * @file history.lazy.tsx
  * @description Grade history page component
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createLazyFileRoute } from '@tanstack/react-router'
@@ -490,8 +490,8 @@ function HistoryPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {ungradedData && ungradedData.length > 0 ? (
-                    ungradedData.map((file: UngradedFile) => (
+                  {ungradedData && ungradedData.files && ungradedData.files.length > 0 ? (
+                    ungradedData.files.map((file: UngradedFile) => (
                       <Table.Tr key={file.id}>
                         <Table.Td>
                           <Group align="center" gap="sm">

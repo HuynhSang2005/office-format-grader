@@ -16,6 +16,7 @@ import type {
 } from '@/types/criteria';
 import { RubricSchema } from '@/schemas/rubric.schema';
 import { detectors } from '@/rule-engine/detectors';
+import { getCriterionById, listCriteria as listAllCriteria } from './criteria-crud.service';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -25,10 +26,13 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 const cacheTimestamps = new Map<string, number>();
 
 // Load preset
-export async function loadPresetRubric(name: string, type: FileType): Promise<Rubric> {
-  logger.info(`Đang load preset rubric: ${name} cho ${type}`);
+export async function loadPresetRubric(name: string, type?: FileType): Promise<Rubric> {
+  // If type is not provided, default to DOCX
+  const fileType = type || 'DOCX';
   
-  const key = `${type}_${name}`;
+  logger.info(`Đang load preset rubric: ${name} cho ${fileType}`);
+  
+  const key = `${fileType}_${name}`;
   
   // Check cache validity
   const cachedTime = cacheTimestamps.get(key);
@@ -40,7 +44,7 @@ export async function loadPresetRubric(name: string, type: FileType): Promise<Ru
   }
   
   try {
-    const file = path.resolve(__dirname, `../config/presets/defaultRubric.${type.toLowerCase()}.json`);
+    const file = path.resolve(__dirname, `../config/presets/defaultRubric.${fileType.toLowerCase()}.json`);
     const raw = await fs.readFile(file, 'utf-8');
     const parsed = RubricSchema.parse(JSON.parse(raw));
     
@@ -49,7 +53,7 @@ export async function loadPresetRubric(name: string, type: FileType): Promise<Ru
       name: parsed.title,
       version: parsed.version,
       description: undefined, // Not in Zod schema
-      fileType: type,
+      fileType: fileType,
       totalMaxPoints: parsed.totalPoints,
       rounding: parsed.scoring.rounding,
       criteria: parsed.criteria.map(criterion => ({
@@ -71,7 +75,7 @@ export async function loadPresetRubric(name: string, type: FileType): Promise<Ru
     presetCache.set(key, rubric);
     cacheTimestamps.set(key, Date.now());
     
-    logger.info(`Load preset rubric thành công: ${name} cho ${type} (${rubric.criteria.length} criteria)`);
+    logger.info(`Load preset rubric thành công: ${name} cho ${fileType} (${rubric.criteria.length} criteria)`);
     return rubric;
   } catch (error) {
     logger.error(`Lỗi khi load preset rubric ${name}:`, error);
@@ -79,17 +83,42 @@ export async function loadPresetRubric(name: string, type: FileType): Promise<Ru
   }
 }
 
-// List criteria từ preset
-export async function listCriteria(query: { source: 'preset'; fileType: FileType; rubricName?: string }): Promise<Criterion[]> {
-  logger.debug(`Đang list criteria: source=${query.source}, fileType=${query.fileType}`);
+// List criteria từ preset - enhanced to support both preset and custom criteria
+export async function listCriteria(query: { source: 'preset' | 'custom'; fileType?: FileType; rubricName?: string }): Promise<Criterion[]> {
+  logger.debug(`Đang list criteria: source=${query.source}, fileType=${query.fileType || 'not specified'}`);
   
   try {
-    const rubric = await loadPresetRubric(query.rubricName || 'default', query.fileType);
-    logger.debug(`Tìm thấy ${rubric.criteria.length} criteria từ preset`);
-    return rubric.criteria;
+    if (query.source === 'custom') {
+      // For custom criteria, list from database
+      const customCriteria = await listAllCustomCriteria();
+      logger.debug(`Tìm thấy ${customCriteria.length} criteria từ custom database`);
+      return customCriteria;
+    } else {
+      // For preset criteria, if fileType is not provided, throw an error
+      // because we need to know which preset rubric to load
+      if (!query.fileType) {
+        throw new Error('fileType là bắt buộc khi source = "preset"');
+      }
+      
+      // Existing preset implementation
+      const rubric = await loadPresetRubric(query.rubricName || 'default', query.fileType);
+      logger.debug(`Tìm thấy ${rubric.criteria.length} criteria từ preset`);
+      return rubric.criteria;
+    }
   } catch (error) {
     logger.error('Lỗi khi list criteria:', error);
     throw error;
+  }
+}
+
+// Helper function to list all custom criteria from database
+async function listAllCustomCriteria(): Promise<Criterion[]> {
+  try {
+    const customCriteria = await listAllCriteria();
+    return customCriteria;
+  } catch (error) {
+    logger.error('Lỗi khi list custom criteria:', error);
+    throw new Error(`Không thể lấy danh sách custom criteria: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -139,11 +168,23 @@ export async function validateRubric(body: { rubric: Rubric }): Promise<{ isVali
   return { isValid, errors };
 }
 
-// Get single criterion by ID
+// Get single criterion by ID - enhanced to support both preset and custom criteria
 export async function getCriterion(criterionId: string): Promise<Criterion | null> {
   logger.debug(`Đang get criterion: ${criterionId}`);
   
   try {
+    // First, try to get from custom criteria (database)
+    try {
+      const customCriterion = await getCriterionById(criterionId);
+      if (customCriterion) {
+        logger.debug(`Tìm thấy criterion ${criterionId} trong custom criteria`);
+        return customCriterion;
+      }
+    } catch (error) {
+      // If there's an error getting from custom criteria, continue to preset criteria
+      logger.debug(`Không tìm thấy criterion ${criterionId} trong custom criteria, tiếp tục tìm trong preset criteria`);
+    }
+    
     // Tìm trong preset rubrics
     const fileTypes: FileType[] = ['DOCX', 'PPTX'];
     
@@ -170,11 +211,12 @@ export async function getCriterion(criterionId: string): Promise<Criterion | nul
   }
 }
 
-// Get supported criteria cho file type
+// Get supported criteria cho file type - enhanced to include custom criteria
 export async function getSupportedCriteria(fileType?: FileType, detectorKey?: DetectorKey): Promise<SupportedCriteria[]> {
   logger.debug(`Đang get supported criteria: fileType=${fileType || 'all'}, detectorKey=${detectorKey || 'all'}`);
   
   try {
+    // Get preset criteria (existing implementation)
     const supportedCriteria: SupportedCriteria[] = [];
     
     // Define supported criteria for DOCX
@@ -422,6 +464,51 @@ export async function getSupportedCriteria(fileType?: FileType, detectorKey?: De
     
     if (detectorKey) {
       filteredCriteria = filteredCriteria.filter(c => c.detectorKey === detectorKey);
+    }
+    
+    // Add custom criteria to the supported criteria list
+    try {
+      const customCriteria = await listAllCustomCriteria();
+      // Convert custom criteria to SupportedCriteria format
+      // Note: Custom criteria don't have fileType information, so we'll include them for all file types
+      const customSupportedCriteria: SupportedCriteria[] = customCriteria.map(criterion => ({
+        detectorKey: criterion.detectorKey,
+        name: criterion.name,
+        description: criterion.description || '',
+        fileTypes: ['PPTX', 'DOCX'], // Include for all file types since we don't have specific fileType info
+        defaultMaxPoints: criterion.maxPoints || 10,
+        suggestedLevels: criterion.levels && criterion.levels.length > 0 
+          ? criterion.levels 
+          : [{ points: 0, code: '0', name: 'Không đạt', description: 'Không đạt yêu cầu' }]
+      }));
+      
+      // Filter custom criteria based on detectorKey if specified
+      let filteredCustomCriteria = customSupportedCriteria;
+      if (detectorKey) {
+        filteredCustomCriteria = filteredCustomCriteria.filter(c => 
+          c.detectorKey === detectorKey
+        );
+      }
+      
+      // Combine preset and custom criteria
+      // Use a Map to ensure unique detector keys (custom criteria will override preset ones if duplicate)
+      const criteriaMap = new Map<string, SupportedCriteria>();
+          
+      // Add preset criteria first
+      filteredCriteria.forEach(criterion => {
+        criteriaMap.set(criterion.detectorKey, criterion);
+      });
+          
+      // Add custom criteria (will override preset ones with same detectorKey)
+      filteredCustomCriteria.forEach(criterion => {
+        criteriaMap.set(criterion.detectorKey, criterion);
+      });
+          
+      // Convert back to array
+      filteredCriteria = Array.from(criteriaMap.values());
+    } catch (error) {
+      // If there's an error fetching custom criteria, continue with just preset criteria
+      logger.warn('Không thể lấy custom criteria, chỉ sử dụng preset criteria:', error);
     }
     
     logger.debug(`Tìm thấy ${filteredCriteria.length} supported criteria`);

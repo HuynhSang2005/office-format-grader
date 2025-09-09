@@ -1,7 +1,7 @@
 /**
  * @file dashboard.tsx
  * @description Dashboard page component with statistics and charts
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -12,17 +12,15 @@ import {
   SimpleGrid, 
   Button, 
   Container, 
-  Flex, 
+  Flex,
   Progress,
   Skeleton,
   Alert,
   ThemeIcon,
   Badge,
   Box,
-  Select,
-  NumberInput
+  Title
 } from '@mantine/core'
-import { DatePickerInput } from '@mantine/dates'
 import { 
   IconUpload, 
   IconHistory, 
@@ -30,18 +28,10 @@ import {
   IconAlertCircle,
   IconTrendingUp,
   IconClipboardList,
-  IconCheck,
-  IconArrowUpRight,
-  IconArrowDownRight,
-  IconFilter,
-  IconCalendar,
-  IconUser
+  IconCheck
 } from '@tabler/icons-react'
 import { useAuth } from '../../hooks/use-auth'
 import { useDashboardStats } from '../../api/hooks/useDashboardStats'
-import { CriteriaDashboard } from '../../components/criteria/dashboard'
-import { useState } from 'react'
-import { notifications } from '@mantine/notifications'
 
 export const Route = createFileRoute('/_auth/dashboard')({
   component: DashboardRoute,
@@ -50,14 +40,12 @@ export const Route = createFileRoute('/_auth/dashboard')({
 function StatsCard({ 
   title, 
   value, 
-  diff, 
   icon, 
   color, 
   description 
 }: { 
   title: string; 
   value: string; 
-  diff: number; 
   icon: React.ReactNode; 
   color: string; 
   description: string; 
@@ -82,19 +70,9 @@ function StatsCard({
         {value}
       </Text>
 
-      <Flex align="center" mt={5}>
-        {diff > 0 ? (
-          <IconArrowUpRight size={16} color="green" />
-        ) : (
-          <IconArrowDownRight size={16} color="red" />
-        )}
-        <Text size="sm" c={diff > 0 ? 'green' : 'red'} ml={5} fw={500}>
-          {diff}%
-        </Text>
-        <Text size="sm" c="dimmed" ml={5}>
-          {description}
-        </Text>
-      </Flex>
+      <Text size="sm" c="dimmed" mt={5}>
+        {description}
+      </Text>
     </Card>
   )
 }
@@ -131,7 +109,6 @@ function DashboardRoute() {
           <Flex gap="md">
             <Skeleton height={36} width={120} />
             <Skeleton height={36} width={150} />
-            <Skeleton height={36} width={130} />
           </Flex>
         </Card>
       </Container>
@@ -182,12 +159,8 @@ function DashboardRoute() {
     navigate({ to: '/ungraded' })
   }
 
-  const handleViewRubrics = () => {
-    navigate({ to: '/rubric/builder' })
-  }
-
-  const handleViewProfile = () => {
-    navigate({ to: '/profile' })
+  const handleViewCriteria = () => {
+    navigate({ to: '/criteria' })
   }
 
   // Calculate average score from top5Highest (simplified)
@@ -198,9 +171,9 @@ function DashboardRoute() {
     <Container size="xl" py="xl">
       <Flex justify="space-between" align="center" mb="xl">
         <Box>
-          <Text size="xl" fw={700}>Bảng điều khiển</Text>
-          <Text size="sm" c="dimmed">
-            Chào mừng trở lại, {user?.email}
+          <Title size="30">Bảng điều khiển</Title>
+          <Text size="lg" c="dimmed">
+            Chào mừng trở lại, {user?.email || 'admin'}
           </Text>
         </Box>
         <Badge 
@@ -218,28 +191,25 @@ function DashboardRoute() {
         <StatsCard
           title="Tổng bài đã chấm"
           value={dashboardStats.totalGraded.toString()}
-          diff={12}
           icon={<IconCheck size={16} />}
           color="green"
-          description="so với tháng trước"
+          description="bài đã chấm điểm"
         />
         
         <StatsCard
           title="Chưa chấm"
           value={dashboardStats.totalUngraded.toString()}
-          diff={-5}
           icon={<IconClipboardList size={16} />}
           color="red"
-          description="so với tháng trước"
+          description="file chưa chấm điểm"
         />
         
         <StatsCard
           title="Custom Rubrics"
           value={dashboardStats.totalCustomRubrics.toString()}
-          diff={8}
           icon={<IconFiles size={16} />}
           color="blue"
-          description="đang sử dụng"
+          description="rubric tùy chỉnh"
         />
         
         <Card withBorder p="lg" radius="md">
@@ -277,11 +247,6 @@ function DashboardRoute() {
         </Card>
       </SimpleGrid>
 
-      {/* Criteria Management Dashboard */}
-      <Card withBorder p="lg" radius="md" mb="xl">
-        <CriteriaDashboard />
-      </Card>
-
       {/* Quick Actions */}
       <Card withBorder p="lg" radius="md">
         <Text size="lg" fw={600} mb="md">Hành động nhanh</Text>
@@ -291,7 +256,7 @@ function DashboardRoute() {
             onClick={handleUploadSingle}
             size="md"
           >
-            Upload đơn
+            Upload đơn lẻ
           </Button>
           <Button 
             variant="outline" 
@@ -299,7 +264,7 @@ function DashboardRoute() {
             onClick={handleUploadBatch}
             size="md"
           >
-            Upload hàng loạt
+            Upload file nén
           </Button>
           <Button 
             variant="outline" 
@@ -320,18 +285,10 @@ function DashboardRoute() {
           <Button 
             variant="outline" 
             leftSection={<IconFiles size={16} />} 
-            onClick={handleViewRubrics}
+            onClick={handleViewCriteria}
             size="md"
           >
-            Quản lý rubric
-          </Button>
-          <Button 
-            variant="outline" 
-            leftSection={<IconUser size={16} />} 
-            onClick={handleViewProfile}
-            size="md"
-          >
-            Hồ sơ cá nhân
+            Xem tiêu chí
           </Button>
         </Group>
       </Card>

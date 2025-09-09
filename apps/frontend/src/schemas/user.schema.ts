@@ -1,7 +1,7 @@
 /**
  * @file user.schema.ts
  * @description User Zod schemas
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { z } from 'zod'

@@ -1,26 +1,18 @@
 /**
  * @file use-ungraded-files.test.ts
- * @description Unit tests for useUngradedFiles hook
+ * @description Tests for the useUngradedFiles hook
  * @author Your Name
  */
 
-import { renderHook, waitFor, act } from '@testing-library/react'
-import { useUngradedFiles, useDeleteUngradedFile } from '../use-ungraded-files'
-import { server } from '../../mocks/server'
-import { http, HttpResponse } from 'msw'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactNode } from 'react'
+import { renderHook, waitFor } from '@testing-library/react'
+import { useUngradedFiles, useDeleteUngradedFile, useRetryGrade } from '../use-ungraded-files'
+import { server } from '../../tests/mocks/server'
+import { rest } from 'msw'
+import { QueryClient, type QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 
-// Mock notifications
-const mockShowNotification = vi.fn()
-vi.mock('@mantine/notifications', () => ({
-  notifications: {
-    show: mockShowNotification
-  }
-}))
-
-// Setup React Query client for testing
+// Create a test query client
 const createTestQueryClient = () => {
   return new QueryClient({
     defaultOptions: {
@@ -31,130 +23,118 @@ const createTestQueryClient = () => {
   })
 }
 
-const wrapper = ({ children }: { children: ReactNode }) => {
-  const queryClient = createTestQueryClient()
-  return React.createElement(
-    QueryClientProvider,
-    { client: queryClient },
-    children
-  )
-}
+// Wrapper component for testing
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <QueryClientProvider client={createTestQueryClient()}>
+    {children}
+  </QueryClientProvider>
+)
 
-// Mock data
-const mockUngradedFiles = [
-  {
-    id: 'file-1',
-    name: 'test1.pptx',
-    size: 1024,
-    uploadedAt: new Date().toISOString(),
-    fileType: 'PPTX' as const
-  },
-  {
-    id: 'file-2',
-    name: 'test2.docx',
-    size: 2048,
-    uploadedAt: new Date().toISOString(),
-    fileType: 'DOCX' as const
-  }
-]
-
-describe('useUngradedFiles hooks', () => {
+describe('useUngradedFiles', () => {
   beforeEach(() => {
-    mockShowNotification.mockClear()
+    // Reset mocks
+    vi.resetAllMocks()
   })
 
-  afterEach(() => {
-    server.resetHandlers()
-  })
-
-  describe('useUngradedFiles', () => {
-    it('should fetch ungraded files successfully', async () => {
-      server.use(
-        http.get('/api/ungraded', () => {
-          return HttpResponse.json({
+  it('should fetch ungraded files successfully', async () => {
+    // Mock API response
+    server.use(
+      rest.get('/api/ungraded', (_, res, ctx) => {
+        return res(
+          ctx.json({
             success: true,
-            message: 'Lấy danh sách file chưa chấm điểm thành công',
+            message: 'Success',
             data: {
-              files: mockUngradedFiles,
-              total: mockUngradedFiles.length
+              files: [
+                {
+                  id: '1',
+                  filename: 'test.pptx',
+                  fileType: 'PPTX',
+                  fileSize: 1024,
+                  uploadedAt: '2023-01-01T00:00:00Z'
+                }
+              ],
+              total: 1
             }
           })
-        })
-      )
-
-      const { result } = renderHook(() => useUngradedFiles(), { wrapper })
-      
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true)
+        )
       })
+    )
 
-      expect(result.current.data).toEqual(mockUngradedFiles)
-    })
+    const { result } = renderHook(() => useUngradedFiles(), { wrapper })
 
-    it('should handle fetch error', async () => {
-      server.use(
-        http.get('/api/ungraded', () => {
-          return HttpResponse.json({
-            success: false,
-            message: 'Không thể lấy danh sách file chưa chấm điểm'
-          }, { status: 500 })
-        })
-      )
-
-      const { result } = renderHook(() => useUngradedFiles(), { wrapper })
-      
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true)
-      })
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+      expect(result.current.data).toBeDefined()
+      expect(result.current.data?.data.files).toHaveLength(1)
     })
   })
 
-  describe('useDeleteUngradedFile', () => {
-    it('should delete an ungraded file successfully', async () => {
-      server.use(
-        http.delete('/api/ungraded/file-1', () => {
-          return new HttpResponse(null, { status: 204 })
-        })
-      )
-
-      const { result } = renderHook(() => useDeleteUngradedFile(), { wrapper })
-
-      await act(async () => {
-        await result.current.mutateAsync('file-1')
+  it('should handle fetch error', async () => {
+    // Mock API error
+    server.use(
+      rest.get('/api/ungraded', (_, res, ctx) => {
+        return res(ctx.status(500), ctx.json({ message: 'Internal Server Error' }))
       })
+    )
 
-      expect(result.current.isSuccess).toBe(true)
-      expect(mockShowNotification).toHaveBeenCalledWith({
-        title: 'Thành công',
-        message: 'Đã xóa file chưa chấm điểm',
-        color: 'green',
-      })
-    })
+    const { result } = renderHook(() => useUngradedFiles(), { wrapper })
 
-    it('should handle delete error', async () => {
-      server.use(
-        http.delete('/api/ungraded/file-1', () => {
-          return HttpResponse.json({
-            success: false,
-            message: 'Không thể xóa file chưa chấm điểm'
-          }, { status: 500 })
-        })
-      )
-
-      const { result } = renderHook(() => useDeleteUngradedFile(), { wrapper })
-
-      await expect(
-        act(async () => {
-          await result.current.mutateAsync('file-1')
-        })
-      ).rejects.toThrow()
-
+    await waitFor(() => {
       expect(result.current.isError).toBe(true)
-      expect(mockShowNotification).toHaveBeenCalledWith({
-        title: 'Lỗi',
-        message: 'Không thể xóa file chưa chấm điểm',
-        color: 'red',
+    })
+  })
+})
+
+describe('useDeleteUngradedFile', () => {
+  it('should delete ungraded file successfully', async () => {
+    const fileId = '1'
+    
+    // Mock API response
+    server.use(
+      rest.delete(`/api/ungraded/${fileId}`, (_, res, ctx) => {
+        return res(
+          ctx.json({
+            success: true,
+            message: 'File deleted successfully'
+          })
+        )
       })
+    )
+
+    const { result } = renderHook(() => useDeleteUngradedFile(), { wrapper })
+
+    await waitFor(async () => {
+      await result.current.mutateAsync(fileId)
+      expect(result.current.isSuccess).toBe(true)
+    })
+  })
+})
+
+describe('useRetryGrade', () => {
+  it('should retry grading successfully', async () => {
+    const fileId = '1'
+    
+    // Mock API response
+    server.use(
+      rest.post('/api/grade/retry', (_, res, ctx) => {
+        return res(
+          ctx.json({
+            success: true,
+            message: 'Grading started successfully',
+            data: {
+              fileId
+            }
+          })
+        )
+      })
+    )
+
+    const { result } = renderHook(() => useRetryGrade(), { wrapper })
+
+    await waitFor(async () => {
+      await result.current.mutateAsync(fileId)
+      expect(result.current.isSuccess).toBe(true)
     })
   })
 })

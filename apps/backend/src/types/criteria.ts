@@ -32,7 +32,7 @@ export type DetectorKey =
   | 'common.exportPdf';
 
 // Loại file được hỗ trợ
-export type FileType = 'PPTX' | 'DOCX';
+export type FileType = 'PPTX' | 'DOCX' | 'ZIP' | 'RAR';
 
 // Phương thức làm tròn điểm
 export type RoundingMethod = 'half_up_0.25' | 'none';

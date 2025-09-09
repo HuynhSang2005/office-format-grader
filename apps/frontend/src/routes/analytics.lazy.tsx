@@ -1,7 +1,7 @@
 /**
  * @file analytics.lazy.tsx
  * @description Analytics dashboard page with charts and statistics
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  * @link https://www.tremor.so/
  * @link https://recharts.org/
  */

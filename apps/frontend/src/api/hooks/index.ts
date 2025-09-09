@@ -1,7 +1,7 @@
 /**
  * @file index.ts
  * @description Export all API hooks
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 export * from './useDashboardStats'

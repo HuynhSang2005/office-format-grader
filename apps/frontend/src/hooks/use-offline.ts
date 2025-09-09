@@ -1,7 +1,7 @@
 /**
  * @file use-offline.ts
  * @description Hook to detect offline status and show banner
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useEffect, useState } from 'react'

@@ -1,7 +1,7 @@
 /**
  * @file builder.lazy.tsx
  * @description Custom rubric builder page with drag and drop functionality
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  * @link https://docs.dndkit.com/
  */
 

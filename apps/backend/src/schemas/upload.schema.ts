@@ -33,7 +33,7 @@ export const UploadSuccessResponseSchema = z.object({
     originalName: z.string(),
     fileName: z.string(),
     fileSize: z.number(),
-    fileType: z.enum(['PPTX', 'DOCX']).optional(),
+    fileType: z.enum(['PPTX', 'DOCX', 'ZIP', 'RAR']).optional(),
     uploadedAt: z.string() // ISO string date
   })
 });

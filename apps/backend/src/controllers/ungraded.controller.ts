@@ -11,25 +11,40 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// GET /ungraded - Lấy danh sách file chưa chấm điểm của user
+// GET /ungraded - Lấy danh sách file chưa chấm điểm của user với hỗ trợ phân trang
 export async function getUngradedFilesController(c: Context) {
   try {
     // Get user ID from JWT context
     const user = c.get('user');
     const userId = user.id;
     
-    logger.info(`Getting ungraded files for user ${userId}`);
+    // Get query parameters for pagination
+    const queryParams = c.req.query();
+    const limit = parseInt(queryParams.limit || '20');
+    const offset = parseInt(queryParams.offset || '0');
     
-    const ungradedFiles = await prisma.ungradedFile.findMany({
-      where: { userId },
-      orderBy: { uploadedAt: 'desc' }
-    });
+    logger.info(`Getting ungraded files for user ${userId} with limit=${limit}, offset=${offset}`);
+    
+    const [ungradedFiles, total] = await Promise.all([
+      prisma.ungradedFile.findMany({
+        where: { userId },
+        orderBy: { uploadedAt: 'desc' },
+        take: limit,
+        skip: offset
+      }),
+      prisma.ungradedFile.count({
+        where: { userId }
+      })
+    ]);
     
     return c.json({
       success: true,
       message: 'Lấy danh sách file chưa chấm điểm thành công',
       data: {
-        files: ungradedFiles
+        files: ungradedFiles,
+        total,
+        limit,
+        offset
       }
     });
     

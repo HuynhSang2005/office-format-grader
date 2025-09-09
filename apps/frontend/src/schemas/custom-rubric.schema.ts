@@ -1,7 +1,7 @@
 /**
  * @file custom-rubric.schema.ts
  * @description Zod schemas for custom rubric functionality
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  * @reference https://github.com/colinhacks/zod
  */
 

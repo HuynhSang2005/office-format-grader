@@ -1,7 +1,7 @@
 /**
  * @file login.lazy.tsx
  * @description Login page component based on Mantine Authentication form example
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useState } from 'react'
@@ -10,7 +10,6 @@ import {
   TextInput,
   PasswordInput,
   Checkbox,
-  Anchor,
   Paper,
   Title,
   Text,
@@ -19,12 +18,20 @@ import {
   Button,
   Alert,
   Center,
+  Select,
 } from '@mantine/core'
 import { IconLogin, IconUser, IconLock } from '@tabler/icons-react'
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuthStore } from '../stores/auth.store'
 import { LoginRequestSchema, type LoginRequest } from '../schemas/auth.schema'
 import { zodResolver } from '../lib/zod-resolver'
+
+// Demo accounts data
+const demoAccounts = [
+  { email: "admin@example.com", password: "admin123", label: "Admin Account" },
+  { email: "user1@example.com", password: "user123", label: "User-1 Account" },
+  { email: "user2@example.com", password: "user123", label: "User-2 Account" }
+];
 
 export const Route = createLazyFileRoute('/login')({
   component: LoginRoute,
@@ -33,15 +40,28 @@ export const Route = createLazyFileRoute('/login')({
 export function LoginRoute() {
   const { login, loading, error } = useAuthStore()
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const navigate = useNavigate()
   
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginRequest>({
     resolver: zodResolver(LoginRequestSchema),
   })
+  
+  // Function to auto-fill selected demo account
+  const fillDemoAccount = () => {
+    if (selectedAccount) {
+      const account = demoAccounts.find(acc => acc.email === selectedAccount);
+      if (account) {
+        setValue('email', account.email);
+        setValue('password', account.password);
+      }
+    }
+  }
   
   const onSubmit = async (data: LoginRequest) => {
     try {
@@ -123,18 +143,31 @@ export function LoginRoute() {
             </Button>
           </form>
           
-          <Text size="sm" ta="center" mt="md">
-            Tài khoản demo: <Anchor href="#" onClick={(e) => {
-              e.preventDefault()
-              // Fill in demo credentials
-              const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement
-              const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement
-              if (emailInput && passwordInput) {
-                emailInput.value = 'admin@example.com'
-                passwordInput.value = 'admin123'
-              }
-            }}>Điền tự động</Anchor>
-          </Text>
+          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <Text size="sm">Tài khoản demo:</Text>
+            <Select
+              placeholder="Chọn tài khoản demo"
+              data={demoAccounts.map(account => ({
+                value: account.email,
+                label: account.label
+              }))}
+              value={selectedAccount}
+              onChange={setSelectedAccount}
+              mt="xs"
+              size="sm"
+              clearable
+            />
+            <Button 
+              variant="outline" 
+              fullWidth 
+              mt="sm" 
+              size="sm"
+              onClick={fillDemoAccount}
+              disabled={!selectedAccount}
+            >
+              Điền tự động
+            </Button>
+          </div>
         </Paper>
         
         <Text size="md" c="dimmed" ta="center" mt="xl">

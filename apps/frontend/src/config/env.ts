@@ -1,7 +1,7 @@
 /**
  * @file env.ts
  * @description Environment variables configuration with Zod validation
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createEnv } from '@t3-oss/env-core'
@@ -15,7 +15,13 @@ export const env = createEnv({
     VITE_DEBUG: z
       .string()
       .transform((s) => s === 'true')
-      .default(false), // Changed from 'false' to false
+      .or(z.boolean())
+      .default(false),
   },
+  // Server-side environment variables (not used in frontend but defined for completeness)
+  server: {},
+  // Runtime environment variables
   runtimeEnv: import.meta.env,
+  // Handle empty strings as undefined
+  emptyStringAsUndefined: true,
 })

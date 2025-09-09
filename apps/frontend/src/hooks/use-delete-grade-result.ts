@@ -1,7 +1,7 @@
 /**
  * @file use-delete-grade-result.ts
  * @description Custom hook for deleting grade results
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';

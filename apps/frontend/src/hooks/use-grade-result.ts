@@ -1,7 +1,7 @@
 /**
  * @file use-grade-result.ts
  * @description TanStack Query hook for fetching a single grade result by ID
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useQuery } from '@tanstack/react-query'

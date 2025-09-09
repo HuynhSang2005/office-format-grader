@@ -1,7 +1,7 @@
 /**
  * @file user.store.ts
  * @description User Zustand store
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { create } from 'zustand'

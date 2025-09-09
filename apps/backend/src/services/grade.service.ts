@@ -7,7 +7,7 @@
 import { logger } from '@core/logger';
 import { loadPresetRubric } from '@services/criteria.service';
 import { readStoredFile, deleteStoredFile, getOriginalFileName, getFileInfo } from '@services/storage.service';
-import { extractDOCXSafely, extractPPTXSafely } from '@services/archive.service';
+import { extractDOCXSafely, extractPPTXSafely, extractAllFilesFromArchive } from '@services/archive.service';
 import { extractDOCXFeatures } from '@/extractors/docx/docx';
 import { extractPPTXFeatures } from '@/extractors/pptx/pptx';
 import { gradeFile } from '@/rule-engine/rule-engine';
@@ -17,11 +17,54 @@ import type { FeaturesDOCX } from '@/types/features-docx';
 import type { GradeFileRequest, BatchGradeRequest, GradeResultWithDB } from '@/types/grade.types';
 import { PrismaClient } from '@prisma/client';
 import pLimit from 'p-limit';
+import path from 'path';
 
 const prisma = new PrismaClient();
 
-// Chấm điểm file chính
+// Chấm điểm file chính (now supports both single and batch)
 export async function gradeFileService(request: GradeFileRequest): Promise<GradeResultWithDB> {
+  // Handle batch request
+  if (request.files && request.files.length > 0) {
+    // This is actually a batch request, redirect to batch service
+    const batchRequest: BatchGradeRequest = {
+      files: request.files,
+      userId: request.userId,
+      useHardRubric: request.useHardRubric,
+      customRubric: request.customRubric,
+      onlyCriteria: request.onlyCriteria,
+      concurrency: request.concurrency
+    };
+    
+    const batchResult = await batchGradeService(batchRequest);
+    
+    // For compatibility, return the first result if there are any
+    if (batchResult.results.length > 0) {
+      return batchResult.results[0];
+    } else {
+      throw new Error('Batch grading failed for all files');
+    }
+  }
+  
+  // Handle single file request
+  const { fileId, userId, useHardRubric = true, customRubric, onlyCriteria } = request;
+  
+  // Ensure we have a fileId for single file processing
+  if (!fileId) {
+    throw new Error('File ID is required for single file grading');
+  }
+  
+  // Call the single file grading function
+  return await gradeSingleFile({ fileId, userId, useHardRubric, customRubric, onlyCriteria });
+}
+
+// Single file grading function (extracted from the original gradeFileService logic)
+async function gradeSingleFile(request: { 
+  fileId: string; 
+  userId: number; 
+  useHardRubric?: boolean; 
+  customRubric?: Rubric; 
+  onlyCriteria?: string[] 
+}): Promise<GradeResultWithDB> {
   const { fileId, userId, useHardRubric = true, customRubric, onlyCriteria } = request;
   
   logger.info(`Bắt đầu chấm điểm file: ${fileId} cho user: ${userId}`);
@@ -44,15 +87,55 @@ export async function gradeFileService(request: GradeFileRequest): Promise<Grade
     logger.debug('Bước 2: Extract features');
     const features = await extractFeatures(fileBuffer, fileType, fileId);
     
+    // For archive files, determine the actual Office file type from the extracted content
+    let rubricFileType: FileType = fileType;
+    if (fileType === 'ZIP' || fileType === 'RAR') {
+      // Get the actual file extension from the original filename or extracted content
+      const extension = originalFileName.toLowerCase().split('.').pop();
+      if (extension === 'zip' || extension === 'rar') {
+        // Try to determine from extracted content
+        // For simplicity, we'll check the original filename for clues
+        const nameWithoutExtension = originalFileName.substring(0, originalFileName.lastIndexOf('.'));
+        if (nameWithoutExtension.toLowerCase().endsWith('.pptx')) {
+          rubricFileType = 'PPTX';
+        } else if (nameWithoutExtension.toLowerCase().endsWith('.docx')) {
+          rubricFileType = 'DOCX';
+        } else {
+          // Default to PPTX if we can't determine
+          rubricFileType = 'PPTX';
+        }
+      } else {
+        // If the original file has a double extension like file.pptx.zip
+        if (extension === 'pptx') {
+          rubricFileType = 'PPTX';
+        } else if (extension === 'docx') {
+          rubricFileType = 'DOCX';
+        }
+      }
+    }
+    
     // 3. Load rubric
     logger.debug('Bước 3: Load rubric');
-    const { rubric, warnings } = await loadRubricForGrading(fileType, useHardRubric, customRubric);
+    const { rubric, warnings } = await loadRubricForGrading(rubricFileType, useHardRubric, customRubric);
     
     // 4. Chấm điểm với rule engine
     logger.debug('Bước 4: Chấm điểm với rule engine');
+    
+    // For archive files, we need to determine the actual Office file type for grading
+    let gradeFileType: 'PPTX' | 'DOCX' = 'PPTX'; // default
+    if (fileType === 'DOCX' || fileType === 'PPTX') {
+      gradeFileType = fileType;
+    } else if (fileType === 'ZIP' || fileType === 'RAR') {
+      // Use the rubricFileType we determined earlier for archive files, but ensure it's only PPTX or DOCX
+      if (rubricFileType === 'PPTX' || rubricFileType === 'DOCX') {
+        gradeFileType = rubricFileType;
+      }
+      // If rubricFileType is still ZIP or RAR (couldn't determine), default to PPTX
+    }
+    
     const gradeResult = await gradeFile(
       features,
-      fileType,
+      gradeFileType, // Use the correct file type for grading (only PPTX or DOCX)
       {
         rubric,
         onlyCriteria,
@@ -142,7 +225,7 @@ export async function batchGradeService(request: BatchGradeRequest): Promise<{
   const promises = files.map(fileId => 
     limit(async () => {
       try {
-        const result = await gradeFileService({
+        const result = await gradeSingleFile({
           fileId,
           userId,
           useHardRubric,
@@ -203,6 +286,10 @@ async function determineFileType(fileBuffer: Buffer, fileId: string): Promise<Fi
       return 'PPTX';
     } else if (extension === 'docx') {
       return 'DOCX';
+    } else if (extension === 'zip') {
+      return 'ZIP';
+    } else if (extension === 'rar') {
+      return 'RAR';
     }
     
     // Fallback: check file content
@@ -236,10 +323,51 @@ async function extractFeatures(
       logger.debug('Extracting DOCX features');
       const docxStructure = await extractDOCXSafely(fileBuffer);
       return await extractDOCXFeatures(docxStructure, filename, fileBuffer.length);
-    } else {
+    } else if (fileType === 'PPTX') {
       logger.debug('Extracting PPTX features');
       const pptxStructure = await extractPPTXSafely(fileBuffer);
       return await extractPPTXFeatures(pptxStructure, filename, fileBuffer.length);
+    } else if (fileType === 'ZIP' || fileType === 'RAR') {
+      // For archive files, we need to extract them first and find Office files
+      logger.debug(`Processing ${fileType} archive to find Office files`);
+      const ext = fileType === 'ZIP' ? '.zip' : '.rar';
+      
+      // Extract all files from the archive
+      const extractedFiles = await extractAllFilesFromArchive(fileBuffer, ext);
+      
+      if (!extractedFiles) {
+        throw new Error(`Không thể giải nén file ${fileType}`);
+      }
+      
+      // Look for Office files in the extracted content
+      const officeFiles = Object.keys(extractedFiles).filter(file => 
+        file.toLowerCase().endsWith('.docx') || file.toLowerCase().endsWith('.pptx')
+      );
+      
+      if (officeFiles.length === 0) {
+        throw new Error(`Không tìm thấy file Office (.docx, .pptx) trong file nén ${fileType}`);
+      }
+      
+      // Process all Office files found and combine their features
+      // For simplicity, we'll process the first file, but in a full implementation
+      // we might want to process all files or let the user choose
+      const firstOfficeFile = officeFiles[0];
+      const fileContent = extractedFiles[firstOfficeFile];
+      const fileExt = path.extname(firstOfficeFile).toLowerCase();
+      
+      if (fileExt === '.docx') {
+        logger.debug('Processing DOCX from archive');
+        const docxStructure = await extractDOCXSafely(fileContent);
+        return await extractDOCXFeatures(docxStructure, firstOfficeFile, fileContent.length);
+      } else if (fileExt === '.pptx') {
+        logger.debug('Processing PPTX from archive');
+        const pptxStructure = await extractPPTXSafely(fileContent);
+        return await extractPPTXFeatures(pptxStructure, firstOfficeFile, fileContent.length);
+      }
+      
+      throw new Error(`Không thể xử lý file ${fileExt} từ archive`);
+    } else {
+      throw new Error(`Không thể extract features cho file loại: ${fileType}`);
     }
   } catch (error) {
     logger.error(`Lỗi khi extract ${fileType} features:`, error);

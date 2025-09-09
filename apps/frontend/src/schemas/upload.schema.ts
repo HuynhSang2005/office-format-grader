@@ -1,7 +1,7 @@
 /**
  * @file upload.schema.ts
  * @description Zod schemas for upload functionality with custom rubric support
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  * @reference https://github.com/colinhacks/zod
  */
 
@@ -28,7 +28,7 @@ export const UploadResponseSchema = z.object({
     originalName: z.string(),
     fileName: z.string(),
     fileSize: z.number(),
-    fileType: z.enum(['PPTX', 'DOCX']).optional(),
+    fileType: z.enum(['PPTX', 'DOCX', 'ZIP', 'RAR']).optional(),
     uploadedAt: z.string(), // ISO string date
     gradeResult: GradeResultSchema.optional()
   })

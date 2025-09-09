@@ -12,7 +12,7 @@ export const CriteriaListQuerySchema = z.object({
   source: z.enum(['preset', 'custom'], {
     errorMap: () => ({ message: 'Source phải là "preset" hoặc "custom"' })
   }),
-  fileType: FileTypeSchema,
+  fileType: FileTypeSchema.optional(),
   rubricName: z.string().optional()
 }).refine((data) => {
   // Nếu source = 'preset' thì bắt buộc phải có rubricName

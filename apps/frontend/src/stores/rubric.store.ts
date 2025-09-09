@@ -1,7 +1,7 @@
 /**
  * @file rubric.store.ts
  * @description Custom rubric Zustand store
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { create } from 'zustand'

@@ -13,6 +13,13 @@ import {
   validateRubricController,
   previewCriteriaController
 } from '../controllers/criteria.controller';
+// Add the new CRUD controllers
+import {
+  createCriterionController,
+  updateCriterionController,
+  deleteCriterionController,
+  listAllCriteriaController
+} from '../controllers/criteria.controller';
 
 // Create a regular Hono app for the main app
 const regularCriteriaRoutes = new Hono();
@@ -33,12 +40,24 @@ regularCriteriaRoutes.use('*', async (c, next) => {
 // Query params: source (preset|custom), fileType (PPTX|DOCX), rubricName? (string)
 regularCriteriaRoutes.get('/', listCriteriaController);
 
+// GET /criteria/all - List all criteria
+regularCriteriaRoutes.get('/all', listAllCriteriaController);
+
 // GET /criteria/supported - Get supported criteria cho file type
 // Query params: fileType? (PPTX|DOCX), detectorKey? (string)
 regularCriteriaRoutes.get('/supported', getSupportedCriteriaController);
 
 // GET /criteria/:id - Get single criterion by ID
 regularCriteriaRoutes.get('/:id', getCriterionController);
+
+// POST /criteria - Create a new criterion
+regularCriteriaRoutes.post('/', createCriterionController);
+
+// PUT /criteria/:id - Update a criterion
+regularCriteriaRoutes.put('/:id', updateCriterionController);
+
+// DELETE /criteria/:id - Delete a criterion
+regularCriteriaRoutes.delete('/:id', deleteCriterionController);
 
 // POST /criteria/validate - Validate rubric structure
 // Body: { rubric: Rubric }
@@ -82,6 +101,34 @@ const CriteriaParamsSchema = z.object({
   id: z.string()
 });
 
+// Define schema for create criterion
+const CreateCriterionSchema = z.object({
+  name: z.string().min(1, 'Name không được rỗng').max(100, 'Name không được quá 100 ký tự'),
+  description: z.string().min(1, 'Description không được rỗng').max(500, 'Description không được quá 500 ký tự'),
+  detectorKey: z.string(),
+  maxPoints: z.number().min(0.25, 'Max points phải >= 0.25').max(10, 'Max points không được > 10'),
+  levels: z.array(z.object({
+    points: z.number(),
+    code: z.string(),
+    name: z.string(),
+    description: z.string()
+  })).min(2, 'Phải có ít nhất 2 levels').max(10, 'Không được quá 10 levels')
+});
+
+// Define schema for update criterion
+const UpdateCriterionSchema = z.object({
+  name: z.string().min(1, 'Name không được rỗng').max(100, 'Name không được quá 100 ký tự').optional(),
+  description: z.string().min(1, 'Description không được rỗng').max(500, 'Description không được quá 500 ký tự').optional(),
+  detectorKey: z.string().optional(),
+  maxPoints: z.number().min(0.25, 'Max points phải >= 0.25').max(10, 'Max points không được > 10').optional(),
+  levels: z.array(z.object({
+    points: z.number(),
+    code: z.string(),
+    name: z.string(),
+    description: z.string()
+  })).min(2, 'Phải có ít nhất 2 levels').max(10, 'Không được quá 10 levels').optional()
+});
+
 // Define a very generic response schema
 const GenericResponseSchema = z.object({}).catchall(z.any());
 
@@ -100,6 +147,29 @@ export const listCriteriaRoute = createRoute({
         }
       },
       description: 'List criteria thành công'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Lỗi server'
+    }
+  }
+});
+
+export const listAllCriteriaRoute = createRoute({
+  method: 'get',
+  path: '/criteria/all',
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'List all criteria thành công'
     },
     500: {
       content: {
@@ -152,6 +222,129 @@ export const getCriterionRoute = createRoute({
         }
       },
       description: 'Get single criterion thành công'
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Không tìm thấy criterion'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Lỗi server'
+    }
+  }
+});
+
+export const createCriterionRoute = createRoute({
+  method: 'post',
+  path: '/criteria',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateCriterionSchema
+        }
+      }
+    }
+  },
+  responses: {
+    201: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Tạo criterion mới thành công'
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Dữ liệu request không hợp lệ'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Lỗi server'
+    }
+  }
+});
+
+export const updateCriterionRoute = createRoute({
+  method: 'put',
+  path: '/criteria/{id}',
+  request: {
+    params: CriteriaParamsSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: UpdateCriterionSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Cập nhật criterion thành công'
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Dữ liệu request không hợp lệ'
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Không tìm thấy criterion'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Lỗi server'
+    }
+  }
+});
+
+export const deleteCriterionRoute = createRoute({
+  method: 'delete',
+  path: '/criteria/{id}',
+  request: {
+    params: CriteriaParamsSchema
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Xóa criterion thành công'
     },
     404: {
       content: {
@@ -261,9 +454,13 @@ function createCompatibleHandler(handler: Function) {
 }
 
 export const openApiCriteriaRoutes = new OpenAPIHono();
-// Register the routes with the OpenAPI documentation
+// Register the new routes with the OpenAPI documentation
 openApiCriteriaRoutes.openapi(listCriteriaRoute, createCompatibleHandler(listCriteriaController));
+openApiCriteriaRoutes.openapi(listAllCriteriaRoute, createCompatibleHandler(listAllCriteriaController));
 openApiCriteriaRoutes.openapi(getSupportedCriteriaRoute, createCompatibleHandler(getSupportedCriteriaController));
 openApiCriteriaRoutes.openapi(getCriterionRoute, createCompatibleHandler(getCriterionController));
+openApiCriteriaRoutes.openapi(createCriterionRoute, createCompatibleHandler(createCriterionController));
+openApiCriteriaRoutes.openapi(updateCriterionRoute, createCompatibleHandler(updateCriterionController));
+openApiCriteriaRoutes.openapi(deleteCriterionRoute, createCompatibleHandler(deleteCriterionController));
 openApiCriteriaRoutes.openapi(validateRubricRoute, createCompatibleHandler(validateRubricController));
 openApiCriteriaRoutes.openapi(previewCriteriaRoute, createCompatibleHandler(previewCriteriaController));

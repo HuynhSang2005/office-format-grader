@@ -1,10 +1,10 @@
 /**
  * @file $criterionId.lazy.tsx
  * @description Criterion detail page component
- * @author Your Name
+ * @authorNguyễn Huỳnh Sang
  */
 
-import { createLazyFileRoute, useParams } from '@tanstack/react-router'
+import { createLazyFileRoute, useParams, useNavigate } from '@tanstack/react-router'
 import { 
   Card, 
   Title, 
@@ -17,9 +17,8 @@ import {
   Skeleton,
   Button
 } from '@mantine/core'
-import { IconAlertCircle, IconArrowLeft } from '@tabler/icons-react'
+import { IconAlertCircle, IconArrowLeft, IconEdit } from '@tabler/icons-react'
 import { useCriterion } from '../../../hooks/use-criteria'
-import { useNavigate } from '@tanstack/react-router'
 
 export const Route = createLazyFileRoute('/_auth/criteria/$criterionId')({
   component: CriterionDetailPage,
@@ -73,14 +72,22 @@ function CriterionDetailPage() {
   
   return (
     <Container size="lg" py="xl">
-      <Button
-        leftSection={<IconArrowLeft size={16} />}
-        variant="subtle"
-        mb="md"
-        onClick={() => navigate({ to: '/criteria/list' })}
-      >
-        Quay lại danh sách
-      </Button>
+      <Group mb="md">
+        <Button
+          leftSection={<IconArrowLeft size={16} />}
+          variant="subtle"
+          onClick={() => navigate({ to: '/criteria/list' })}
+        >
+          Quay lại danh sách
+        </Button>
+        <Button
+          leftSection={<IconEdit size={16} />}
+          variant="light"
+          onClick={() => navigate({ to: '/criteria/edit/$criterionId', params: { criterionId } })}
+        >
+          Chỉnh sửa
+        </Button>
+      </Group>
       
       <Card withBorder p="lg" radius="md">
         <Group justify="space-between" mb="md">

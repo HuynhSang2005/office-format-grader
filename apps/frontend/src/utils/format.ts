@@ -1,7 +1,7 @@
 /**
  * @file format.ts
  * @description Formatting utilities
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 /**

@@ -1,7 +1,7 @@
 /**
  * @file analytics.schema.ts
  * @description Zod schemas for analytics dashboard data
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  * @link https://github.com/recharts/recharts
  * @link https://www.tremor.so/
  */

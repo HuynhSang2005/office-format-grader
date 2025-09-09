@@ -1,7 +1,7 @@
 /**
  * @file use-batch-grade.ts
  * @description Custom hook for batch grading files with default hard-coded rubric
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ export const useBatchGrade = ({ onSuccess, onError }: UseBatchGradeProps = {}) =
   
   return useMutation({
     mutationFn: async (request: BatchGradeRequest) => {
-      const response = await apiClient.post<BatchGradeResponse>('/api/grade/custom', request);
+      const response = await apiClient.post<BatchGradeResponse>('/api/grade', request);
       return response.data;
     },
     
@@ -123,3 +123,5 @@ export const useBatchGrade = ({ onSuccess, onError }: UseBatchGradeProps = {}) =
     },
   });
 };
+
+

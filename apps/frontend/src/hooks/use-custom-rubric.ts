@@ -1,7 +1,7 @@
 /**
  * @file use-custom-rubric.ts
  * @description Custom hook for custom rubric functionality in grade flow
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useQuery } from '@tanstack/react-query';

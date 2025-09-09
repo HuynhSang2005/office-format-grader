@@ -1,7 +1,7 @@
 /**
  * @file index.ts
  * @description Export all custom hooks
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 export * from './use-auth';

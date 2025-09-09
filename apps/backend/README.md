@@ -1,4 +1,4 @@
-# Office Format Grader Code - Hệ thống chấm điểm tài liệu Office
+# Office Vibe Code - Hệ thống chấm điểm tài liệu Office
 
 Hệ thống chấm điểm tự động cho file PowerPoint (.pptx) và Word (.docx) sử dụng Bun + Hono + TypeScript + Prisma.
 

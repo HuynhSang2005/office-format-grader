@@ -91,33 +91,55 @@ export async function validateFile(buffer: Buffer, originalName: string): Promis
     
     // Kiểm tra extension
     const extension = path.extname(originalName).toLowerCase();
-    let fileType: 'PPTX' | 'DOCX' | undefined;
+    let fileType: 'PPTX' | 'DOCX' | 'ZIP' | 'RAR' | undefined;
     
     if (extension === '.pptx') {
       fileType = 'PPTX';
     } else if (extension === '.docx') {
       fileType = 'DOCX';
+    } else if (extension === '.zip') {
+      fileType = 'ZIP';
+    } else if (extension === '.rar') {
+      fileType = 'RAR';
     } else {
-      errors.push(`Loại file không được hỗ trợ: ${extension}. Chỉ chấp nhận .pptx và .docx`);
+      errors.push(`Loại file không được hỗ trợ: ${extension}. Chỉ chấp nhận .pptx, .docx, .zip và .rar`);
     }
     
     // Kiểm tra ZIP signature (Office files là ZIP)
-    if (buffer.length >= 4) {
-      const zipSignature = buffer.subarray(0, 4);
-      const validSignatures = [
-        Buffer.from([0x50, 0x4B, 0x03, 0x04]), // Standard ZIP
-        Buffer.from([0x50, 0x4B, 0x05, 0x06]), // Empty ZIP
-        Buffer.from([0x50, 0x4B, 0x07, 0x08])  // Spanned ZIP
-      ];
+    if (fileType === 'PPTX' || fileType === 'DOCX' || fileType === 'ZIP') {
+      if (buffer.length >= 4) {
+        const zipSignature = buffer.subarray(0, 4);
+        const validSignatures = [
+          Buffer.from([0x50, 0x4B, 0x03, 0x04]), // Standard ZIP
+          Buffer.from([0x50, 0x4B, 0x05, 0x06]), // Empty ZIP
+          Buffer.from([0x50, 0x4B, 0x07, 0x08])  // Spanned ZIP
+        ];
+        
+        const hasValidSignature = validSignatures.some(sig => zipSignature.equals(sig));
+        if (!hasValidSignature) {
+          errors.push('File không phải định dạng hợp lệ (thiếu ZIP signature)');
+        }
+      }
+    }
+    
+    // Kiểm tra RAR signature
+    if (fileType === 'RAR' && buffer.length >= 7) {
+      // RAR5 signature: 0x52 0x61 0x72 0x21 0x1A 0x07 0x01
+      const rar5Signature = Buffer.from([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x01]);
+      // RAR4 signature: 0x52 0x61 0x72 0x21 0x1A 0x07 0x00
+      const rar4Signature = Buffer.from([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00]);
       
-      const hasValidSignature = validSignatures.some(sig => zipSignature.equals(sig));
-      if (!hasValidSignature) {
-        errors.push('File không phải định dạng Office hợp lệ (thiếu ZIP signature)');
+      const fileSignature = buffer.subarray(0, 7);
+      const isRar5 = fileSignature.equals(rar5Signature);
+      const isRar4 = fileSignature.equals(rar4Signature);
+      
+      if (!isRar5 && !isRar4) {
+        errors.push('File không phải định dạng RAR hợp lệ');
       }
     }
     
     // Kiểm tra filename convention (optional warning)
-    if (fileType && !APP_CONFIG.FILENAME_PATTERN.test(originalName)) {
+    if ((fileType === 'PPTX' || fileType === 'DOCX') && !APP_CONFIG.FILENAME_PATTERN.test(originalName)) {
       logger.warn(`Tên file không đúng quy ước: ${originalName}`);
     }
     
@@ -196,7 +218,7 @@ export async function readStoredFile(fileId: string): Promise<Buffer> {
   try {
     // Tìm file trong thư mục temp
     const tempFiles = await fs.readdir(TEMP_DIR);
-    const tempTargetFile = tempFiles.find(file => file.startsWith(fileId));
+    const tempTargetFile = tempFiles.find(file => file.startsWith(`${fileId}.`));
     
     if (!tempTargetFile) {
       throw new Error(`Không tìm thấy file với ID: ${fileId}`);
@@ -220,7 +242,7 @@ export async function getStoredFilePath(fileId: string): Promise<string> {
   try {
     // Tìm file trong thư mục temp
     const tempFiles = await fs.readdir(TEMP_DIR);
-    const tempTargetFile = tempFiles.find(file => file.startsWith(fileId));
+    const tempTargetFile = tempFiles.find(file => file.startsWith(`${fileId}.`));
     
     if (!tempTargetFile) {
       throw new Error(`Không tìm thấy file với ID: ${fileId}`);
@@ -243,7 +265,7 @@ export async function deleteStoredFile(fileId: string): Promise<void> {
   try {
     // Tìm file trong thư mục temp
     const tempFiles = await fs.readdir(TEMP_DIR);
-    const tempTargetFile = tempFiles.find(file => file.startsWith(fileId));
+    const tempTargetFile = tempFiles.find(file => file.startsWith(`${fileId}.`));
     
     if (!tempTargetFile) {
       logger.warn(`File không tồn tại để xóa: ${fileId}`);

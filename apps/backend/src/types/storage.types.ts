@@ -23,5 +23,5 @@ export interface UploadedFile {
 export interface FileValidationResult {
   isValid: boolean;
   errors: string[];
-  fileType?: 'PPTX' | 'DOCX';
+  fileType?: 'PPTX' | 'DOCX' | 'ZIP' | 'RAR';
 }

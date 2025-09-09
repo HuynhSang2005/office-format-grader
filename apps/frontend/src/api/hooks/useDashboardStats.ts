@@ -1,7 +1,7 @@
 /**
  * @file useDashboardStats.ts
  * @description TanStack Query hook for fetching dashboard statistics
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useQuery } from '@tanstack/react-query'

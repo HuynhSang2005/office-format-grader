@@ -1,7 +1,7 @@
 /**
  * @file main.tsx
  * @description Entry point of the application
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import React from 'react'

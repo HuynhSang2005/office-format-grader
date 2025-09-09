@@ -1,7 +1,7 @@
 /**
  * @file ungraded.lazy.tsx
  * @description Ungraded files page component
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createLazyFileRoute } from '@tanstack/react-router'
@@ -32,16 +32,37 @@ import { useBatchGrade } from '../../hooks/use-batch-grade'
 import type { UngradedFile } from '../../schemas/ungraded.schema'
 import { useState, useEffect } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
+import { notifications } from '@mantine/notifications'
+
 export const Route = createLazyFileRoute('/_auth/ungraded')({
   component: UngradedPage,
 })
 
 function UngradedPage() {
-  const { data: ungradedFiles, isLoading, error } = useUngradedFiles()
+  const { data: ungradedFilesData, isLoading, error } = useUngradedFiles()
+  const ungradedFiles = ungradedFilesData?.files || []
   const { mutate: deleteFile, isPending: isDeleting } = useDeleteUngradedFile()
-  const { mutate: gradeFile, isPending: isGrading } = useGradeFile({
-    redirectToGradePage: true
-  });
+  const queryClient = useQueryClient()
+
+  const { mutate: gradeFile } = useGradeFile({
+    onSuccess: () => {
+      // Invalidate the ungraded files query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['ungraded-files'] })
+      notifications.show({
+        title: 'Thành công',
+        message: 'Bắt đầu chấm điểm file',
+        color: 'green'
+      })
+    },
+    onError: (error) => {
+      notifications.show({
+        title: 'Lỗi',
+        message: error instanceof Error ? error.message : 'Có lỗi xảy ra khi chấm điểm',
+        color: 'red'
+      })
+    }
+  })
   const { mutate: batchGrade, isPending: isBatchGrading } = useBatchGrade()
   
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())

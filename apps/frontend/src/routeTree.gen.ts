@@ -14,6 +14,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteRouteImport } from './routes/index.route'
 import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
+import { Route as AuthCriteriaCreateRouteImport } from './routes/_auth/criteria/create'
+import { Route as AuthCriteriaEditCriterionIdRouteImport } from './routes/_auth/criteria/edit.$criterionId'
 
 const LogoutLazyRouteImport = createFileRoute('/logout')()
 const LoginLazyRouteImport = createFileRoute('/login')()
@@ -176,6 +178,17 @@ const AuthCriteriaCriterionIdLazyRoute =
   } as any).lazy(() =>
     import('./routes/_auth/criteria/$criterionId.lazy').then((d) => d.Route),
   )
+const AuthCriteriaCreateRoute = AuthCriteriaCreateRouteImport.update({
+  id: '/criteria/create',
+  path: '/criteria/create',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCriteriaEditCriterionIdRoute =
+  AuthCriteriaEditCriterionIdRouteImport.update({
+    id: '/criteria/edit/$criterionId',
+    path: '/criteria/edit/$criterionId',
+    getParentRoute: () => AuthRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRouteRoute
@@ -188,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthProfileLazyRoute
   '/settings': typeof AuthSettingsLazyRoute
   '/ungraded': typeof AuthUngradedLazyRoute
+  '/criteria/create': typeof AuthCriteriaCreateRoute
   '/criteria/$criterionId': typeof AuthCriteriaCriterionIdLazyRoute
   '/criteria/list': typeof AuthCriteriaListLazyRoute
   '/criteria/preview': typeof AuthCriteriaPreviewLazyRoute
@@ -198,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/criteria': typeof AuthCriteriaIndexLazyRoute
   '/grade': typeof AuthGradeIndexLazyRoute
   '/upload': typeof AuthUploadIndexLazyRoute
+  '/criteria/edit/$criterionId': typeof AuthCriteriaEditCriterionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRouteRoute
@@ -210,6 +225,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthProfileLazyRoute
   '/settings': typeof AuthSettingsLazyRoute
   '/ungraded': typeof AuthUngradedLazyRoute
+  '/criteria/create': typeof AuthCriteriaCreateRoute
   '/criteria/$criterionId': typeof AuthCriteriaCriterionIdLazyRoute
   '/criteria/list': typeof AuthCriteriaListLazyRoute
   '/criteria/preview': typeof AuthCriteriaPreviewLazyRoute
@@ -220,6 +236,7 @@ export interface FileRoutesByTo {
   '/criteria': typeof AuthCriteriaIndexLazyRoute
   '/grade': typeof AuthGradeIndexLazyRoute
   '/upload': typeof AuthUploadIndexLazyRoute
+  '/criteria/edit/$criterionId': typeof AuthCriteriaEditCriterionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -234,6 +251,7 @@ export interface FileRoutesById {
   '/_auth/profile': typeof AuthProfileLazyRoute
   '/_auth/settings': typeof AuthSettingsLazyRoute
   '/_auth/ungraded': typeof AuthUngradedLazyRoute
+  '/_auth/criteria/create': typeof AuthCriteriaCreateRoute
   '/_auth/criteria/$criterionId': typeof AuthCriteriaCriterionIdLazyRoute
   '/_auth/criteria/list': typeof AuthCriteriaListLazyRoute
   '/_auth/criteria/preview': typeof AuthCriteriaPreviewLazyRoute
@@ -244,6 +262,7 @@ export interface FileRoutesById {
   '/_auth/criteria/': typeof AuthCriteriaIndexLazyRoute
   '/_auth/grade/': typeof AuthGradeIndexLazyRoute
   '/_auth/upload/': typeof AuthUploadIndexLazyRoute
+  '/_auth/criteria/edit/$criterionId': typeof AuthCriteriaEditCriterionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -258,6 +277,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/settings'
     | '/ungraded'
+    | '/criteria/create'
     | '/criteria/$criterionId'
     | '/criteria/list'
     | '/criteria/preview'
@@ -268,6 +288,7 @@ export interface FileRouteTypes {
     | '/criteria'
     | '/grade'
     | '/upload'
+    | '/criteria/edit/$criterionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -280,6 +301,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/settings'
     | '/ungraded'
+    | '/criteria/create'
     | '/criteria/$criterionId'
     | '/criteria/list'
     | '/criteria/preview'
@@ -290,6 +312,7 @@ export interface FileRouteTypes {
     | '/criteria'
     | '/grade'
     | '/upload'
+    | '/criteria/edit/$criterionId'
   id:
     | '__root__'
     | '/'
@@ -303,6 +326,7 @@ export interface FileRouteTypes {
     | '/_auth/profile'
     | '/_auth/settings'
     | '/_auth/ungraded'
+    | '/_auth/criteria/create'
     | '/_auth/criteria/$criterionId'
     | '/_auth/criteria/list'
     | '/_auth/criteria/preview'
@@ -313,6 +337,7 @@ export interface FileRouteTypes {
     | '/_auth/criteria/'
     | '/_auth/grade/'
     | '/_auth/upload/'
+    | '/_auth/criteria/edit/$criterionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -472,6 +497,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCriteriaCriterionIdLazyRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/criteria/create': {
+      id: '/_auth/criteria/create'
+      path: '/criteria/create'
+      fullPath: '/criteria/create'
+      preLoaderRoute: typeof AuthCriteriaCreateRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/criteria/edit/$criterionId': {
+      id: '/_auth/criteria/edit/$criterionId'
+      path: '/criteria/edit/$criterionId'
+      fullPath: '/criteria/edit/$criterionId'
+      preLoaderRoute: typeof AuthCriteriaEditCriterionIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
@@ -482,6 +521,7 @@ interface AuthRouteChildren {
   AuthProfileLazyRoute: typeof AuthProfileLazyRoute
   AuthSettingsLazyRoute: typeof AuthSettingsLazyRoute
   AuthUngradedLazyRoute: typeof AuthUngradedLazyRoute
+  AuthCriteriaCreateRoute: typeof AuthCriteriaCreateRoute
   AuthCriteriaCriterionIdLazyRoute: typeof AuthCriteriaCriterionIdLazyRoute
   AuthCriteriaListLazyRoute: typeof AuthCriteriaListLazyRoute
   AuthCriteriaPreviewLazyRoute: typeof AuthCriteriaPreviewLazyRoute
@@ -492,6 +532,7 @@ interface AuthRouteChildren {
   AuthCriteriaIndexLazyRoute: typeof AuthCriteriaIndexLazyRoute
   AuthGradeIndexLazyRoute: typeof AuthGradeIndexLazyRoute
   AuthUploadIndexLazyRoute: typeof AuthUploadIndexLazyRoute
+  AuthCriteriaEditCriterionIdRoute: typeof AuthCriteriaEditCriterionIdRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -501,6 +542,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthProfileLazyRoute: AuthProfileLazyRoute,
   AuthSettingsLazyRoute: AuthSettingsLazyRoute,
   AuthUngradedLazyRoute: AuthUngradedLazyRoute,
+  AuthCriteriaCreateRoute: AuthCriteriaCreateRoute,
   AuthCriteriaCriterionIdLazyRoute: AuthCriteriaCriterionIdLazyRoute,
   AuthCriteriaListLazyRoute: AuthCriteriaListLazyRoute,
   AuthCriteriaPreviewLazyRoute: AuthCriteriaPreviewLazyRoute,
@@ -511,6 +553,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthCriteriaIndexLazyRoute: AuthCriteriaIndexLazyRoute,
   AuthGradeIndexLazyRoute: AuthGradeIndexLazyRoute,
   AuthUploadIndexLazyRoute: AuthUploadIndexLazyRoute,
+  AuthCriteriaEditCriterionIdRoute: AuthCriteriaEditCriterionIdRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

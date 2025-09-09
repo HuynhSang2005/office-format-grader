@@ -1,7 +1,7 @@
 /**
  * @file useLocalStorage.ts
  * @description Custom hook for localStorage
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useState } from 'react'

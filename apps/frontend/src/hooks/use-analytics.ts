@@ -1,7 +1,7 @@
 /**
  * @file use-analytics.ts
  * @description TanStack Query hook for fetching analytics dashboard statistics
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  * @link https://tanstack.com/query/latest
  */
 

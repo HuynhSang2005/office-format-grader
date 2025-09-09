@@ -1,7 +1,7 @@
 /**
  * @file profile.lazy.tsx
  * @description User profile page component
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createLazyFileRoute } from '@tanstack/react-router'

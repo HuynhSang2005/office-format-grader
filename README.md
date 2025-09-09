@@ -1,89 +1,102 @@
-# Office Vibe - Monorepo
+# Office Format Grader
 
-This is a monorepo for the Office Vibe project, containing both the backend and frontend applications.
+A full-stack application for grading office documents (Word, PowerPoint) with automated feedback.
 
 ## Project Structure
 
 ```
-.
+office-format-grader/
 ├── apps/
-│   ├── backend/     # Bun + Hono backend API
-│   └── frontend/    # React + Vite frontend application
-├── packages/        # Shared packages (if any)
+│   ├── backend/     # Bun + Hono API server
+│   └── frontend/    # React + Vite frontend
+├── package.json     # Root package with workspace setup
 └── README.md        # This file
 ```
 
-## Available Scripts
+## Prerequisites
 
-### Root Level Scripts
-- `bun run dev` - Run development servers for all apps
-- `bun run build` - Build all apps
-- `bun run test` - Run tests for all apps
-- `bun run clean` - Clean build artifacts
+- [Bun](https://bun.sh) >= 1.2.0
+- Node.js >= 22.0.0
 
-### Backend Specific Scripts
-- `bun run dev:backend` - Run backend in development mode
-- `bun run build:backend` - Build backend
-- `bun run start:backend` - Start built backend
-- `bun run test:backend` - Run backend tests
+## Quick Start
 
-### Frontend Specific Scripts
-- `bun run dev:frontend` - Run frontend in development mode
-- `bun run build:frontend` - Build frontend
-- `bun run preview:frontend` - Preview built frontend
-- `bun run test:frontend` - Run frontend tests
-- `bun run lint:frontend` - Lint frontend code
-- `bun run type-check:frontend` - Type check frontend code
+1. Install dependencies for both frontend and backend:
+```bash
+bun install
+```
 
-## Backend Setup
-
-1. Navigate to the backend directory:
-   ```bash
-   cd apps/backend
-   ```
-
-2. Install dependencies:
-   ```bash
-   bun install
-   ```
-
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Run database migrations:
-   ```bash
-   bun run db:migrate
-   ```
-
-5. Start the development server:
-   ```bash
-   bun run dev
-   ```
-
-## Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd apps/frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   bun install
-   ```
-
-3. Start the development server:
-   ```bash
-   bun run dev
-   ```
-
-## Development Workflow
-
-To start both frontend and backend in development mode:
+2. Run both frontend and backend in development mode:
 ```bash
 bun run dev
 ```
 
-This will run both applications concurrently, allowing you to develop the full stack application.
+## Available Scripts
+
+### Root Scripts
+- `bun install` - Install dependencies for both frontend and backend
+- `bun run dev` - Start both frontend and backend in development mode
+- `bun run build` - Build both frontend and backend for production
+- `bun run test` - Run tests for both frontend and backend
+- `bun run clean` - Clean build artifacts
+
+### Setup Scripts
+- `bun run setup:dependencies` - Install dependencies for both apps
+- `bun run setup:initial` - Run initial setup (database migration + create initial users)
+- `bun run setup:all` - Run complete setup (dependencies + initial setup)
+
+### Backend Scripts
+- `bun run dev:backend` - Start backend in development mode
+- `bun run build:backend` - Build backend for production
+- `bun run start:backend` - Start backend in production mode
+- `bun run test:backend` - Run backend tests
+
+### Frontend Scripts
+- `bun run dev:frontend` - Start frontend in development mode
+- `bun run build:frontend` - Build frontend for production
+- `bun run preview:frontend` - Preview built frontend
+- `bun run test:frontend` - Run frontend tests
+- `bun run lint:frontend` - Lint frontend code
+- `bun run type-check:frontend` - Check TypeScript types in frontend
+
+## Environment Variables
+
+Each app has its own `.env` file:
+- `apps/backend/.env` - Backend environment variables
+- `apps/frontend/.env` - Frontend environment variables
+
+See `.env.example` files in each app directory for required variables.
+
+## Initial Setup
+
+To set up the application for the first time:
+
+1. Copy `.env.example` to `.env` in both `apps/backend` and `apps/frontend`
+2. Run the initial setup script:
+```bash
+bun run setup:initial
+```
+
+This will:
+- Create the database (if it doesn't exist)
+- Run database migrations
+- Create initial admin users
+
+## Technologies
+
+### Backend
+- [Bun](https://bun.sh) - JavaScript runtime
+- [Hono](https://hono.dev) - Web framework
+- [Prisma](https://www.prisma.io) - Database ORM
+- [SQLite](https://www.sqlite.org) - Database
+
+### Frontend
+- [React](https://react.dev) - UI library
+- [Vite](https://vitejs.dev) - Build tool
+- [TypeScript](https://www.typescriptlang.org) - Type safety
+- [Mantine](https://mantine.dev) - UI components
+- [TanStack Router](https://tanstack.com/router) - Routing
+- [TanStack Query](https://tanstack.com/query) - Server state management
+
+## License
+
+MIT

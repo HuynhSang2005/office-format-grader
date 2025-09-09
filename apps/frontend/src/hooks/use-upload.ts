@@ -1,7 +1,7 @@
 /**
  * @file use-upload.ts
  * @description Custom hook for file upload functionality with custom rubric support and automatic grading
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,7 +22,7 @@ interface UploadFileOptions {
 
 export const useUpload = ({ onSuccessRedirect, customRubricId: defaultCustomRubricId }: UseUploadProps = {}) => {
   const queryClient = useQueryClient();
-  const gradeFileMutation = useGradeFile({ redirectToGradePage: true }); // Add this
+  const gradeFileMutation = useGradeFile({ redirectToGradePage: false }); // Don't redirect automatically
   
   return useMutation({
     mutationFn: async (variables: { file: File, options?: UploadFileOptions }) => {
@@ -49,7 +49,7 @@ export const useUpload = ({ onSuccessRedirect, customRubricId: defaultCustomRubr
       return parsedResponse;
     },
     
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data) => {
       // Invalidate and refetch ungraded files to update the list
       queryClient.invalidateQueries({ queryKey: ['ungraded-files'] });
       // Invalidate and refetch grade history to update the list
@@ -58,10 +58,15 @@ export const useUpload = ({ onSuccessRedirect, customRubricId: defaultCustomRubr
       // Check if automatic grading was performed by checking if gradeResult exists
       const hasGradeResult = data.data && 'gradeResult' in data.data && data.data.gradeResult !== undefined;
       
+      // Check if the uploaded file is an archive
+      const isArchiveFile = data.data?.fileType === 'ZIP' || data.data?.fileType === 'RAR';
+      
       if (hasGradeResult) {
         notifications.show({
           title: 'Thành công',
-          message: 'File đã được tải lên và chấm điểm tự động',
+          message: isArchiveFile 
+            ? 'File nén đã được xử lý và chấm điểm tự động' 
+            : 'File đã được tải lên và chấm điểm tự động',
           color: 'green',
         });
       } else {
@@ -70,7 +75,9 @@ export const useUpload = ({ onSuccessRedirect, customRubricId: defaultCustomRubr
           // Show notification that file is being graded
           notifications.show({
             title: 'Đang xử lý',
-            message: 'File đang được chấm điểm...',
+            message: isArchiveFile
+              ? 'File nén đang được xử lý và chấm điểm...'
+              : 'File đang được chấm điểm...',
             color: 'blue',
           });
           
@@ -90,24 +97,8 @@ export const useUpload = ({ onSuccessRedirect, customRubricId: defaultCustomRubr
       // Redirect based on whether grading was performed
       if (onSuccessRedirect && data.data?.fileId) {
         onSuccessRedirect(data.data.fileId, hasGradeResult, data.data.gradeResult);
-      } else if (hasGradeResult) {
-        // For files with automatic grading, redirect to grade page
-        // Use the database ID from the grade result if available
-        const dbId = data.data?.gradeResult?.dbId;
-        if (dbId) {
-          window.location.href = `/grade/${dbId}`;
-        } else {
-          // Fallback to fileId if dbId is not available
-          window.location.href = `/grade/${data.data?.fileId}`;
-        }
-      } else if (!hasGradeResult) {
-        // For files without automatic grading, show notification about manual grading
-        notifications.show({
-          title: 'Thông báo',
-          message: 'File đã được tải lên và đang được chấm điểm. Vui lòng kiểm tra lịch sử chấm điểm.',
-          color: 'blue',
-        });
       }
+      // Don't automatically redirect here, let the calling component handle navigation
     },
     
     onError: (error: unknown) => {

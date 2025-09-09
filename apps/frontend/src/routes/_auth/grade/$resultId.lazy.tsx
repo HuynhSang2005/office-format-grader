@@ -1,7 +1,7 @@
 /**
  * @file $resultId.lazy.tsx
  * @description Grade result page component with detailed view
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createLazyFileRoute } from '@tanstack/react-router'

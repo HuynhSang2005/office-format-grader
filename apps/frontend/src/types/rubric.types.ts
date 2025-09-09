@@ -1,7 +1,7 @@
 /**
  * @file rubric.types.ts
  * @description Type definitions for rubric-related data
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 export interface Level {

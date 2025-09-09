@@ -1,7 +1,7 @@
 /**
  * @file query-sync.ts
  * @description TanStack Query offline cache and retry functionality
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { onlineManager } from '@tanstack/react-query'

@@ -16,20 +16,85 @@ import {
   loadPresetRubric 
 } from '@services/criteria.service';
 import { 
+  createCriterion as createCriterionService,
+  updateCriterion as updateCriterionService,
+  deleteCriterion as deleteCriterionService,
+  listCriteria as listAllCriteria,
+  getCriterionById
+} from '@services/criteria-crud.service';
+import { 
   CriteriaListQuerySchema, 
   CriteriaPreviewBodySchema, 
   CriteriaValidateBodySchema,
-  SupportedCriteriaQuerySchema 
+  SupportedCriteriaQuerySchema,
+  CreateCriterionSchema
 } from '@/schemas/criteria.schema';
-import type { Rubric } from '@/types/criteria';
+import type { Rubric, Criterion, CriterionEvalResult } from '@/types/criteria';
 
 // GET /criteria - List criteria theo query parameters
 export async function listCriteriaController(c: Context) {
   try {
     const queryParams = c.req.query();
     
-    // Validate query parameters
-    const queryValidation = CriteriaListQuerySchema.safeParse(queryParams);
+    // If no source is provided, list all criteria (both preset and custom)
+    if (!queryParams.source) {
+      // Get both preset and custom criteria
+      // For preset criteria, if fileType is not provided, we'll get both DOCX and PPTX
+      let presetCriteria: Criterion[] = [];
+      
+      if (queryParams.fileType) {
+        // If fileType is provided, get preset criteria for that specific type
+        presetCriteria = await listCriteria({ 
+          source: 'preset', 
+          fileType: queryParams.fileType as any, 
+          rubricName: queryParams.rubricName || 'default' 
+        });
+      } else {
+        // If fileType is not provided, get preset criteria for both DOCX and PPTX
+        const [docxCriteria, pptxCriteria] = await Promise.all([
+          listCriteria({ source: 'preset', fileType: 'DOCX', rubricName: queryParams.rubricName || 'default' }),
+          listCriteria({ source: 'preset', fileType: 'PPTX', rubricName: queryParams.rubricName || 'default' })
+        ]);
+        presetCriteria = [...docxCriteria, ...pptxCriteria];
+      }
+      
+      const customCriteria = await listAllCriteria();
+      const allCriteria = [...presetCriteria, ...customCriteria];
+      
+      return c.json({
+        success: true,
+        message: `Tìm thấy ${allCriteria.length} criteria`,
+        data: {
+          criteria: allCriteria,
+          query: queryParams,
+          total: allCriteria.length
+        }
+      });
+    }
+    
+    // Handle custom criteria listing - fileType is not required for custom criteria
+    if (queryParams.source === 'custom') {
+      const customCriteria = await listAllCriteria();
+      return c.json({
+        success: true,
+        message: `Tìm thấy ${customCriteria.length} criteria`,
+        data: {
+          criteria: customCriteria,
+          query: queryParams,
+          total: customCriteria.length
+        }
+      });
+    }
+    
+    // Normalize query parameters when source is 'preset'
+    // If source is preset but rubricName is not provided, use 'default'
+    const normalizedQueryParams = {
+      ...queryParams,
+      rubricName: queryParams.source === 'preset' && !queryParams.rubricName ? 'default' : queryParams.rubricName
+    };
+    
+    // Validate query parameters using normalized values
+    const queryValidation = CriteriaListQuerySchema.safeParse(normalizedQueryParams);
     if (!queryValidation.success) {
       logger.warn('Invalid criteria list query:', queryValidation.error);
       return c.json({
@@ -40,14 +105,14 @@ export async function listCriteriaController(c: Context) {
     }
     
     const query = queryValidation.data;
-    logger.info(`Listing criteria: source=${query.source}, fileType=${query.fileType}`);
+    logger.info(`Listing criteria: source=${query.source}, fileType=${query.fileType || 'all'}`);
     
     // Convert the query to match the expected type
     const criteria = await listCriteria({
       source: query.source,
       fileType: query.fileType,
       rubricName: query.rubricName
-    } as any);
+    });
     
     return c.json({
       success: true,
@@ -140,6 +205,132 @@ export async function getSupportedCriteriaController(c: Context) {
     
   } catch (error) {
     logger.error('Lỗi trong getSupportedCriteriaController:', error);
+    return c.json({
+      success: false,
+      message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
+    }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+}
+
+// POST /criteria - Create a new criterion
+export async function createCriterionController(c: Context) {
+  try {
+    const body = await c.req.json();
+    
+    logger.info('Creating new criterion');
+    
+    // Validate the request body before creating
+    const validation = CreateCriterionSchema.safeParse(body);
+    if (!validation.success) {
+      logger.warn('Invalid create criterion request:', validation.error);
+      return c.json({
+        success: false,
+        message: ERROR_MESSAGES.VALIDATION_ERROR,
+        errors: validation.error.errors
+      }, HTTP_STATUS.BAD_REQUEST);
+    }
+    
+    // Create criterion using the service
+    const criterion = await createCriterionService(body);
+    
+    return c.json({
+      success: true,
+      message: 'Tạo criterion mới thành công',
+      data: criterion
+    }, HTTP_STATUS.CREATED);
+    
+  } catch (error) {
+    logger.error('Lỗi trong createCriterionController:', error);
+    return c.json({
+      success: false,
+      message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
+    }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+}
+
+// PUT /criteria/:id - Update a criterion
+export async function updateCriterionController(c: Context) {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    
+    if (!id) {
+      return c.json({
+        success: false,
+        message: 'Criterion ID là bắt buộc'
+      }, HTTP_STATUS.BAD_REQUEST);
+    }
+    
+    logger.info(`Updating criterion: ${id}`);
+    
+    // Update criterion using the service
+    const criterion = await updateCriterionService(id, body);
+    
+    return c.json({
+      success: true,
+      message: 'Cập nhật criterion thành công',
+      data: criterion
+    });
+    
+  } catch (error) {
+    logger.error('Lỗi trong updateCriterionController:', error);
+    return c.json({
+      success: false,
+      message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
+    }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+}
+
+// DELETE /criteria/:id - Delete a criterion
+export async function deleteCriterionController(c: Context) {
+  try {
+    const id = c.req.param('id');
+    
+    if (!id) {
+      return c.json({
+        success: false,
+        message: 'Criterion ID là bắt buộc'
+      }, HTTP_STATUS.BAD_REQUEST);
+    }
+    
+    logger.info(`Deleting criterion: ${id}`);
+    
+    // Delete criterion using the service
+    await deleteCriterionService(id);
+    
+    return c.json({
+      success: true,
+      message: 'Xóa criterion thành công'
+    });
+    
+  } catch (error) {
+    logger.error('Lỗi trong deleteCriterionController:', error);
+    return c.json({
+      success: false,
+      message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
+    }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+}
+
+// GET /criteria/all - List all criteria
+export async function listAllCriteriaController(c: Context) {
+  try {
+    logger.info('Listing all criteria');
+    
+    // List all criteria using the service
+    const criteria = await listAllCriteria();
+    
+    return c.json({
+      success: true,
+      message: `Tìm thấy ${criteria.length} criteria`,
+      data: {
+        criteria,
+        total: criteria.length
+      }
+    });
+    
+  } catch (error) {
+    logger.error('Lỗi trong listAllCriteriaController:', error);
     return c.json({
       success: false,
       message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
@@ -259,7 +450,7 @@ export async function previewCriteriaController(c: Context) {
     
     logger.info(`Previewing criteria cho rubric: ${rubric.name}`);
     
-    const previewResults = await preview({
+    const previewResults: Record<string, CriterionEvalResult> = await preview({
       rubric,
       onlyCriteria: previewBody.onlyCriteria,
       fileId: previewBody.fileId,

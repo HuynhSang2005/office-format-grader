@@ -56,3 +56,16 @@ model UngradedFile {
 
   @@map("ungraded_files")
 }
+
+model Criterion {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  detectorKey String
+  maxPoints   Float
+  levels      String   // JSON string representation of levels array
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("criteria")
+}

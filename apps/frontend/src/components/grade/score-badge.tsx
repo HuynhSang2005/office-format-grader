@@ -9,7 +9,7 @@
 import { RingProgress, Text, Center } from '@mantine/core'
 
 interface ScoreBadgeProps {
-  percentage: number
+  percentage?: number
   size?: number
 }
 
@@ -19,7 +19,7 @@ interface ScoreBadgeProps {
  * - 50-70%: Orange
  * - ≥ 70%: Green
  */
-export function ScoreBadge({ percentage, size = 100 }: ScoreBadgeProps) {
+export function ScoreBadge({ percentage = 0, size = 100 }: ScoreBadgeProps) {
   // Determine color based on percentage
   const getColor = () => {
     if (percentage < 50) return 'red'

@@ -1,7 +1,7 @@
 /**
  * @file OfflineBanner.tsx
  * @description Banner component to show when user is offline
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { Alert } from '@mantine/core'
@@ -31,7 +31,7 @@ export function OfflineBanner() {
         textAlign: 'center',
       }}
     >
-      Bạn đang làm việc ở chế độ offline. Một số tính năng có thể không khả dụng.
+      Bạn đang làm việc ở chế độ offline. Đa số tính năng có thể không khả dụng.
     </Alert>
   )
 }

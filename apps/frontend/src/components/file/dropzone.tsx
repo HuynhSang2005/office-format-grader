@@ -1,158 +1,125 @@
 /**
  * @file dropzone.tsx
- * @description File dropzone component with drag & drop functionality
- * @author Your Name
+ * @description File dropzone component with preview and remove functionality
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { 
-  Dropzone as MantineDropzone, 
-  type DropzoneProps as MantineDropzoneProps,
-} from '@mantine/dropzone';
-import { 
-  Text, 
   Group, 
-  rem, 
-  Badge,
-  Box,
-  ActionIcon,
-  Stack
-} from '@mantine/core';
-import { IconUpload, IconX, IconCheck } from '@tabler/icons-react';
-import { useState, useRef } from 'react';
+  Text, 
+  Box, 
+  Stack, 
+  ActionIcon, 
+  Card
+} from '@mantine/core'
+import { IconUpload, IconX, IconFile } from '@tabler/icons-react'
+import { useDropzone } from 'react-dropzone'
+import type { Accept } from 'react-dropzone'
 
-interface FileDropzoneProps extends Omit<MantineDropzoneProps, 'onDrop'> {
-  onDrop: (files: File[]) => void;
-  onRemove?: (index: number) => void;
-  uploadedFiles?: File[];
-  accept?: string[];
-  multiple?: boolean;
+interface FileDropzoneProps {
+  onDrop: (files: File[]) => void
+  onRemove: (index?: number) => void
+  onRemoveAll: () => void
+  uploadedFiles: File[]
+  accept?: string[]
+  multiple?: boolean
+  maxFiles?: number
+  mb?: string | number
 }
 
-export function FileDropzone({
-  onDrop,
-  onRemove,
-  uploadedFiles = [],
-  accept = ['.pptx', '.docx', '.zip'],
-  maxSize = 52428800, // 50MB in bytes
-  multiple = false,
-  ...props
+export function FileDropzone({ 
+  onDrop, 
+  onRemove, 
+  onRemoveAll,
+  uploadedFiles, 
+  accept = [],
+  multiple = true,
+  maxFiles = 0,
+  mb = 0
 }: FileDropzoneProps) {
-  const [files, setFiles] = useState<File[]>(uploadedFiles);
-  const dropzoneRef = useRef<HTMLDivElement>(null);
-
-  const handleDrop = (droppedFiles: File[]) => {
-    if (multiple) {
-      // For multiple file uploads, add new files to existing ones
-      const newFiles = [...files, ...droppedFiles];
-      setFiles(newFiles);
-      onDrop(newFiles);
-    } else {
-      // For single file upload, replace existing file
-      if (droppedFiles.length > 0) {
-        const droppedFile = droppedFiles[0];
-        setFiles([droppedFile]);
-        onDrop([droppedFile]);
-      }
-    }
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
-  };
-
-  // Create accept object without using spread in reduce
-  const acceptObject: Record<string, string[]> = {};
-  accept.forEach(ext => {
-    acceptObject[ext] = [];
-  });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: accept.length > 0 ? accept.reduce((acc, ext) => {
+      acc[ext] = [];
+      return acc;
+    }, {} as Accept) : undefined,
+    multiple,
+    maxFiles
+  })
 
   return (
-    <MantineDropzone
-      ref={dropzoneRef}
-      onDrop={handleDrop}
-      maxSize={maxSize}
-      accept={acceptObject}
-      multiple={multiple}
-      {...props}
-    >
-      {files.length > 0 ? (
+    <Box mb={mb}>
+      {uploadedFiles.length === 0 ? (
+        <Box
+          {...getRootProps()}
+          style={{
+            border: `2px dashed ${isDragActive ? '#228be6' : '#e9ecef'}`,
+            borderRadius: '4px',
+            padding: '40px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            backgroundColor: isDragActive ? '#f8f9fa' : '#ffffff'
+          }}
+        >
+          <input {...getInputProps()} />
+          <IconUpload 
+            size={48} 
+            color="#adb5bd" 
+            stroke={1.5} 
+            style={{ margin: '0 auto 16px' }} 
+          />
+          <Text size="lg" fw={500} c="dimmed" mb="xs">
+            Kéo thả file vào đây hoặc click để chọn
+          </Text>
+          <Text size="sm" c="dimmed">
+            Hỗ trợ các định dạng: {accept.length > 0 ? accept.join(', ') : 'Tất cả'}
+          </Text>
+        </Box>
+      ) : (
         <Stack gap="xs" p="md">
-          {files.map((file, index) => (
-            <Group key={index} justify="space-between" align="center">
+          {uploadedFiles.map((file, index) => (
+            <Group key={`${file.name}-${file.size}-${file.lastModified}`} justify="space-between" align="center">
               <Box>
-                <Text size="sm" fw={500}>
-                  {file.name}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  {formatFileSize(file.size)}
-                </Text>
+                <Group>
+                  <IconFile size={20} color="#228be6" />
+                  <Box>
+                    <Text size="sm" fw={500}>
+                      {file.name}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </Text>
+                  </Box>
+                </Group>
               </Box>
-              <Group gap="xs">
-                <Badge 
-                  leftSection={<IconCheck size={14} />} 
-                  color="green"
-                  variant="light"
-                >
-                  Ready
-                </Badge>
-                {onRemove && (
-                  <ActionIcon 
-                    variant="outline" 
-                    color="red" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newFiles = files.filter((_, i) => i !== index);
-                      setFiles(newFiles);
-                      onRemove(index);
-                    }}
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                )}
-              </Group>
+              <ActionIcon 
+                variant="light" 
+                color="red" 
+                onClick={() => onRemove(index)}
+                aria-label="Remove file"
+              >
+                <IconX size={16} />
+              </ActionIcon>
             </Group>
           ))}
-        </Stack>
-      ) : (
-        <Group justify="center" align="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
-          <MantineDropzone.Accept>
-            <IconUpload
-              style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-blue-6)' }}
-              stroke={1.5}
-            />
-          </MantineDropzone.Accept>
-          <MantineDropzone.Reject>
-            <IconX
-              style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-red-6)' }}
-              stroke={1.5}
-            />
-          </MantineDropzone.Reject>
-          <MantineDropzone.Idle>
-            <IconUpload
-              style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-dimmed)' }}
-              stroke={1.5}
-            />
-          </MantineDropzone.Idle>
-
-          <div>
-            <Text size="xl" inline>
-              Kéo file vào đây hoặc click để chọn file
-            </Text>
-            <Text size="sm" c="dimmed" inline mt={7}>
-              Chấp nhận file: {accept.join(', ')} với dung lượng tối đa 50MB
-            </Text>
-            {multiple && (
-              <Text size="sm" c="dimmed" inline mt={7}>
-                Bạn có thể chọn nhiều file cùng lúc
+          
+          <Card withBorder p="sm" radius="sm">
+            <Group justify="space-between">
+              <Text size="sm">
+                Tổng cộng: {uploadedFiles.length} file
               </Text>
-            )}
-          </div>
-        </Group>
+              <ActionIcon 
+                variant="light" 
+                color="red" 
+                onClick={onRemoveAll}
+                aria-label="Remove all files"
+              >
+                <IconX size={16} />
+              </ActionIcon>
+            </Group>
+          </Card>
+        </Stack>
       )}
-    </MantineDropzone>
-  );
+    </Box>
+  )
 }

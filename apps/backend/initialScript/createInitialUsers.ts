@@ -17,12 +17,12 @@ const initialUsers = [
     password: "admin123",
   },
   {
-    email: "teacher@example.com",
-    password: "teacher123",
+    email: "user1@example.com",
+    password: "user123",
   },
   {
-    email: "student@example.com",
-    password: "student123",
+    email: "user2@example.com",
+    password: "user123",
   },
 ];
 

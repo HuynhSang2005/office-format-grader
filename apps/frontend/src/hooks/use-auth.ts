@@ -1,7 +1,7 @@
 /**
  * @file use-auth.ts
  * @description Custom hook for authentication
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useEffect } from 'react'

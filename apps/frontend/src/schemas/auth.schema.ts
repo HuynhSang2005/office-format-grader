@@ -1,7 +1,7 @@
 /**
  * @file auth.schema.ts
  * @description Zod schemas for authentication
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { z } from 'zod'

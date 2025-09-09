@@ -1,20 +1,35 @@
 /**
  * @file use-criteria.ts
  * @description TanStack Query hooks for criteria management
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
-import { 
-  type Criterion,
-  type PreviewCriteriaResponse
+import type { 
+  Criterion,
+  PreviewCriteriaResponse,
+  CreateCriterion
 } from '../schemas/criteria.schema'
 
 interface ListCriteriaParams {
   source?: 'preset' | 'custom'
   fileType?: 'PPTX' | 'DOCX'
   rubricName?: string
+}
+
+interface SupportedCriterion {
+  id: string
+  name: string
+  detectorKey: string
+  description: string
+  maxPoints: number
+  levels: Array<{
+    points: number
+    code: string
+    name: string
+    description: string
+  }>
 }
 
 /**
@@ -64,10 +79,104 @@ export const useSupportedCriteria = (fileType?: 'PPTX' | 'DOCX', detectorKey?: s
       if (detectorKey) params.detectorKey = detectorKey
       
       const response = await apiClient.get('/api/criteria/supported', { params })
-      return response.data.data.criteria as Criterion[]
+      return response.data.data.criteria as SupportedCriterion[]
     },
     enabled: !!fileType
   })
+}
+
+/**
+ * Create a new criterion
+ * @returns Mutation hook for creating criteria
+ */
+export const useCreateCriterion = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (criterion: CreateCriterion) => {
+      const response = await apiClient.post('/api/criteria', criterion)
+      return response.data.data as Criterion
+    },
+    onSuccess: () => {
+      // Invalidate and refetch criteria lists
+      queryClient.invalidateQueries({ queryKey: ['criteria'] })
+    },
+    onError: (error: any) => {
+      // Handle validation errors from backend
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors
+        throw new Error(validationErrors.map((err: any) => err.message).join(', '))
+      }
+      throw error
+    }
+  })
+}
+
+/**
+ * Update an existing criterion
+ * @returns Mutation hook for updating criteria
+ */
+export const useUpdateCriterion = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, ...data }: Partial<Criterion> & { id: string }) => {
+      const response = await apiClient.put(`/api/criteria/${id}`, data)
+      return response.data.data as Criterion
+    },
+    onSuccess: (data) => {
+      // Update the specific criterion in cache
+      queryClient.setQueryData(['criterion', data.id], data)
+      // Invalidate criteria lists to show updated data
+      queryClient.invalidateQueries({ queryKey: ['criteria'] })
+    },
+    onError: (error: any) => {
+      // Handle validation errors from backend
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors
+        throw new Error(validationErrors.map((err: any) => err.message).join(', '))
+      }
+      throw error
+    }
+  })
+}
+
+/**
+ * Delete a criterion
+ * @returns Mutation hook for deleting criteria
+ */
+export const useDeleteCriterion = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiClient.delete(`/api/criteria/${id}`)
+      return response.data
+    },
+    onSuccess: () => {
+      // Invalidate criteria lists to remove deleted item
+      queryClient.invalidateQueries({ queryKey: ['criteria'] })
+      // Remove specific criterion from cache
+      queryClient.removeQueries({ queryKey: ['criterion'] })
+    }
+  })
+}
+
+interface PreviewRubric {
+  title: string
+  version: string
+  locale: string
+  totalPoints: number
+  scoring: {
+    method: 'sum'
+    rounding: 'half_up_0.25' | 'none'
+  }
+  criteria: Criterion[]
+}
+
+interface PreviewData {
+  fileId: string
+  rubric: PreviewRubric
 }
 
 /**
@@ -109,13 +218,13 @@ export const usePreviewCriteria = () => {
       const rubric = rubricResponse.data.data.criteria
       
       // Then preview criteria
-      const previewData = {
+      const previewData: PreviewData = {
         fileId,
         rubric: {
           title: rubricName || 'default',
           version: '1.0',
           locale: 'vi-VN',
-          totalPoints: rubric.reduce((sum: number, criterion: any) => sum + (criterion.maxPoints || 0), 0),
+          totalPoints: rubric.reduce((sum: number, criterion: Criterion) => sum + (criterion.maxPoints || 0), 0),
           scoring: {
             method: 'sum',
             rounding: 'half_up_0.25'
@@ -140,7 +249,7 @@ export const usePreviewCriteria = () => {
  */
 export const useValidateRubric = () => {
   return useMutation({
-    mutationFn: async (rubric: any) => {
+    mutationFn: async (rubric: PreviewRubric) => {
       const response = await apiClient.post('/api/criteria/validate', { rubric })
       return response.data
     }

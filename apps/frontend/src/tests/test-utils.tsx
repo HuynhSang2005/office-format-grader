@@ -1,64 +1,108 @@
 /**
  * @file test-utils.tsx
- * @description Custom render function for testing with providers
+ * @description Custom test utilities and providers for testing components and hooks
  * @author Your Name
  */
 
-import { MantineProvider } from '@mantine/core'
+import type React from 'react'
+import type { ReactElement, ReactNode } from 'react'
+import { render, type RenderOptions, type RenderResult } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, renderHook } from '@testing-library/react'
-import { theme } from '../styles/theme'
-import React, { ReactElement } from 'react'
+import { http, HttpResponse } from 'msw'
+import { setupServer } from 'msw/node'
+import { JSDOM } from 'jsdom'
+import { MantineProvider } from '@mantine/core'
 
-// Create a new query client for each test
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
+// Create a test query client
+export const createTestQueryClient = () => {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
     },
-    mutations: {
-      retry: false,
-    },
-  },
-})
+  })
+}
 
 // Custom render function that wraps components with providers
-export const renderWithProviders = (
-  ui: ReactElement,
-  { 
-    queryClient = createTestQueryClient(),
-    ...renderOptions 
-  } = {}
-) => {
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <MantineProvider theme={theme} defaultColorScheme="light">
-      <QueryClientProvider client={queryClient}>
+interface CustomRenderOptions extends Omit<RenderOptions, 'queries'> {
+  queryClient?: QueryClient
+}
+
+interface TestProvidersProps {
+  children: ReactNode
+  queryClient?: QueryClient
+}
+
+const TestProviders = ({ children, queryClient }: TestProvidersProps) => {
+  const client = queryClient || createTestQueryClient()
+  
+  return (
+    <MantineProvider>
+      <QueryClientProvider client={client}>
         {children}
       </QueryClientProvider>
     </MantineProvider>
   )
+}
 
-  return render(ui, { wrapper: Wrapper, ...renderOptions })
+export const renderWithProviders = (
+  ui: ReactElement,
+  { queryClient, ...renderOptions }: CustomRenderOptions = {}
+): RenderResult => {
+  const wrapper: React.FC<{ children: ReactNode }> = ({ children }) => (
+    <TestProviders queryClient={queryClient}>
+      {children}
+    </TestProviders>
+  )
+  
+  return render(ui, { wrapper, ...renderOptions })
 }
 
 // Custom renderHook function that wraps hooks with providers
-export const renderHookWithProviders = (
-  hook: (props: any) => any,
-  { 
-    queryClient = createTestQueryClient(),
-    ...renderOptions 
-  } = {}
-) => {
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <MantineProvider theme={theme} defaultColorScheme="light">
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    </MantineProvider>
-  )
-
-  return renderHook(hook, { wrapper: Wrapper, ...renderOptions })
+interface RenderHookOptions {
+  queryClient?: QueryClient
 }
 
-// Re-export everything from testing-library
+export const renderHookWithProviders = <TProps, TResult>(
+  hook: (props: TProps) => TResult,
+  { queryClient }: RenderHookOptions = {}
+) => {
+  const wrapper: React.FC<{ children: ReactNode }> = ({ children }) => (
+    <TestProviders queryClient={queryClient}>
+      {children}
+    </TestProviders>
+  )
+  
+  // This is a simplified version - in a real implementation, you would use
+  // @testing-library/react-hooks or similar
+  return {
+    result: { current: hook({} as TProps) },
+    wrapper
+  }
+}
+
+// Setup DOM environment for tests
+export const setupDomEnvironment = () => {
+  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+    url: 'http://localhost'
+  })
+  
+  global.window = dom.window as unknown as Window & typeof globalThis
+  global.document = dom.window.document
+  global.navigator = dom.window.navigator
+  
+  return dom
+}
+
+// Clean up DOM environment
+export const cleanupDomEnvironment = () => {
+  // @ts-expect-error
+  global.window = undefined
+  // @ts-expect-error
+  global.document = undefined
+  // @ts-expect-error
+  global.navigator = undefined
+}
+
 export * from '@testing-library/react'

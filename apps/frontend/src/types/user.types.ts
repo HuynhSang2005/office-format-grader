@@ -1,7 +1,7 @@
 /**
  * @file user.types.ts
  * @description User type definitions
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 export interface User {

@@ -10,7 +10,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useExportExcel } from '../use-export-excel'
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 // Mock notifications
 const mockShowNotification = vi.fn()

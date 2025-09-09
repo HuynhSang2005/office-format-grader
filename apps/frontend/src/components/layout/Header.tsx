@@ -1,7 +1,7 @@
 /**
  * @file header.tsx
  * @description Header component with theme toggle and user menu
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { 
@@ -14,7 +14,7 @@ import {
   Burger
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconSun, IconMoon, IconLogout, IconUser, IconSettings } from '@tabler/icons-react'
+import { IconSun, IconMoon, IconLogout } from '@tabler/icons-react'
 import { useAuth } from '../../hooks/use-auth'
 import { useMantineColorScheme } from '@mantine/core'
 import { useUIStore } from '../../stores/ui.store'
@@ -63,7 +63,7 @@ export function Header({ sidebarOpened, toggleSidebar }: HeaderProps) {
               OV
             </Avatar>
             <Text size="xl" fw={700}>
-              Office Vibe
+              Office Format Grader
             </Text>
           </Group>
         </Group>
@@ -103,23 +103,8 @@ export function Header({ sidebarOpened, toggleSidebar }: HeaderProps) {
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Label>{user?.email}</Menu.Label>
-              <Menu.Item 
-                leftSection={<IconUser style={{ width: '1rem', height: '1rem' }} />}
-                onClick={() => {
-                  window.location.href = '/profile'
-                }}
-              >
-                Hồ sơ
-              </Menu.Item>
-              <Menu.Item 
-                leftSection={<IconSettings style={{ width: '1rem', height: '1rem' }} />}
-                onClick={() => {
-                  window.location.href = '/settings'
-                }}
-              >
-                Cài đặt
-              </Menu.Item>
+              <Menu.Label>{user?.email || 'Người dùng'}</Menu.Label>
+              {/* Removed Hồ sơ and Cài đặt items as requested */}
               <Menu.Divider />
               <Menu.Item 
                 color="red" 

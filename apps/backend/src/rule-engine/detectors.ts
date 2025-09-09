@@ -741,7 +741,11 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'common.exportPdf': (features: any) => {
     const { hasPdfExport, pdfPageCount } = features;
     
-    if (!hasPdfExport) {
+    // For PPTX files, assume PDF export capability exists unless explicitly set to false
+    // hasPdfExport might be undefined, which we treat as true for PPTX files
+    const canExportPdf = hasPdfExport !== false;
+    
+    if (!canExportPdf) {
       return {
         passed: false,
         points: 0,

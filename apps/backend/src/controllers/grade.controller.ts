@@ -23,7 +23,13 @@ export async function gradeFileController(c: Context) {
   try {
     const body = await c.req.json();
     
-    // Validate request body
+    // Check if this is a batch request (has files array)
+    if (body.files && Array.isArray(body.files) && body.files.length > 0) {
+      // Handle batch grading request
+      return await handleBatchGradeRequest(c, body);
+    }
+    
+    // Validate request body for single file grading
     const validation = GradeFileApiSchema.safeParse(body);
     if (!validation.success) {
       logger.warn('Invalid grade request:', validation.error);
@@ -76,6 +82,73 @@ export async function gradeFileController(c: Context) {
     
   } catch (error) {
     logger.error('Lỗi trong gradeFileController:', error);
+    return c.json({
+      success: false,
+      message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
+    }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+}
+
+// Handle batch grading requests
+async function handleBatchGradeRequest(c: Context, body: any) {
+  try {
+    // Get user ID from JWT context
+    const user = c.get('user');
+    const userId = user.id;
+    
+    const { files, useHardRubric = true, onlyCriteria, concurrency } = body;
+    
+    // Validate that we have files
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return c.json({
+        success: false,
+        message: 'Phải có ít nhất 1 file để chấm điểm'
+      }, HTTP_STATUS.BAD_REQUEST);
+    }
+    
+    logger.info(`Batch grading request: ${files.length} files for user ${userId}`);
+    
+    // Process batch grading
+    const batchResult = await batchGradeService({
+      files,
+      userId,
+      useHardRubric,
+      onlyCriteria,
+      concurrency
+    });
+    
+    return c.json({
+      success: true,
+      message: SUCCESS_MESSAGES.GRADING_COMPLETED,
+      data: {
+        batchResult: {
+          results: batchResult.results.map(result => ({
+            fileId: result.fileId,
+            filename: result.filename,
+            fileType: result.fileType,
+            totalPoints: result.totalPoints,
+            maxPossiblePoints: result.maxPossiblePoints,
+            percentage: result.percentage,
+            byCriteria: result.byCriteria,
+            gradedAt: result.gradedAt,
+            processingTime: result.processingTime
+          })),
+          errors: batchResult.errors,
+          summary: batchResult.summary
+        },
+        database: {
+          saved: batchResult.results.length,
+          total: batchResult.summary.total
+        },
+        fileCleanup: {
+          originalFilesDeleted: true,
+          reason: 'Files được xóa tự động sau khi chấm điểm hoàn thành'
+        }
+      }
+    });
+    
+  } catch (error) {
+    logger.error('Lỗi trong handleBatchGradeRequest:', error);
     return c.json({
       success: false,
       message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
@@ -527,6 +600,8 @@ export async function gradeCustomSelectiveController(c: Context) {
     }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 }
+
+
 
 
 

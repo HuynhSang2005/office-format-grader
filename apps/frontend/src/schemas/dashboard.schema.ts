@@ -1,7 +1,7 @@
 /**
  * @file dashboard.schema.ts
  * @description Zod schemas for dashboard data
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { z } from 'zod'

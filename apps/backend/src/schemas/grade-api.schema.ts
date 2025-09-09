@@ -7,11 +7,25 @@
 import { z } from 'zod';
 import { RubricSchema } from './rubric.schema';
 
-// Schema cho grade request API endpoint
+// Schema cho grade request API endpoint (now supports both single and batch)
 export const GradeFileApiSchema = z.object({
-  fileId: z.string().min(1, 'File ID không được rỗng'),
+  // Single file grading
+  fileId: z.string().min(1, 'File ID không được rỗng').optional(),
   useHardRubric: z.boolean().default(true),
-  onlyCriteria: z.array(z.string()).optional()
+  onlyCriteria: z.array(z.string()).optional(),
+  // Batch grading
+  files: z.array(z.string()).optional(),
+  concurrency: z.number().min(1).max(20).default(5).optional()
+}).refine((data) => {
+  // Must have either fileId (single) or files (batch), but not both
+  const hasFileId = !!data.fileId;
+  const hasFiles = !!data.files && data.files.length > 0;
+  
+  // Must have one but not both
+  return (hasFileId || hasFiles) && !(hasFileId && hasFiles);
+}, {
+  message: 'Phải cung cấp fileId (để chấm điểm 1 file) hoặc files[] (để chấm điểm hàng loạt), không được cung cấp cả hai',
+  path: ['fileId']
 });
 
 // Schema cho grade request với custom rubric API endpoint
@@ -156,6 +170,8 @@ export type BatchGradeResponse = z.infer<typeof BatchGradeResponseSchema>;
 export type GradeHistoryResponse = z.infer<typeof GradeHistoryResponseSchema>;
 export type SingleGradeResultResponse = z.infer<typeof SingleGradeResultResponseSchema>;
 export type GradeErrorResponse = z.infer<typeof GradeErrorResponseSchema>;
+
+
 
 
 

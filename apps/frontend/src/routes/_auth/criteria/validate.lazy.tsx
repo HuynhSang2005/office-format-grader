@@ -1,7 +1,7 @@
 /**
  * @file validate.lazy.tsx
  * @description Rubric validation page component
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createLazyFileRoute } from '@tanstack/react-router'
@@ -17,15 +17,84 @@ import {
   FileButton,
   Code,
   List,
-  ThemeIcon
+  ThemeIcon,
+  CopyButton
 } from '@mantine/core'
-import { IconAlertCircle, IconCheck, IconUpload, IconX } from '@tabler/icons-react'
+import { IconAlertCircle, IconCheck, IconUpload, IconX, IconCopy, IconDownload } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useValidateRubric } from '../../../hooks/use-criteria'
 
 export const Route = createLazyFileRoute('/_auth/criteria/validate')({
   component: RubricValidatePage,
 })
+
+// Example rubric JSON data
+const exampleRubric = {
+  title: "Rubric mẫu",
+  version: "1.0",
+  locale: "vi-VN",
+  totalPoints: 10,
+  scoring: {
+    method: "sum",
+    rounding: "half_up_0.25"
+  },
+  criteria: [
+    {
+      id: "1",
+      name: "Nội dung",
+      detectorKey: "content",
+      maxPoints: 5,
+      description: "Đánh giá nội dung bài thuyết trình",
+      levels: [
+        {
+          points: 0,
+          code: "0",
+          name: "Không đạt",
+          description: "Nội dung không liên quan hoặc thiếu"
+        },
+        {
+          points: 2.5,
+          code: "2.5",
+          name: "Trung bình",
+          description: "Nội dung cơ bản nhưng còn thiếu"
+        },
+        {
+          points: 5,
+          code: "5",
+          name: "Tốt",
+          description: "Nội dung đầy đủ, rõ ràng và logic"
+        }
+      ]
+    },
+    {
+      id: "2",
+      name: "Thiết kế",
+      detectorKey: "design",
+      maxPoints: 5,
+      description: "Đánh giá thiết kế slide",
+      levels: [
+        {
+          points: 0,
+          code: "0",
+          name: "Không đạt",
+          description: "Thiết kế lộn xộn, khó đọc"
+        },
+        {
+          points: 2.5,
+          code: "2.5",
+          name: "Trung bình",
+          description: "Thiết kế cơ bản nhưng còn đơn giản"
+        },
+        {
+          points: 5,
+          code: "5",
+          name: "Tốt",
+          description: "Thiết kế chuyên nghiệp, bắt mắt"
+        }
+      ]
+    }
+  ]
+}
 
 function RubricValidatePage() {
   const [file, setFile] = useState<File | null>(null)
@@ -74,6 +143,17 @@ function RubricValidatePage() {
     setFile(null)
     setValidationResult(null)
     setError(null)
+  }
+
+  // Function to download example rubric
+  const downloadExampleRubric = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exampleRubric, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "example-rubric.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
   }
 
   return (
@@ -136,6 +216,44 @@ function RubricValidatePage() {
             Kiểm tra rubric
           </Button>
         </Group>
+      </Card>
+      
+      {/* Example Rubric Section */}
+      <Card withBorder p="lg" radius="md" mb="xl">
+        <Title order={3} mb="md">Rubric mẫu</Title>
+        <Text size="sm" c="dimmed" mb="md">
+          Tải xuống hoặc sao chép rubric mẫu để bắt đầu tạo rubric của bạn
+        </Text>
+        
+        <Group mb="md">
+          <Button
+            leftSection={<IconDownload size={16} />}
+            onClick={downloadExampleRubric}
+            variant="outline"
+          >
+            Tải xuống rubric mẫu
+          </Button>
+          
+          <CopyButton value={JSON.stringify(exampleRubric, null, 2)}>
+            {({ copied, copy }) => (
+              <Button
+                leftSection={<IconCopy size={16} />}
+                onClick={copy}
+                variant="outline"
+                color={copied ? 'teal' : 'blue'}
+              >
+                {copied ? 'Đã sao chép!' : 'Sao chép JSON'}
+              </Button>
+            )}
+          </CopyButton>
+        </Group>
+        
+        <Box mt="md">
+          <Text fw={500} mb="xs">Ví dụ JSON:</Text>
+          <Code block style={{ maxHeight: 300, overflow: 'auto' }}>
+            {JSON.stringify(exampleRubric, null, 2)}
+          </Code>
+        </Box>
       </Card>
       
       {error && (

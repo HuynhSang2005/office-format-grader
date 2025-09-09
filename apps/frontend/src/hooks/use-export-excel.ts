@@ -1,7 +1,7 @@
 /**
  * @file use-export-excel.ts
  * @description Custom hook for exporting grade results to Excel
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useMutation } from '@tanstack/react-query'

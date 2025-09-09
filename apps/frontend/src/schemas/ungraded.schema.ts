@@ -1,7 +1,7 @@
 /**
  * @file ungraded.schema.ts
  * @description Zod schemas for ungraded files functionality
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { z } from 'zod'
@@ -25,7 +25,10 @@ export const UngradedFilesResponseSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   data: z.object({
-    files: z.array(UngradedFileSchema)
+    files: z.array(UngradedFileSchema),
+    total: z.number(),
+    limit: z.number(),
+    offset: z.number()
   })
 })
 

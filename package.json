@@ -19,7 +19,15 @@
     "type-check:frontend": "cd apps/frontend && bun run type-check",
     "build": "bun run build:backend && bun run build:frontend",
     "test": "bun run test:backend && bun run test:frontend",
-    "clean": "rimraf apps/backend/dist apps/frontend/dist apps/frontend/.vite"
+    "clean": "rimraf apps/backend/dist apps/frontend/dist apps/frontend/.vite",
+    "// Setup and Installation Scripts": "",
+    "postinstall": "bun run setup:dependencies",
+    "setup:dependencies": "concurrently \"bun run setup:backend\" \"bun run setup:frontend\"",
+    "setup:backend": "cd apps/backend && bun install",
+    "setup:frontend": "cd apps/frontend && bun install",
+    "setup:initial": "cd apps/backend && bun run setup:initial",
+    "setup:db": "cd apps/backend && bunx prisma migrate dev --name init",
+    "setup:all": "bun run setup:dependencies && bun run setup:initial"
   },
   "engines": {
     "node": ">=22.0.0",

@@ -1,7 +1,7 @@
 /**
  * @file preview.lazy.tsx
  * @description Criteria preview page component
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createLazyFileRoute } from '@tanstack/react-router'
@@ -34,8 +34,10 @@ function CriteriaPreviewPage() {
   const [rubricName, setRubricName] = useState('')
   const { mutate: previewCriteria, data, isPending, error } = usePreviewCriteria()
 
-  const handleDrop = (droppedFile: File) => {
-    setFile(droppedFile)
+  const handleDrop = (droppedFiles: File[]) => {
+    if (droppedFiles.length > 0) {
+      setFile(droppedFiles[0])
+    }
   }
 
   const handleRemove = () => {
@@ -62,8 +64,10 @@ function CriteriaPreviewPage() {
         <FileDropzone
           onDrop={handleDrop}
           onRemove={handleRemove}
-          uploadedFile={file}
+          onRemoveAll={handleRemove}
+          uploadedFiles={file ? [file] : []}
           accept={['.pptx', '.docx']}
+          multiple={false}
           mb="xl"
         />
         

@@ -1,7 +1,7 @@
 import fs from 'fs';
 
 // Load the rubric schema and test validation
-const { RubricSchema } = await import('./src/schemas/rubric.schema.ts');
+const { RubricSchema } = await import('../schemas/rubric.schema.ts');
 
 // Load an existing rubric as template
 const defaultRubric = JSON.parse(fs.readFileSync('./src/config/presets/defaultRubric.docx.json', 'utf8'));

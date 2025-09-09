@@ -518,6 +518,118 @@ export async function extractRarSafely(
   }
 }
 
+// Extract specific file content from RAR archive
+export async function extractFileFromRar(
+  buffer: Buffer,
+  fileName: string
+): Promise<Buffer | null> {
+  try {
+    // Create extractor from the RAR file data
+    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+    const extractor = await createExtractorFromData({ 
+      data: arrayBuffer
+    });
+
+    // Extract the specific file
+    const extracted = extractor.extract({ files: [fileName] });
+    
+    // Process extracted files
+    for (const file of extracted.files) {
+      if (file.fileHeader && !file.fileHeader.flags.directory) {
+        const extractedFileName = file.fileHeader.name;
+        
+        // Check if this is the file we're looking for
+        if (extractedFileName === fileName) {
+          // Extract the file content
+          if (file.extraction) {
+            return Buffer.from(file.extraction);
+          }
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    logger.error(`Lỗi khi extract file ${fileName} từ RAR:`, error);
+    return null;
+  }
+}
+
+// Extract all files from archive with their contents
+export async function extractAllFilesFromArchive(
+  buffer: Buffer,
+  ext: '.zip' | '.rar'
+): Promise<Record<string, Buffer> | null> {
+  try {
+    // Handle empty buffer
+    if (!buffer || buffer.length === 0) {
+      logger.warn(`Empty buffer provided for ${ext} extraction`);
+      return null;
+    }
+    
+    if (ext === '.zip') {
+      const zip = new JSZip();
+      const zipContent = await zip.loadAsync(buffer);
+      
+      const files: Record<string, Buffer> = {};
+      
+      for (const [filePath, zipEntry] of Object.entries(zipContent.files)) {
+        if (!zipEntry.dir) {
+          const content = await zipEntry.async('nodebuffer');
+          files[filePath] = content;
+        }
+      }
+      
+      return files;
+    } else {
+      // For RAR files
+      const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+      const extractor = await createExtractorFromData({ 
+        data: arrayBuffer
+      });
+
+      const extracted = extractor.extract();
+      const files: Record<string, Buffer> = {};
+      
+      // Process all extracted files
+      for (const file of extracted.files) {
+        if (file.fileHeader && !file.fileHeader.flags.directory) {
+          const fileName = file.fileHeader.name;
+          
+          // Extract the file content
+          if (file.extraction) {
+            files[fileName] = Buffer.from(file.extraction);
+          }
+        }
+      }
+
+      return files;
+    }
+  } catch (error: any) {
+    logger.error(`Lỗi khi extract tất cả files từ ${ext} archive:`, error);
+    
+    // Handle specific error types
+    if (error.reason) {
+      switch (error.reason) {
+        case 'ERAR_BAD_DATA':
+          throw new Error('File archive bị hỏng hoặc dữ liệu không hợp lệ');
+        case 'ERAR_BAD_ARCHIVE':
+          throw new Error('File không phải là archive hợp lệ');
+        case 'ERAR_UNKNOWN_FORMAT':
+          throw new Error('Định dạng archive không được hỗ trợ');
+        case 'ERAR_MISSING_PASSWORD':
+          throw new Error('Archive được bảo vệ bằng mật khẩu');
+        case 'ERAR_BAD_PASSWORD':
+          throw new Error('Mật khẩu không đúng');
+        default:
+          throw new Error(`Lỗi khi xử lý archive: ${error.message}`);
+      }
+    }
+    
+    return null;
+  }
+}
+
 // Hàm tổng hợp để giải nén cả ZIP và RAR files
 export async function extractArchive(
   buffer: Buffer,
@@ -671,5 +783,27 @@ export async function validateRarFile(fileBuffer: Buffer): Promise<{
       errors: [`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`],
       warnings
     };
+  }
+}
+
+// Extract specific file content from ZIP archive
+export async function extractFileFromZip(
+  buffer: Buffer,
+  fileName: string
+): Promise<Buffer | null> {
+  try {
+    const zip = new JSZip();
+    const zipContent = await zip.loadAsync(buffer);
+    
+    const file = zipContent.file(fileName);
+    if (file) {
+      const content = await file.async('nodebuffer');
+      return content;
+    }
+    
+    return null;
+  } catch (error) {
+    logger.error(`Lỗi khi extract file ${fileName} từ ZIP:`, error);
+    return null;
   }
 }

@@ -1,7 +1,7 @@
 /**
  * @file index.route.tsx
  * @description Home route component - redirect to login
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createFileRoute, redirect } from '@tanstack/react-router'

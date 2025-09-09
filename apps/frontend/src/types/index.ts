@@ -1,7 +1,7 @@
 /**
  * @file index.ts
  * @description Export all types
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 export * from './user.types'

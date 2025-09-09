@@ -1,7 +1,7 @@
 /**
  * @file index.lazy.tsx
  * @description Grade page for custom rubric selection and grading
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createLazyFileRoute } from '@tanstack/react-router'

@@ -25,7 +25,10 @@ export const UngradedFilesResponseSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   data: z.object({
-    files: z.array(UngradedFileSchema)
+    files: z.array(UngradedFileSchema),
+    total: z.number(),
+    limit: z.number(),
+    offset: z.number()
   })
 });
 

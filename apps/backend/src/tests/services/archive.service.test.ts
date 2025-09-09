@@ -4,7 +4,7 @@
  * @author Nguyễn Huỳnh Sang
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { validateZipFile, extractZipSafely, validateRarFile, extractRarSafely, extractArchive } from '@services/archive.service';
 import { ExtractionOptions } from '@/types/archive.types';
 

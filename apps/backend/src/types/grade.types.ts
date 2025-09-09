@@ -7,14 +7,16 @@
 import type { GradeResult, Rubric } from './criteria';
 
 /**
- * Interface cho grade request
+ * Interface cho grade request (supports both single and batch)
  */
 export interface GradeFileRequest {
-  fileId: string;
+  fileId?: string;
+  files?: string[];
   userId: number;
   useHardRubric?: boolean;
   customRubric?: Rubric;
   onlyCriteria?: string[];
+  concurrency?: number; // Số lượng file xử lý đồng thời (mặc định: 5)
 }
 
 /**

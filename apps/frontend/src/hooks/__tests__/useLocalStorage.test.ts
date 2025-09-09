@@ -1,113 +1,80 @@
-/**
- * @file useLocalStorage.test.ts
- * @description Unit tests for useLocalStorage hook
- * @author Your Name
- */
-
-// @vitest-environment jsdom
-
-import { renderHook, act } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
 import { useLocalStorage } from '../useLocalStorage'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 describe('useLocalStorage', () => {
-  const localStorageKey = 'test-key'
-  const initialValue = 'initial-value'
-
+  const KEY = 'test-key'
+  const INITIAL_VALUE = 'initial-value'
+  
   beforeEach(() => {
-    // Clear localStorage before each test
     localStorage.clear()
   })
-
-  it('should initialize with initial value when localStorage is empty', () => {
-    const { result } = renderHook(() => useLocalStorage<string>(localStorageKey, initialValue))
-    
-    const [storedValue] = result.current
-    expect(storedValue).toBe(initialValue)
+  
+  afterEach(() => {
+    vi.clearAllMocks()
   })
-
-  it('should initialize with value from localStorage when it exists', () => {
-    const storedValue = 'stored-value'
-    window.localStorage.setItem(localStorageKey, JSON.stringify(storedValue))
-    
-    const { result } = renderHook(() => useLocalStorage<string>(localStorageKey, initialValue))
-    
+  
+  it('should return initial value if no item in localStorage', () => {
+    const { result } = renderHook(() => useLocalStorage(KEY, INITIAL_VALUE))
     const [value] = result.current
-    expect(value).toBe(storedValue)
+    
+    expect(value).toBe(INITIAL_VALUE)
   })
-
-  it('should return initial value when localStorage contains invalid JSON', () => {
-    // Set invalid JSON in localStorage
-    localStorage.setItem(localStorageKey, 'invalid-json')
+  
+  it('should return existing value from localStorage', () => {
+    const EXISTING_VALUE = 'existing-value'
+    localStorage.setItem(KEY, JSON.stringify(EXISTING_VALUE))
     
-    const { result } = renderHook(() => useLocalStorage<string>(localStorageKey, initialValue))
-    
+    const { result } = renderHook(() => useLocalStorage(KEY, INITIAL_VALUE))
     const [value] = result.current
-    expect(value).toBe(initialValue)
-  })
-
-  it('should update state and localStorage when setValue is called', () => {
-    const { result } = renderHook(() => useLocalStorage<string>(localStorageKey, initialValue))
     
-    const newValue = 'new-value'
+    expect(value).toBe(EXISTING_VALUE)
+  })
+  
+  it('should update localStorage when value changes', () => {
+    const { result } = renderHook(() => useLocalStorage(KEY, INITIAL_VALUE))
     const [, setValue] = result.current
     
     act(() => {
-      setValue(newValue)
+      setValue(prev => `${prev}1`)
     })
     
-    const [updatedValue] = result.current
-    expect(updatedValue).toBe(newValue)
-    expect(window.localStorage.getItem(localStorageKey)).toBe(JSON.stringify(newValue))
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify(`${INITIAL_VALUE}1`))
   })
-
-  it('should update state with function updater', () => {
-    const { result } = renderHook(() => useLocalStorage<string>(localStorageKey, 'new-value'))
+  
+  it('should handle complex objects', () => {
+    type User = { name: string; age: number }
+    const INITIAL_USER: User = { name: 'John', age: 30 }
+    const UPDATED_USER: User = { name: 'Jane', age: 25 }
     
-    const [, setValue] = result.current
+    const { result } = renderHook(() => useLocalStorage<User>(KEY, INITIAL_USER))
+    const [, setUser] = result.current
     
     act(() => {
-      setValue(prev => prev + '1')
+      setUser(UPDATED_USER)
     })
     
-    const [updatedValue] = result.current
-    expect(updatedValue).toBe('new-value1')
-    expect(window.localStorage.getItem(localStorageKey)).toBe(JSON.stringify('new-value1'))
+    expect(JSON.parse(localStorage.getItem(KEY) || 'null')).toEqual(UPDATED_USER)
   })
-
-  it('should handle errors when setting localStorage', () => {
+  
+  it('should handle errors gracefully', () => {
     // Mock localStorage.setItem to throw an error
-    const mockSetItem = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
-      throw new Error('Storage full')
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('Storage failed')
     })
     
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     
-    const { result } = renderHook(() => useLocalStorage<string>(localStorageKey, initialValue))
-    
-    const newValue = 'new-value'
+    const { result } = renderHook(() => useLocalStorage(KEY, INITIAL_VALUE))
     const [, setValue] = result.current
     
     act(() => {
-      setValue(newValue)
+      setValue('new-value')
     })
     
-    // Should not throw and should still update state
-    const [updatedValue] = result.current
-    expect(updatedValue).toBe(newValue)
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to set localStorage key "test-key":', expect.any(Error))
     
-    // Restore mocks
-    mockSetItem.mockRestore()
+    setItemSpy.mockRestore()
     consoleSpy.mockRestore()
-  })
-
-  it('should return initial value when window is undefined (server-side)', () => {
-    // This test is not applicable in jsdom environment
-    expect(true).toBe(true)
-  })
-
-  it('should not set localStorage when window is undefined (server-side)', () => {
-    // This test is not applicable in jsdom environment
-    expect(true).toBe(true)
   })
 })

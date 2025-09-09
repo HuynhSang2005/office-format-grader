@@ -1,7 +1,7 @@
 /**
  * @file _auth.tsx
  * @description Authentication layout guard with AppShell
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { createFileRoute, redirect } from '@tanstack/react-router'

@@ -13,7 +13,7 @@ import type { ExportExcelRequest } from '@/schemas/grade-request.schema';
  * Interface cho dữ liệu export Excel
  */
 export interface ExcelExportData {
-  results: GradeResult[];
+  results: GradeResult[] | null | undefined;
   includeDetails?: boolean;
   groupBy?: ExportExcelRequest['groupBy'];
 }
@@ -27,7 +27,7 @@ function createWorksheet(data: ExcelExportData) {
   const { results, includeDetails = true } = data;
   
   // Validate input data
-  if (!results || results.length === 0) {
+  if (!results || !Array.isArray(results) || results.length === 0) {
     const error = new Error('Không có dữ liệu để export');
     logger.error('[ERROR] createWorksheet - Không có dữ liệu để export');
     throw error;
@@ -124,7 +124,7 @@ export async function exportToExcel(data: ExcelExportData, filename: string = 'e
       throw error;
     }
     
-    if (!data.results) {
+    if (!data.results || !Array.isArray(data.results)) {
       const error = new Error('Dữ liệu export không hợp lệ: data.results là null hoặc undefined');
       logger.error('[ERROR] exportToExcel - Dữ liệu export không hợp lệ: data.results là null hoặc undefined');
       throw error;

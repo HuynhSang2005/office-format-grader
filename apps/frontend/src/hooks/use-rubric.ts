@@ -1,7 +1,7 @@
 /**
  * @file use-rubric.ts
  * @description Custom hook for managing custom rubrics
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

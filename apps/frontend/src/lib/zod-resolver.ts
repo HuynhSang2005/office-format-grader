@@ -1,7 +1,7 @@
 /**
  * @file zod-resolver.ts
  * @description Zod resolver wrapper to avoid type issues
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { zodResolver as originalZodResolver } from '@hookform/resolvers/zod'

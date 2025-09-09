@@ -1,7 +1,7 @@
 /**
  * @file AppShell.tsx
  * @description Main application shell with header, sidebar, and content area
- * @author Your Name
+ * @author Nguyễn Huỳnh Sang
  */
 
 import { 
@@ -13,11 +13,11 @@ import {
   Avatar,
   Menu,
   ActionIcon,
-  rem
+  Box
 } from '@mantine/core'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useLocation } from '@tanstack/react-router'
 import { useDisclosure } from '@mantine/hooks'
-import { IconSun, IconMoon, IconLogout, IconUser, IconSettings, IconDashboard, IconUpload, IconHistory, IconTableExport, IconListSearch } from '@tabler/icons-react'
+import { IconSun, IconMoon, IconLogout, IconDashboard, IconUpload, IconHistory, IconTableExport, IconListSearch } from '@tabler/icons-react'
 import { useAuth } from '../../hooks/use-auth'
 import { useMantineColorScheme } from '@mantine/core'
 import { OfflineBanner } from './OfflineBanner'
@@ -35,6 +35,7 @@ export function AppShell({ children }: AppShellProps) {
   const { user, logout } = useAuth()
   const { setColorScheme } = useMantineColorScheme()
   const navigate = useNavigate()
+  const location = useLocation()
 
   // Sync UI store with Mantine color scheme
   useEffect(() => {
@@ -62,6 +63,7 @@ export function AppShell({ children }: AppShellProps) {
   const navItems = [
     { label: 'Bảng điều khiển', icon: IconDashboard, href: '/dashboard' },
     { label: 'Upload tài liệu', icon: IconUpload, href: '/upload' },
+    { label: 'Upload file nén', icon: IconUpload, href: '/upload/batch' },
     { label: 'File chưa chấm', icon: IconHistory, href: '/ungraded' },
     { label: 'Lịch sử chấm', icon: IconHistory, href: '/history' },
     { label: 'Xuất kết quả', icon: IconTableExport, href: '/export' },
@@ -74,7 +76,7 @@ export function AppShell({ children }: AppShellProps) {
       <MantineAppShell
         header={{ height: 70 }}
         navbar={{
-          width: { sm: 200 },
+          width: { sm: 250 },
           breakpoint: 'sm',
           collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
         }}
@@ -104,9 +106,9 @@ export function AppShell({ children }: AppShellProps) {
                 aria-label="Toggle color scheme"
               >
                 {theme === 'dark' ? (
-                  <IconSun style={{ width: rem(18), height: rem(18) }} stroke={1.5} />
+                  <IconSun style={{ width: '1.25rem', height: '1.25rem' }} stroke={1.5} />
                 ) : (
-                  <IconMoon style={{ width: rem(18), height: rem(18) }} stroke={1.5} />
+                  <IconMoon style={{ width: '1.25rem', height: '1.25rem' }} stroke={1.5} />
                 )}
               </ActionIcon>
               
@@ -125,9 +127,9 @@ export function AppShell({ children }: AppShellProps) {
                 </Menu.Target>
 
                 <Menu.Dropdown>
-                  <Menu.Label>{user?.email}</Menu.Label>
+                  {/* <Menu.Label>{user?.email}</Menu.Label>
                   <Menu.Item 
-                    leftSection={<IconUser style={{ width: rem(14), height: rem(14) }} />}
+                    leftSection={<IconUser style={{ width: '1rem', height: '1rem' }} />}
                     onClick={() => {
                       navigate({ to: '/profile' })
                     }}
@@ -135,17 +137,17 @@ export function AppShell({ children }: AppShellProps) {
                     Hồ sơ
                   </Menu.Item>
                   <Menu.Item 
-                    leftSection={<IconSettings style={{ width: rem(14), height: rem(14) }} />}
+                    leftSection={<IconSettings style={{ width: '1rem', height: '1rem' }} />}
                     onClick={() => {
                       navigate({ to: '/settings' })
                     }}
                   >
                     Cài đặt
                   </Menu.Item>
-                  <Menu.Divider />
+                  <Menu.Divider /> */}
                   <Menu.Item 
                     color="red" 
-                    leftSection={<IconLogout style={{ width: rem(14), height: rem(14) }} />}
+                    leftSection={<IconLogout style={{ width: '1rem', height: '1rem' }} />}
                     onClick={handleLogout}
                   >
                     Đăng xuất
@@ -157,33 +159,65 @@ export function AppShell({ children }: AppShellProps) {
         </MantineAppShell.Header>
 
         <MantineAppShell.Navbar p="md">
-          {navItems.map((item) => (
-            <UnstyledButton
-              key={item.label}
-              onClick={() => {
-                navigate({ to: item.href })
-                toggleMobile()
-              }}
-              w="100%"
-              p="xs"
-              mb="xs"
-              style={{
-                borderRadius: '4px',
-                color: theme === 'dark' ? '#fff' : '#000',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = theme === 'dark' ? '#374151' : '#f3f4f6'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-              }}
-            >
-              <Group>
-                <item.icon style={{ width: rem(18), height: rem(18) }} />
-                <Text size="sm">{item.label}</Text>
-              </Group>
-            </UnstyledButton>
-          ))}
+          <Box style={{ flex: 1 }}>
+            {navItems.map((item) => (
+              <UnstyledButton
+                key={item.label}
+                onClick={() => {
+                  navigate({ to: item.href })
+                  toggleMobile()
+                }}
+                w="100%"
+                p="sm"
+                mb="xs"
+                style={{
+                  borderRadius: '6px',
+                  color: theme === 'dark' ? '#fff' : '#000',
+                  backgroundColor: location.pathname === item.href ? (theme === 'dark' ? '#4b5563' : '#e5e7eb') : 'transparent',
+                  transition: 'background-color 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = location.pathname === item.href 
+                    ? (theme === 'dark' ? '#4b5563' : '#e5e7eb') 
+                    : (theme === 'dark' ? '#374151' : '#f3f4f6')
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = location.pathname === item.href 
+                    ? (theme === 'dark' ? '#4b5563' : '#e5e7eb') 
+                    : 'transparent'
+                }}
+              >
+                <Group>
+                  <item.icon style={{ width: '1rem', height: '1rem' }} stroke={1.5} />
+                  <Text size="md" fw={location.pathname === item.href ? 600 : 400}>{item.label}</Text>
+                </Group>
+              </UnstyledButton>
+            ))}
+          </Box>
+          
+          {/* Logout button in navbar footer */}
+          <UnstyledButton
+            onClick={handleLogout}
+            w="100%"
+            p="sm"
+            style={{
+              borderRadius: '6px',
+              color: theme === 'dark' ? '#ff6b6b' : '#ef4444',
+              backgroundColor: 'transparent',
+              transition: 'background-color 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = theme === 'dark' ? '#374151' : '#f3f4f6'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+            }}
+          >
+            <Group>
+              <IconLogout style={{ width: '1.5rem', height: '1.5rem' }} stroke={1.5} />
+              <Text size="md">Đăng xuất</Text>
+            </Group>
+          </UnstyledButton>
         </MantineAppShell.Navbar>
 
         <MantineAppShell.Main>
