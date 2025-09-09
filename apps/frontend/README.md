@@ -30,7 +30,7 @@
 - UI với **Mantine**. State cục bộ bằng **Zustand**. Dữ liệu server với **TanStack Query**.
 - Routing dùng **TanStack Router** (code-splitting qua `*.lazy.tsx`).
 - Validate dữ liệu bằng **Zod**. Form bằng **react-hook-form**.
-- Giao tiếp API qua **axios/ky wrapper**. Export Excel bằng **exceljs**. Biểu đồ bằng **Recharts/Tremor**. :contentReference[oaicite:1]{index=1}
+- Giao tiếp API qua **axios/ky wrapper**. Export Excel bằng **exceljs**. Biểu đồ bằng **Recharts/Tremor**.
 
 ---
 
