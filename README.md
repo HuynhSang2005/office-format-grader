@@ -1,4 +1,4 @@
-# Office Format Grader
+# Office Vibe - Monorepo
 
 A full-stack application for grading office documents (Word, PowerPoint) with automated feedback.
 
@@ -76,27 +76,4 @@ To set up the application for the first time:
 bun run setup:initial
 ```
 
-This will:
-- Create the database (if it doesn't exist)
-- Run database migrations
-- Create initial admin users
-
-## Technologies
-
-### Backend
-- [Bun](https://bun.sh) - JavaScript runtime
-- [Hono](https://hono.dev) - Web framework
-- [Prisma](https://www.prisma.io) - Database ORM
-- [SQLite](https://www.sqlite.org) - Database
-
-### Frontend
-- [React](https://react.dev) - UI library
-- [Vite](https://vitejs.dev) - Build tool
-- [TypeScript](https://www.typescriptlang.org) - Type safety
-- [Mantine](https://mantine.dev) - UI components
-- [TanStack Router](https://tanstack.com/router) - Routing
-- [TanStack Query](https://tanstack.com/query) - Server state management
-
-## License
-
-MIT
+This will run both applications concurrently, allowing you to develop the full stack application.
