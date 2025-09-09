@@ -21,10 +21,7 @@
     "cleanup:metadata": "bun src/scripts/cleanup-metadata.ts",
     "cleanup:manual": "bun src/scripts/manual-cleanup.ts",
     "test": "bun test",
-    "test:real": "bun run test-real-files.js",
-    "test:vi": "bun run test-tieng-viet.js",
-    "docker:build": "docker build -t office-vibe-code .",
-    "docker:run": "docker run -p 3000:3000 --env-file .env office-vibe-code"
+    "test:real": "bun run test-real-files.js"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
