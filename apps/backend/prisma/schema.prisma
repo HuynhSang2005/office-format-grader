@@ -63,7 +63,7 @@ model Criterion {
   description String
   detectorKey String
   maxPoints   Float
-  levels      String   // JSON string representation of levels array
+  levels      String   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
