@@ -38,7 +38,7 @@
 
 <div align="center">
 
-| Nhóm | Công nghệ |
+| Nhóm | Techstack |
 |---|---|
 | Build/runtime | Bun, Vite |
 | UI | React 18, Mantine UI |
@@ -56,6 +56,24 @@
 
 > Scripts, deps và cấu trúc xác nhận từ `package.json`, `src/`, `lefthook.yml`.
 
+---
+
+
+## 🗂️ Cấu trúc thư mục
+
+```text
+src/
+├─ routes/                # Route tree (TanStack Router) + code-splitting *.lazy.tsx
+│  ├─ _auth/              # Các trang sau đăng nhập: dashboard, grade, upload, history, ...
+│  └─ login.lazy.tsx      # Trang đăng nhập
+├─ components/            # UI theo domain: criteria, grade, layout, file, ...
+├─ hooks/                 # TanStack Query hooks + hooks nghiệp vụ (upload, grade, export...)
+├─ lib/                   # api-client, query-client, query-sync, zod-resolver
+├─ schemas/               # Zod schemas (auth, upload, grade, criteria, dashboard, ...)
+├─ stores/                # Zustand stores (auth, user, ui, rubric)
+├─ styles/                # Mantine theme, CSS entry
+└─ types/, utils/         # Kiểu dữ liệu và helpers
+```
 ---
 
 ## ⚙️ Cài đặt
@@ -103,25 +121,6 @@ bun run format       # Biome format --write
 
 ---
 
-## 🗂️ Cấu trúc thư mục
-
-```text
-src/
-├─ routes/                # Route tree (TanStack Router) + code-splitting *.lazy.tsx
-│  ├─ _auth/              # Các trang sau đăng nhập: dashboard, grade, upload, history, ...
-│  └─ login.lazy.tsx      # Trang đăng nhập
-├─ components/            # UI theo domain: criteria, grade, layout, file, ...
-├─ hooks/                 # TanStack Query hooks + hooks nghiệp vụ (upload, grade, export...)
-├─ lib/                   # api-client, query-client, query-sync, zod-resolver
-├─ schemas/               # Zod schemas (auth, upload, grade, criteria, dashboard, ...)
-├─ stores/                # Zustand stores (auth, user, ui, rubric)
-├─ styles/                # Mantine theme, CSS entry
-└─ types/, utils/         # Kiểu dữ liệu và helpers
-```
-
-> Danh mục và file tương ứng lấy từ cây thư mục repo.&#x20;
-
----
 
 ## 🔐 Auth và cấu hình API
 
