@@ -16,6 +16,8 @@
 
 <p align="center"><strong>Chấm điểm file Microsoft Office theo rubric • Build bằng Bun.js + Hono + Zod + JWT (jose) + Prisma + SQLite</strong></p>
 
+<p align="center"><strong>Build bằng Bun.js + Hono + Zod + JWT (jose) + Prisma + SQLite</strong></p>
+
 ---
 
 ## 🎯 Mục Tiêu
