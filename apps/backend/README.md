@@ -24,10 +24,10 @@
 
 API này được xây dựng để:
 - **Chấm điểm file `.docx` và `.pptx`** theo rubric mặc định hoặc rubric tùy chỉnh.  
-- Hỗ trợ upload đơn, upload hàng loạt (tối đa 60 file), upload file nén `.zip` hoặc `.rar`.  
+- Hỗ trợ upload đơn, upload hàng loạt (tối đa 60 file) và upload file nén `.zip` hoặc `.rar`.  
 - Lưu trữ file chưa chấm và quản lý metadata.  
 - **Xuất kết quả sang Excel** với chi tiết theo rubric.  
-- Tích hợp Dashboard để theo dõi kết quả, phân phối điểm, thống kê số liệu.  
+- Tích hợp Dashboard để theo dõi kết quả, phân phối điểm và thống kê số liệu.  
 
 ---
 
@@ -56,7 +56,7 @@ API này được xây dựng để:
 | ORM | [**Prisma**](https://www.prisma.io/) |
 | Database | SQLite (dev) / PostgreSQL (prod tuỳ chọn) |
 | Excel Export | `xlsx` |
-| File extractors | PPTX/DOCX custom extractors |
+| File extractors | PPTX/DOCX custom extractors và libs : JSZip, fast-xml-parser,... |
 </div>
 
 ---
@@ -65,18 +65,28 @@ API này được xây dựng để:
 
 ```bash
 src/
-├── routes/              # Các route chính (auth, upload, grade, export, dashboard, ungraded, analyze)
-├── controllers/         # Điều khiển logic cho từng route
-├── services/            # Business logic: grade, excel, storage, cleanup
-├── middlewares/         # Middleware (auth, cors, logger)
-├── cron-jobs/           # Tác vụ định kỳ dọn dẹp
-├── config/              # Biến cấu hình, presets, constants
-├── extractors/          # Bộ phân tích PPTX/DOCX
-├── schemas/             # Zod schemas validate request
-├── index.ts             # Entry server
-└── app.ts               # Khởi tạo Hono app + middleware
-```
+├── routes/               # Các route chính (auth, upload, grade, export, dashboard, ungraded, analyze)
+├── controllers/          # Controller cho từng route
+├── services/             # Business logic: grade, excel, storage, cleanup
+├── middlewares/          # Middleware (auth, cors, logger)
+├── cron-jobs/            # Cron job clean up (dọn dẹp)
+├── extractors/           # Bộ phân tích PPTX/DOCX
+│── rule-engine/          # Core grading logic
+├── tests/                # Test files
+├── schemas/              # Zod schemas validate request
+│── types/                # TypeScript types
+├── config/               # Cấu hình hệ thống
+│      ├── constants.ts   # Constants & messages
+│      └── cors.config.ts # CORS configuration
+├── prisma/
+│   └── schema.prisma     # Database schema
+│── utils/                # Utility functions
+├── .env.example          # Environment template
+├── index.ts              # Entry server
+└── app.ts                # Main app & routes
+└── DEPLOYMENT-GUIDE.md   # Hướng dẫn deployment
 
+```
 ---
 
 ## ⚙️ Cài Đặt & Chạy
@@ -93,7 +103,7 @@ src/
 bun install
 bunx prisma generate
 bunx prisma migrate dev   # tạo DB dev
-bun run dev               # start dev mode
+bun run dev               # start dev mode với hot reload
 bun run start             # start production
 ```
 
