@@ -1,17 +1,17 @@
 <p align="center">
-  <img src="https://bun.sh/logo.svg" height="70" />
+  <img src="https://bun.sh/logo.svg" height="60" />
   &nbsp;&nbsp;&nbsp;
-  <img src="https://raw.githubusercontent.com/honojs/hono/main/docs/images/hono-title.png" height="70" />
+  <img src="https://raw.githubusercontent.com/honojs/hono/main/docs/images/hono-title.png" height="60" />
   &nbsp;&nbsp;&nbsp;
-  <img src="https://vitejs.dev/logo.svg" height="70" />
+  <img src="https://vitejs.dev/logo.svg" height="60" />
   &nbsp;&nbsp;&nbsp;
-  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg" height="70" />
+  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg" height="60" />
   &nbsp;&nbsp;&nbsp;
-  <img src="https://raw.githubusercontent.com/colinhacks/zod/master/logo.svg" height="70" />
+  <img src="https://raw.githubusercontent.com/colinhacks/zod/master/logo.svg" height="60" />
   &nbsp;&nbsp;&nbsp;
-  <img src="https://cdn.worldvectorlogo.com/logos/prisma-2.svg" height="70" />
+  <img src="https://cdn.worldvectorlogo.com/logos/prisma-2.svg" height="60" />
   &nbsp;&nbsp;&nbsp;
-  <img src="https://cdn.worldvectorlogo.com/logos/sqlite.svg" height="70" />
+  <img src="https://cdn.worldvectorlogo.com/logos/sqlite.svg" height="60" />
 </p>
 
 <h1 align="center">
@@ -24,9 +24,9 @@
 
 ## 🎯 Mục tiêu
 
-- Cung cấp **API Backend** để upload, chấm điểm theo rubric (mặc định hoặc custom), export kết quả Excel, thống kê dashboard.  
-- Cung cấp **Frontend UI** để người dùng thao tác trực quan: đăng nhập, upload file, chấm điểm, xem kết quả, export.  
-- Monorepo quản lý cả hai app trong cùng workspace.
+Dự án **Office Format Grader** ra đời nhằm giải quyết bài toán **tự động chấm điểm và đánh giá chất lượng file Office (Word, PowerPoint)** dựa trên rubric. Thay vì phải chấm thủ công, công cụ này cho phép giảng viên hoặc người dùng nhanh chóng tải lên nhiều file, áp dụng rubric mặc định hoặc tùy chỉnh, và nhận lại điểm số cùng phản hồi chi tiết. Ngoài ra, kết quả có thể được **xuất ra Excel** để lưu trữ, phân tích và theo dõi tiến độ.  
+
+Dự án được triển khai theo mô hình **monorepo**, trong đó backend và frontend được đặt trong cùng một workspace, giúp dễ dàng quản lý dependencies, đồng bộ script và phát triển full-stack liền mạch. Cấu trúc này không chỉ tối ưu cho phát triển cá nhân mà còn sẵn sàng để mở rộng và phát triển trong tương lai.
 
 ---
 
