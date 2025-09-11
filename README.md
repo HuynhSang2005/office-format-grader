@@ -41,6 +41,96 @@ office-format-grader/
 └── README.md        # README tổng quan
 ````
 
+## 🎨 UI / UX Overview
+
+Giao diện của **Office Format Grader** được thiết kế hiện đại, trực quan, tập trung vào trải nghiệm đơn giản và hiệu quả. Toàn bộ layout theo dạng **sidebar navigation** cố định bên trái, các trang chức năng hiển thị rõ ràng với Mantine UI và biểu đồ/tables dễ theo dõi.
+
+### 🔑 Đăng nhập
+
+<div align="center">
+  <img src="public/screenshot/login.png" width="800" />
+  <p>Màn hình đăng nhập đơn giản, hỗ trợ tài khoản demo để thử nghiệm nhanh.</p>
+</div>
+
+---
+
+
+### 📊 Bảng điều khiển (Dashboard)
+
+<div align="center">
+  <img src="public/screenshot/dashboard.png" width="800" />
+  <p>Hiển thị tổng số file đã chấm, file chưa chấm, số rubric custom, và điểm trung bình.</p>
+  <p>Có khu vực Hành động nhanh: Upload file, xem lịch sử, truy cập rubric.</p>
+</div>
+
+---
+
+
+### 📂 Upload tài liệu
+
+<div align="center">
+  <img src="public/screenshot/upload-single-file.png" width="800" />
+  <p>Upload đơn lẻ: chọn một file .docx hoặc .pptx.</p>
+</div>
+
+<div align="center">
+  <img src="public/screenshot/upload-multi-file.png" width="800" />
+<p>Upload hàng loạt: chọn nhiều file cùng lúc.</p>
+</div>
+
+<div align="center">
+  <img src="public/screenshot/upload-compressed-file.png" width="800" />
+  <p>Upload file nén: hệ thống tự động giải nén và chấm điểm từng file.</p>
+</div>
+
+---
+
+
+### 🕑 File chưa chấm & Lịch sử chấm
+
+<div align="center">
+  <img src="public/screenshot/ungrade.png" width="800" />
+  <p>File chưa chấm: hiển thị danh sách chờ xử lý. Người dùng có thể chọn và bắt đầu chấm điểm.</p>
+</div>
+
+<div align="center">
+  <img src="public/screenshot/history.png" width="800" />
+  <p>Lịch sử chấm: hiển thị kết quả đã chấm với phân trang, cho phép xem chi tiết hoặc xóa.</p>
+</div>
+
+---
+
+
+### 📑 Quản lý & tùy chỉnh tiêu chí (Rubric)
+
+<div align="center">
+  <img src="public/screenshot/criteria-custom.png" width="800" />
+  <p>Danh sách toàn bộ tiêu chí chấm điểm (mặc định + tùy chỉnh).</p>
+</div>
+
+<div align="center">
+  <img src="public/screenshot/criteria-list.png" width="800" />
+  <p>Cho phép xem trước, sửa đổi, xóa, hoặc tạo rubric mới.</p>
+</div>
+
+<div align="center">
+  <img src="public/screenshot/criteria-validate-json.png" width="800" />
+  <p>Có tính năng kiểm tra rubric để đảm bảo hợp lệ trước khi sử dụng.</p>
+</div>
+
+---
+
+
+### 📤 Xuất kết quả sang Excel
+
+<div align="center">
+  <img src="public/screenshot/export-excel.png" width="800" />
+  <p>Chọn kết quả đã chấm để export.</p>
+  <p>File .xlsx có thể bao gồm điểm, phần trăm, rubric áp dụng, thời gian chấm, và chi tiết tiêu chí nếu bật tùy chọn.</p>
+</div>
+
+---
+
 ## 📊 Tổng quan hệ thống
 
 ```mermaid
