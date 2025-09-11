@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 
 describe('Custom Rubric E2E Tests', () => {
   // Tạo user test
-  let testUserId: string;
+  let testUserId: number; // Fix: ownerId phải là number
   
   beforeAll(async () => {
     // Hash the password before storing
@@ -27,13 +27,13 @@ describe('Custom Rubric E2E Tests', () => {
         password: hashedPassword
       }
     });
-    testUserId = testUser.id;
+    testUserId = testUser.id; // testUser.id là number
   });
 
   afterAll(async () => {
     // Cleanup: xóa custom rubrics test
     await prisma.customRubric.deleteMany({
-      where: { ownerId: testUserId }
+      where: { ownerId: testUserId } // ownerId là number
     });
     
     // Đóng kết nối DB
@@ -43,14 +43,14 @@ describe('Custom Rubric E2E Tests', () => {
   it('should create, read, update, and delete custom rubric', async () => {
     // 1. Tạo custom rubric
     const createRequest = {
-      ownerId: 'test-user',
+      ownerId: testUserId, // Sử dụng testUserId từ database
       name: 'Test Rubric',
       content: {
-        name: 'Test Rubric',
+        name: 'Test Rubric', // Fix: sử dụng name thay vì title
         version: '1.0',
-        fileType: 'DOCX' as const,
-        totalMaxPoints: 10,
-        rounding: 'half_up_0.25' as const,
+        fileType: 'DOCX' as const, // Fix: thêm fileType
+        totalMaxPoints: 10, // Fix: sử dụng totalMaxPoints thay vì totalPoints
+        rounding: 'half_up_0.25' as const, // Fix: sử dụng rounding thay vì scoring
         criteria: [
           {
             id: 'docx_toc',
@@ -96,11 +96,11 @@ describe('Custom Rubric E2E Tests', () => {
     expect(fetchedRubric).toBeDefined();
     expect(fetchedRubric?.name).toBe('Test Rubric');
     expect(fetchedRubric?.content.criteria.length).toBe(1);
-    expect(fetchedRubric?.content.criteria[0].id).toBe('test_criterion');
+    expect(fetchedRubric?.content.criteria[0].id).toBe('docx_toc'); // Fix: sử dụng id đúng
 
     // 3. Cập nhật custom rubric
     const updateRequest = {
-      ownerId: 'test-user',
+      ownerId: testUserId,
       name: 'Updated Test Rubric',
       content: {
         name: 'Updated Test Rubric',
@@ -135,10 +135,31 @@ describe('Custom Rubric E2E Tests', () => {
                 description: 'Advanced table of contents'
               }
             ]
+          },
+          {
+            id: 'docx_header',
+            name: 'Header/Footer',
+            description: 'Has header and footer',
+            detectorKey: 'docx.headerFooter' as const,
+            maxPoints: 1.5,
+            levels: [
+              {
+                code: 'header_0',
+                name: 'No Header/Footer',
+                points: 0,
+                description: 'No header or footer'
+              },
+              {
+                code: 'header_1',
+                name: 'Basic Header/Footer',
+                points: 1.5,
+                description: 'Basic header and footer'
+              }
+            ]
           }
         ]
       },
-      isPublic: false
+      isPublic: true // Fix: set to true to match expectation
     };
 
     const updatedRubric = await updateCustomRubric(createdRubric.id, updateRequest);

@@ -39,7 +39,7 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'docx.toc': (features: any) => {
     const { toc } = features;
     
-    if (!toc.exists) {
+    if (!toc || !toc.exists) {
       return {
         passed: false,
         points: 0,
@@ -68,7 +68,7 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'docx.headerFooter': (features: any) => {
     const { headerFooter } = features;
     
-    if (!headerFooter.hasHeader && !headerFooter.hasFooter) {
+    if (!headerFooter || (!headerFooter.hasHeader && !headerFooter.hasFooter)) {
       return {
         passed: false,
         points: 0,
@@ -155,7 +155,7 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'docx.table': (features: any) => {
     const { tables } = features;
     
-    if (tables.count === 0) {
+    if (!tables || tables.count === 0) {
       return {
         passed: false,
         points: 0,
@@ -184,7 +184,7 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'docx.equation': (features: any) => {
     const { equations } = features;
     
-    if (equations.count === 0) {
+    if (!equations || equations.count === 0) {
       return {
         passed: false,
         points: 0,
@@ -242,7 +242,7 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'docx.smartArt': (features: any) => {
     const { smartArt } = features;
     
-    if (smartArt.count === 0) {
+    if (!smartArt || smartArt.count === 0) {
       return {
         passed: false,
         points: 0,
@@ -337,7 +337,7 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'pptx.theme': (features: any) => {
     const { theme } = features;
     
-    if (!theme.name || theme.name === 'Office Theme') {
+    if (!theme || !theme.name || theme.name === 'Office Theme') {
       return {
         passed: false,
         points: 0,
@@ -499,7 +499,7 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'pptx.transitions': (features: any) => {
     const { transitions } = features;
     
-    if (transitions.length === 0) {
+    if (!transitions || transitions.length === 0) {
       return {
         passed: false,
         points: 0,
@@ -544,7 +544,7 @@ export const detectors: Record<DetectorKey, DetectorFn> = {
   'pptx.animations': (features: any) => {
     const { animations } = features;
     
-    if (animations.length === 0) {
+    if (!animations || animations.length === 0) {
       return {
         passed: false,
         points: 0,

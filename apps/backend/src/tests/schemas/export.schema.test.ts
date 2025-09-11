@@ -51,14 +51,14 @@ describe('ExportExcelRequestSchema', () => {
 
   it('nên từ chối khi có quá nhiều resultIds', () => {
     const invalidData = {
-      resultIds: Array(1001).fill('result-id')
+      resultIds: Array(61).fill('result-id') // 61 > 60 limit
     };
 
     const result = ExportExcelRequestSchema.safeParse(invalidData);
     expect(result.success).toBe(false);
     
     if (!result.success) {
-      expect(result.error.issues[0].message).toBe('Không được export quá 1000 results');
+      expect(result.error.issues[0].message).toBe('Không được export quá 60 results');
     }
   });
 

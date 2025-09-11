@@ -8,7 +8,6 @@ import { logger } from '@core/logger';
 import { PrismaClient } from '@prisma/client';
 import type { Rubric } from '@/types/criteria';
 import type { CustomRubric, CreateCustomRubricRequest, UpdateCustomRubricRequest } from '@/types/custom-rubric.types';
-import { RubricSchema } from '@/schemas/rubric.schema';
 import { createCriterion as createCriterionService, updateCriterion as updateCriterionService, deleteCriterion as deleteCriterionService } from './criteria-crud.service';
 
 const prisma = new PrismaClient();
@@ -266,39 +265,97 @@ export async function validateRubric(rubric: Rubric): Promise<{ isValid: boolean
   logger.debug(`Đang validate rubric: ${rubric.name}`);
   
   try {
-    // Use Zod schema to validate
-    const result = RubricSchema.safeParse(rubric);
-    
-    if (!result.success) {
-      const errors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-      return { isValid: false, errors, warnings: [] };
-    }
-    
-    // Additional business logic validation
     const errors: string[] = [];
     const warnings: string[] = [];
     
+    // Validate required fields
+    if (!rubric.name || rubric.name.trim().length === 0) {
+      errors.push('name: Required');
+    }
+    if (!rubric.version || rubric.version.trim().length === 0) {
+      errors.push('version: Required');
+    }
+    if (!rubric.fileType || !['PPTX', 'DOCX', 'ZIP', 'RAR'].includes(rubric.fileType)) {
+      errors.push('fileType: Must be one of PPTX, DOCX, ZIP, RAR');
+    }
+    if (typeof rubric.totalMaxPoints !== 'number' || rubric.totalMaxPoints <= 0) {
+      errors.push('totalMaxPoints: Must be a positive number');
+    }
+    if (!rubric.rounding || !['half_up_0.25', 'none'].includes(rubric.rounding)) {
+      errors.push('rounding: Must be one of half_up_0.25, none');
+    }
+    if (!rubric.criteria || !Array.isArray(rubric.criteria) || rubric.criteria.length === 0) {
+      errors.push('criteria: Must be a non-empty array');
+    }
+    
+    // Validate criteria if they exist
+    if (rubric.criteria && Array.isArray(rubric.criteria)) {
+      rubric.criteria.forEach((criterion, index) => {
+        if (!criterion.id || criterion.id.trim().length === 0) {
+          errors.push(`criteria[${index}].id: Required`);
+        }
+        if (!criterion.name || criterion.name.trim().length === 0) {
+          errors.push(`criteria[${index}].name: Required`);
+        }
+        if (!criterion.detectorKey || criterion.detectorKey.trim().length === 0) {
+          errors.push(`criteria[${index}].detectorKey: Required`);
+        }
+        if (typeof criterion.maxPoints !== 'number' || criterion.maxPoints <= 0) {
+          errors.push(`criteria[${index}].maxPoints: Must be a positive number`);
+        }
+        if (!criterion.levels || !Array.isArray(criterion.levels) || criterion.levels.length === 0) {
+          errors.push(`criteria[${index}].levels: Must be a non-empty array`);
+        }
+        
+        // Validate levels
+        if (criterion.levels && Array.isArray(criterion.levels)) {
+          criterion.levels.forEach((level, levelIndex) => {
+            if (!level.code || level.code.trim().length === 0) {
+              errors.push(`criteria[${index}].levels[${levelIndex}].code: Required`);
+            }
+            if (!level.name || level.name.trim().length === 0) {
+              errors.push(`criteria[${index}].levels[${levelIndex}].name: Required`);
+            }
+            if (typeof level.points !== 'number') {
+              errors.push(`criteria[${index}].levels[${levelIndex}].points: Must be a number`);
+            }
+            if (!level.description || level.description.trim().length === 0) {
+              errors.push(`criteria[${index}].levels[${levelIndex}].description: Required`);
+            }
+          });
+        }
+      });
+    }
+    
     // Check if totalMaxPoints matches sum of criteria maxPoints
-    const calculatedTotal = rubric.criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
-    if (Math.abs(calculatedTotal - rubric.totalMaxPoints) > 0.01) {
-      warnings.push(`Tổng điểm criteria (${calculatedTotal}) không khớp với totalMaxPoints (${rubric.totalMaxPoints})`);
+    if (rubric.criteria && Array.isArray(rubric.criteria)) {
+      const calculatedTotal = rubric.criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
+      if (Math.abs(calculatedTotal - rubric.totalMaxPoints) > 0.01) {
+        warnings.push(`Tổng điểm criteria (${calculatedTotal}) không khớp với totalMaxPoints (${rubric.totalMaxPoints})`);
+      }
     }
     
     // Check for duplicate criterion IDs
-    const criterionIds = rubric.criteria.map(c => c.id);
-    const duplicateIds = criterionIds.filter((id, index) => criterionIds.indexOf(id) !== index);
-    if (duplicateIds.length > 0) {
-      errors.push(`Có criterion ID bị trùng: ${[...new Set(duplicateIds)].join(', ')}`);
+    if (rubric.criteria && Array.isArray(rubric.criteria)) {
+      const criterionIds = rubric.criteria.map(c => c.id);
+      const duplicateIds = criterionIds.filter((id, index) => criterionIds.indexOf(id) !== index);
+      if (duplicateIds.length > 0) {
+        errors.push(`Có criterion ID bị trùng: ${[...new Set(duplicateIds)].join(', ')}`);
+      }
     }
     
     // Check for duplicate level codes within each criterion
-    rubric.criteria.forEach(criterion => {
-      const levelCodes = criterion.levels.map(l => l.code);
-      const duplicateLevelCodes = levelCodes.filter((code, index) => levelCodes.indexOf(code) !== index);
-      if (duplicateLevelCodes.length > 0) {
-        errors.push(`Criterion ${criterion.id} có level code bị trùng: ${[...new Set(duplicateLevelCodes)].join(', ')}`);
-      }
-    });
+    if (rubric.criteria && Array.isArray(rubric.criteria)) {
+      rubric.criteria.forEach(criterion => {
+        if (criterion.levels && Array.isArray(criterion.levels)) {
+          const levelCodes = criterion.levels.map(l => l.code);
+          const duplicateLevelCodes = levelCodes.filter((code, index) => levelCodes.indexOf(code) !== index);
+          if (duplicateLevelCodes.length > 0) {
+            errors.push(`Criterion ${criterion.id} có level code bị trùng: ${[...new Set(duplicateLevelCodes)].join(', ')}`);
+          }
+        }
+      });
+    }
     
     logger.debug(`Validate rubric ${rubric.name}: ${errors.length} errors, ${warnings.length} warnings`);
     
