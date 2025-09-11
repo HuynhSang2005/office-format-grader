@@ -107,40 +107,69 @@ async function extractSlidesInfo(
   
   try {
     const slides: SlideInfo[] = [];
+    const slideKeys = Object.keys(slidesData).sort(); // Sort để đảm bảo thứ tự
     
-    for (let i = 0; i < Object.keys(slidesData).length; i++) {
-      const slideKey = `slide${i + 1}.xml`;
+    for (let i = 0; i < slideKeys.length; i++) {
+      const slideKey = slideKeys[i];
       const slideXml = slidesData[slideKey];
       
       if (!slideXml) continue;
       
       const slideDoc = parsePPTXXML(slideXml);
-      if (!slideDoc) continue;
+      if (!slideDoc) {
+        logger.warn(`Không thể parse slide: ${slideKey}`);
+        continue;
+      }
       
-      // Extract slide title
-      const titleShape = findElementByNamespace(slideDoc, 'p', 'sp');
+      // Extract slide title - thử nhiều cách khác nhau
       let title = '';
-      if (titleShape) {
-        title = extractPPTXText(titleShape);
+      
+      // Cách 1: Tìm shape có text trong title placeholder
+      const titleShapes = findElementsByNamespace(slideDoc, 'p', 'sp');
+      for (const shape of titleShapes) {
+        const text = extractPPTXText(shape);
+        if (text && text.trim().length > 0) {
+          title = text.trim();
+          break;
+        }
+      }
+      
+      // Cách 2: Nếu không tìm thấy, thử tìm trong paragraph elements
+      if (!title) {
+        const paragraphs = findElementsByNamespace(slideDoc, 'p', 'p');
+        for (const para of paragraphs) {
+          const text = extractPPTXText(para);
+          if (text && text.trim().length > 0) {
+            title = text.trim();
+            break;
+          }
+        }
       }
       
       // Extract notes (if any)
       const noteText = ''; // TODO: Extract from notes slides
       
-      // Extract layout name from relationships
-      const slideRelId = `rId${i + 1}`;
-      const layoutRel = relationships.find(r => r.id === slideRelId);
-      const layoutName = layoutRel ? layoutRel.target.split('/').pop()?.replace('.xml', '') || 'Unknown Layout' : 'Unknown Layout';
+      // Extract layout name from relationships - cần tìm relationship tương ứng
+      let layoutName = 'Unknown Layout';
+      // Tìm relationship dựa trên slide key
+      const slideNumber = slideKey.match(/slide(\d+)\.xml$/)?.[1];
+      if (slideNumber) {
+        const slideRelId = `rId${slideNumber}`;
+        const layoutRel = relationships.find(r => r.id === slideRelId);
+        if (layoutRel) {
+          layoutName = layoutRel.target.split('/').pop()?.replace('.xml', '') || 'Unknown Layout';
+        }
+      }
       
       slides.push({
         index: i,
-        title: title || undefined,
+        title: title || `Slide ${i + 1}`,
         noteText: noteText || undefined,
         layoutName
       });
     }
     
-    logger.debug(`Trích xuất được ${slides.length} slides`);
+    logger.debug(`Trích xuất được ${slides.length} slides từ ${slideKeys.length} files`);
     return slides;
   } catch (error) {
     logger.error('Lỗi khi extract slides info:', error);

@@ -1,6 +1,6 @@
 /**
  * @file app.ts
- * @description Main application setup with routes and middleware
+ * @description Thiết lập main app với routes và middleware
  * @author Nguyễn Huỳnh Sang
  */
 
@@ -10,7 +10,7 @@ import { logger } from 'hono/logger';
 import { corsConfig } from './config/cors.config';
 import { authGuard } from './middlewares/auth.middleware';
 
-// Import all route modules
+// Import tất cả các module route
 import authRoutes from './routes/auth.routes';
 import uploadRoutes from './routes/upload.routes';
 import analyzeRoutes from './routes/analyze.routes';
@@ -23,12 +23,12 @@ import ungradedRoutes from './routes/ungraded.routes';
 
 const app = new Hono();
 
-// Add global middlewares
+// Thêm middleware toàn cục
 app.use('*', corsConfig);
 app.use('*', logger());
 app.use('*', prettyJSON());
 
-// Add error handling middleware
+// Thêm middleware xử lý lỗi
 app.onError((err, c) => {
   console.error('Error:', err);
   return c.json({
@@ -37,7 +37,7 @@ app.onError((err, c) => {
   }, 500);
 });
 
-// Root endpoint
+// Endpoint gốc
 app.get('/', (c) => {
   return c.json({
     message: 'Office Format Grader API',
@@ -58,7 +58,7 @@ app.get('/', (c) => {
   });
 });
 
-// Health check endpoint
+// Endpoint health check
 app.get('/health', (c) => {
   return c.json({
     status: 'healthy',
@@ -67,13 +67,23 @@ app.get('/health', (c) => {
   });
 });
 
-// Mount API routes - Public routes first
-// Note: Upload route is now protected as it needs user context for automatic grading
+// Mount các route API - Route công khai trước
+// Lưu ý: Route upload giờ được bảo vệ vì cần user context cho việc chấm điểm tự động
 app.use('/api/upload', authGuard);
 app.route('/api/upload', uploadRoutes);
 app.route('/api/debug', analyzeRoutes);
 
-// Protected routes (require authentication)
+// Endpoint rubric công khai (không cần auth)
+app.route('/api/criteria', criteriaRoutes);
+
+// Endpoint rubric cụ thể (không cần auth)
+app.get('/api/criteria/rubric', async (c) => {
+  // Import controller tại đây để tránh circular imports
+  const { getRubricController } = await import('./controllers/criteria.controller');
+  return getRubricController(c);
+});
+
+// Các route được bảo vệ (yêu cầu xác thực)
 app.use('/api/auth/me', authGuard);
 app.use('/api/grade/*', authGuard);
 app.use('/api/criteria/*', authGuard);
@@ -82,6 +92,7 @@ app.use('/api/dashboard/*', authGuard);
 app.use('/api/export/*', authGuard);
 app.use('/api/ungraded/*', authGuard);
 
+// Mount các route chính
 app.route('/api/auth', authRoutes);
 app.route('/api/grade', gradeRoutes);
 app.route('/api/criteria', criteriaRoutes);

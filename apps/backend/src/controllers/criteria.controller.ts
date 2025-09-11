@@ -495,3 +495,34 @@ export async function previewCriteriaController(c: Context) {
     }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 }
+
+// GET /criteria/rubric - Get rubric data for frontend
+export async function getRubricController(c: Context) {
+  try {
+    const fileType = c.req.query('fileType') as 'PPTX' | 'DOCX' | undefined;
+
+    if (!fileType) {
+      return c.json({
+        success: false,
+        message: 'fileType parameter is required (PPTX or DOCX)'
+      }, HTTP_STATUS.BAD_REQUEST);
+    }
+
+    logger.info(`Getting rubric data for ${fileType}`);
+
+    const rubric = await loadPresetRubric('default', fileType);
+
+    return c.json({
+      success: true,
+      message: `Lấy rubric ${fileType} thành công`,
+      data: rubric
+    });
+
+  } catch (error) {
+    logger.error('Lỗi trong getRubricController:', error);
+    return c.json({
+      success: false,
+      message: error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR
+    }, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+}

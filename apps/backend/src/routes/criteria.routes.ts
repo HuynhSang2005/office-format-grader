@@ -11,7 +11,8 @@ import {
   getCriterionController,
   getSupportedCriteriaController,
   validateRubricController,
-  previewCriteriaController
+  previewCriteriaController,
+  getRubricController
 } from '../controllers/criteria.controller';
 // Add the new CRUD controllers
 import {
@@ -67,6 +68,10 @@ regularCriteriaRoutes.post('/validate', validateRubricController);
 // Body: { fileId?: string, features?: object, rubric: Rubric, onlyCriteria?: string[] }
 regularCriteriaRoutes.post('/preview', previewCriteriaController);
 
+// GET /criteria/rubric - Get rubric data for frontend
+// Query params: fileType (PPTX|DOCX)
+regularCriteriaRoutes.get('/rubric', getRubricController);
+
 export default regularCriteriaRoutes;
 
 // Export an OpenAPIHono version for documentation
@@ -95,6 +100,10 @@ const PreviewCriteriaRequestSchema = z.object({
   features: z.any().optional(),
   rubric: z.any(),
   onlyCriteria: z.array(z.string()).optional()
+});
+
+const GetRubricQuerySchema = z.object({
+  fileType: z.enum(['PPTX', 'DOCX'])
 });
 
 const CriteriaParamsSchema = z.object({
@@ -445,6 +454,40 @@ export const previewCriteriaRoute = createRoute({
   }
 });
 
+export const getRubricRoute = createRoute({
+  method: 'get',
+  path: '/criteria/rubric',
+  request: {
+    query: GetRubricQuerySchema
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Lấy rubric data thành công'
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Thiếu hoặc sai fileType parameter'
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: GenericResponseSchema
+        }
+      },
+      description: 'Lỗi server'
+    }
+  }
+});
+
 // Create a compatible wrapper function
 function createCompatibleHandler(handler: Function) {
   return (c: any) => {
@@ -464,3 +507,4 @@ openApiCriteriaRoutes.openapi(updateCriterionRoute, createCompatibleHandler(upda
 openApiCriteriaRoutes.openapi(deleteCriterionRoute, createCompatibleHandler(deleteCriterionController));
 openApiCriteriaRoutes.openapi(validateRubricRoute, createCompatibleHandler(validateRubricController));
 openApiCriteriaRoutes.openapi(previewCriteriaRoute, createCompatibleHandler(previewCriteriaController));
+openApiCriteriaRoutes.openapi(getRubricRoute, createCompatibleHandler(getRubricController));

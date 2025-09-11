@@ -95,4 +95,74 @@ describe('PPTX Export PDF Criterion Tests', () => {
     expect(result.level).toBe('pdf_1');
     expect(result.reason).toBe('Xuất PDF chính xác, không lỗi layout');
   });
+
+  it('should handle edge case with negative pdfPageCount', () => {
+    const features = {
+      hasPdfExport: true,
+      pdfPageCount: -1
+    };
+    
+    const result = detectors['common.exportPdf'](features);
+    
+    expect(result.passed).toBe(false);
+    expect(result.points).toBe(0);
+    expect(result.level).toBe('pdf_0');
+    expect(result.reason).toBe('File PDF có vấn đề về layout');
+  });
+
+  it('should handle large pdfPageCount values', () => {
+    const features = {
+      hasPdfExport: true,
+      pdfPageCount: 1000
+    };
+    
+    const result = detectors['common.exportPdf'](features);
+    
+    expect(result.passed).toBe(true);
+    expect(result.points).toBe(0.5);
+    expect(result.level).toBe('pdf_1');
+    expect(result.reason).toBe('Xuất PDF chính xác, không lỗi layout');
+  });
+
+  it('should handle decimal pdfPageCount values', () => {
+    const features = {
+      hasPdfExport: true,
+      pdfPageCount: 5.7
+    };
+    
+    const result = detectors['common.exportPdf'](features);
+    
+    expect(result.passed).toBe(true);
+    expect(result.points).toBe(0.5);
+    expect(result.level).toBe('pdf_1');
+    expect(result.reason).toBe('Xuất PDF chính xác, không lỗi layout');
+  });
+
+  it('should handle minimum valid pdfPageCount (1)', () => {
+    const features = {
+      hasPdfExport: true,
+      pdfPageCount: 1
+    };
+    
+    const result = detectors['common.exportPdf'](features);
+    
+    expect(result.passed).toBe(true);
+    expect(result.points).toBe(0.5);
+    expect(result.level).toBe('pdf_1');
+    expect(result.reason).toBe('Xuất PDF chính xác, không lỗi layout');
+  });
+
+  it('should work with pptx.exportPdf detector key', () => {
+    const features = {
+      hasPdfExport: true,
+      pdfPageCount: 3
+    };
+    
+    const result = detectors['pptx.exportPdf'](features);
+    
+    expect(result.passed).toBe(true);
+    expect(result.points).toBe(0.5);
+    expect(result.level).toBe('pdf_1');
+    expect(result.reason).toBe('Xuất PDF chính xác, không lỗi layout');
+  });
 });
