@@ -20,7 +20,7 @@ export async function getUngradedFilesController(c: Context) {
     
     // Get query parameters for pagination
     const queryParams = c.req.query();
-    const limit = parseInt(queryParams.limit || '20');
+    const limit = parseInt(queryParams.limit || '500');
     const offset = parseInt(queryParams.offset || '0');
     
     logger.info(`Getting ungraded files for user ${userId} with limit=${limit}, offset=${offset}`);

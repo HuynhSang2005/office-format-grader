@@ -9,6 +9,7 @@ import { notifications } from '@mantine/notifications';
 import { apiClient } from '../lib/api-client';
 import { type UploadResponse, UploadResponseSchema, type UploadErrorResponse } from '../schemas/upload.schema';
 import type { AxiosError } from 'axios';
+import { useGradeFile } from './use-grade-file';
 
 interface UseBatchUploadProps {
   onSuccess?: (results: UploadResponse[]) => void;
@@ -18,6 +19,7 @@ interface UseBatchUploadProps {
 
 export const useBatchUpload = ({ onSuccess, onError, customRubricId }: UseBatchUploadProps = {}) => {
   const queryClient = useQueryClient();
+  const gradeFileMutation = useGradeFile({ redirectToGradePage: false }); // Don't redirect automatically
   
   return useMutation({
     mutationFn: async (files: File[]) => {
@@ -59,12 +61,46 @@ export const useBatchUpload = ({ onSuccess, onError, customRubricId }: UseBatchU
       // Invalidate and refetch grade history to update the list
       queryClient.invalidateQueries({ queryKey: ['grade-history'] });
       
+      // Count files that need automatic grading
+      const filesNeedingGrading = data.filter(result => 
+        result.data?.fileId && 
+        !(result.data && 'gradeResult' in result.data && result.data.gradeResult !== undefined)
+      );
+      
       // Show success notification
-      notifications.show({
-        title: 'Thành công',
-        message: `Đã tải lên ${data.length} file thành công`,
-        color: 'green',
-      });
+      const gradedCount = data.length - filesNeedingGrading.length;
+      const totalFiles = data.length;
+      
+      if (gradedCount === totalFiles) {
+        notifications.show({
+          title: 'Thành công',
+          message: `Đã tải lên và chấm điểm tự động ${totalFiles} file thành công`,
+          color: 'green',
+        });
+      } else if (gradedCount > 0) {
+        notifications.show({
+          title: 'Đang xử lý',
+          message: `Đã tải lên ${totalFiles} file. ${gradedCount} file đã được chấm điểm tự động, ${filesNeedingGrading.length} file đang được chấm điểm...`,
+          color: 'blue',
+        });
+      } else {
+        notifications.show({
+          title: 'Đang xử lý',
+          message: `Đã tải lên ${totalFiles} file và đang chấm điểm tự động...`,
+          color: 'blue',
+        });
+      }
+      
+      // Automatically grade files that weren't graded automatically
+      if (filesNeedingGrading.length > 0) {
+        filesNeedingGrading.forEach(result => {
+          if (result.data?.fileId) {
+            gradeFileMutation.mutate({
+              fileId: result.data.fileId
+            });
+          }
+        });
+      }
       
       if (onSuccess) {
         onSuccess(data);
